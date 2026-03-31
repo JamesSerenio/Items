@@ -19,23 +19,23 @@ class AdminMenuStyles {
   static const Color textSecondary = Color(0xFFA7B4D3);
   static const Color textMuted = Color(0xFF7182A8);
 
-  static BoxDecoration pageBackground = const BoxDecoration(
+  static final BoxDecoration pageBackground = const BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [backgroundTop, backgroundColor, backgroundBottom],
+      colors: <Color>[backgroundTop, backgroundColor, backgroundBottom],
     ),
   );
 
-  static BoxDecoration sidebarDecoration = BoxDecoration(
+  static final BoxDecoration sidebarDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(28),
     gradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [sidebarColor, sidebarColor2],
+      colors: <Color>[sidebarColor, sidebarColor2],
     ),
     border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
+    boxShadow: const <BoxShadow>[
       BoxShadow(
         color: Color(0x33000000),
         blurRadius: 30,
@@ -45,15 +45,15 @@ class AdminMenuStyles {
     ],
   );
 
-  static BoxDecoration panelDecoration = BoxDecoration(
+  static final BoxDecoration panelDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(28),
     gradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [panelColor, panelColor2],
+      colors: <Color>[panelColor, panelColor2],
     ),
     border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
+    boxShadow: const <BoxShadow>[
       BoxShadow(
         color: Color(0x22000000),
         blurRadius: 24,
@@ -62,16 +62,26 @@ class AdminMenuStyles {
     ],
   );
 
-  static BoxDecoration activeMenuDecoration = BoxDecoration(
+  static final BoxDecoration mobilePanelDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(22),
+    gradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: <Color>[panelColor, panelColor2],
+    ),
+    border: Border.all(color: borderColor, width: 1.0),
+  );
+
+  static final BoxDecoration activeMenuDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(18),
     color: const Color(0x1624D6F2),
     border: Border.all(color: const Color(0x3324D6F2), width: 1),
-    boxShadow: const [
+    boxShadow: const <BoxShadow>[
       BoxShadow(color: Color(0x1424D6F2), blurRadius: 16, offset: Offset(0, 0)),
     ],
   );
 
-  static BoxDecoration inactiveMenuDecoration = BoxDecoration(
+  static final BoxDecoration inactiveMenuDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(18),
     color: Colors.transparent,
     border: Border.all(color: Colors.transparent, width: 1),
@@ -102,6 +112,12 @@ class AdminMenuStyles {
     color: textPrimary,
   );
 
+  static const TextStyle pageTitleMobileStyle = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w800,
+    color: textPrimary,
+  );
+
   static const TextStyle pageSubtitleStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
@@ -126,11 +142,33 @@ class AdminMenuStyles {
     fontWeight: FontWeight.w500,
   );
 
-  static ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(
+  static final ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: primaryColor,
     foregroundColor: const Color(0xFF07111F),
     elevation: 0,
     minimumSize: const Size(double.infinity, 52),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
   );
+
+  static InputDecoration inputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(color: textMuted, fontSize: 14),
+      prefixIcon: Icon(prefixIcon, color: textSecondary),
+      filled: true,
+      fillColor: const Color(0xFF0E1730),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderColor, width: 1.1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: primaryColor, width: 1.4),
+      ),
+    );
+  }
 }

@@ -28,9 +28,172 @@ class _AdminMenuState extends State<AdminMenu> {
     );
   }
 
+  Widget _buildCurrentPage(bool isMobile) {
+    switch (_selectedSection) {
+      case AdminSection.dashboard:
+        return _DashboardView(isMobile: isMobile);
+      case AdminSection.addItems:
+        return _AddItemsView(isMobile: isMobile);
+    }
+  }
+
+  Widget _buildSidebar({required bool isMobile, required bool isCollapsed}) {
+    return Container(
+      width: isMobile ? null : (_isCollapsed ? 96 : 270),
+      margin: isMobile ? EdgeInsets.zero : const EdgeInsets.all(18),
+      padding: EdgeInsets.all(isMobile ? 16 : 16),
+      decoration: AdminMenuStyles.sidebarDecoration,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (!isMobile)
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isCollapsed = !_isCollapsed;
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.menu_rounded,
+                    color: AdminMenuStyles.textPrimary,
+                    size: 28,
+                  ),
+                ),
+              if (!isMobile && !_isCollapsed) const SizedBox(width: 6),
+              Expanded(
+                child: isMobile || !isCollapsed
+                    ? RichText(
+                        overflow: TextOverflow.ellipsis,
+                        text: const TextSpan(
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'DATA',
+                              style: TextStyle(
+                                color: AdminMenuStyles.textPrimary,
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'CORE',
+                              style: TextStyle(
+                                color: AdminMenuStyles.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 26),
+          _SidebarMenuTile(
+            icon: Icons.dashboard_outlined,
+            label: 'Dashboard',
+            isCollapsed: isMobile ? false : isCollapsed,
+            isActive: _selectedSection == AdminSection.dashboard,
+            onTap: () {
+              _selectSection(AdminSection.dashboard);
+              if (isMobile) Navigator.pop(context);
+            },
+          ),
+          const SizedBox(height: 12),
+          _SidebarMenuTile(
+            icon: Icons.add_box_outlined,
+            label: 'Add Items',
+            isCollapsed: isMobile ? false : isCollapsed,
+            isActive: _selectedSection == AdminSection.addItems,
+            onTap: () {
+              _selectSection(AdminSection.addItems);
+              if (isMobile) Navigator.pop(context);
+            },
+          ),
+          const Spacer(),
+          if (isMobile || !isCollapsed)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _logout,
+                style: AdminMenuStyles.logoutButtonStyle,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text(
+                  'Logout',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: AdminMenuStyles.primaryColor,
+                size: 28,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double sidebarWidth = _isCollapsed ? 96 : 270;
+    final double width = MediaQuery.of(context).size.width;
+    final bool isMobile = width < 768;
+
+    if (isMobile) {
+      return Scaffold(
+        drawer: Drawer(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+              child: _buildSidebar(isMobile: true, isCollapsed: false),
+            ),
+          ),
+        ),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: AdminMenuStyles.textPrimary),
+          title: RichText(
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+              children: [
+                TextSpan(
+                  text: 'DATA',
+                  style: TextStyle(color: AdminMenuStyles.textPrimary),
+                ),
+                TextSpan(
+                  text: 'CORE',
+                  style: TextStyle(color: AdminMenuStyles.primaryColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: Container(
+          decoration: AdminMenuStyles.pageBackground,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: _buildCurrentPage(true),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -41,99 +204,10 @@ class _AdminMenuState extends State<AdminMenu> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeInOut,
-                width: sidebarWidth,
-                margin: const EdgeInsets.all(18),
-                padding: const EdgeInsets.all(16),
-                decoration: AdminMenuStyles.sidebarDecoration,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _isCollapsed = !_isCollapsed;
-                            });
-                          },
-                          icon: const Icon(
-                            Icons.menu_rounded,
-                            color: AdminMenuStyles.textPrimary,
-                            size: 28,
-                          ),
-                        ),
-                        if (!_isCollapsed) ...[
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: RichText(
-                              text: const TextSpan(
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'DATA',
-                                    style: TextStyle(
-                                      color: AdminMenuStyles.textPrimary,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: 'CORE',
-                                    style: TextStyle(
-                                      color: AdminMenuStyles.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 26),
-                    _SidebarMenuTile(
-                      icon: Icons.dashboard_outlined,
-                      label: 'Dashboard',
-                      isCollapsed: _isCollapsed,
-                      isActive: _selectedSection == AdminSection.dashboard,
-                      onTap: () => _selectSection(AdminSection.dashboard),
-                    ),
-                    const SizedBox(height: 12),
-                    _SidebarMenuTile(
-                      icon: Icons.add_box_outlined,
-                      label: 'Add Items',
-                      isCollapsed: _isCollapsed,
-                      isActive: _selectedSection == AdminSection.addItems,
-                      onTap: () => _selectSection(AdminSection.addItems),
-                    ),
-                    const Spacer(),
-                    if (!_isCollapsed)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _logout,
-                          style: AdminMenuStyles.logoutButtonStyle,
-                          icon: const Icon(Icons.logout_rounded),
-                          label: const Text(
-                            'Logout',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      IconButton(
-                        onPressed: _logout,
-                        icon: const Icon(
-                          Icons.logout_rounded,
-                          color: AdminMenuStyles.primaryColor,
-                          size: 28,
-                        ),
-                      ),
-                  ],
+                width: _isCollapsed ? 96 : 270,
+                child: _buildSidebar(
+                  isMobile: false,
+                  isCollapsed: _isCollapsed,
                 ),
               ),
               Expanded(
@@ -141,9 +215,10 @@ class _AdminMenuState extends State<AdminMenu> {
                   padding: const EdgeInsets.fromLTRB(0, 18, 18, 18),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 260),
-                    child: _selectedSection == AdminSection.dashboard
-                        ? const _DashboardView(key: ValueKey('dashboard'))
-                        : const _AddItemsView(key: ValueKey('add_items')),
+                    child: KeyedSubtree(
+                      key: ValueKey<AdminSection>(_selectedSection),
+                      child: _buildCurrentPage(false),
+                    ),
                   ),
                 ),
               ),
@@ -206,11 +281,14 @@ class _SidebarMenuTile extends StatelessWidget {
                       size: 24,
                     ),
                     const SizedBox(width: 14),
-                    Text(
-                      label,
-                      style: isActive
-                          ? AdminMenuStyles.menuTextStyle
-                          : AdminMenuStyles.menuInactiveTextStyle,
+                    Expanded(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: isActive
+                            ? AdminMenuStyles.menuTextStyle
+                            : AdminMenuStyles.menuInactiveTextStyle,
+                      ),
                     ),
                   ],
                 ),
@@ -221,156 +299,204 @@ class _SidebarMenuTile extends StatelessWidget {
 }
 
 class _DashboardView extends StatelessWidget {
-  const _DashboardView({super.key});
+  final bool isMobile;
+
+  const _DashboardView({super.key, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AdminMenuStyles.panelDecoration,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Dashboard', style: AdminMenuStyles.pageTitleStyle),
-          const SizedBox(height: 8),
-          const Text(
-            'Overview of your admin panel.',
-            style: AdminMenuStyles.pageSubtitleStyle,
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Column(
-              children: [
-                Row(
-                  children: const [
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Total Revenue',
-                        value: '\$2.45M',
-                        glowColor: AdminMenuStyles.primaryColor,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Active Users',
-                        value: '48.3K',
-                        glowColor: Color(0xFF34D399),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Orders',
-                        value: '1,284',
-                        glowColor: AdminMenuStyles.secondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: Row(
-                    children: const [
-                      Expanded(
-                        flex: 2,
-                        child: _BigPanel(
-                          title: 'Sales Overview',
-                          subtitle: 'Analytics panel placeholder',
-                        ),
-                      ),
-                      SizedBox(width: 18),
-                      Expanded(
-                        child: _BigPanel(
-                          title: 'Recent Activity',
-                          subtitle: 'Recent logs placeholder',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      decoration: isMobile
+          ? AdminMenuStyles.mobilePanelDecoration
+          : AdminMenuStyles.panelDecoration,
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dashboard',
+              style: isMobile
+                  ? AdminMenuStyles.pageTitleMobileStyle
+                  : AdminMenuStyles.pageTitleStyle,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Overview of your admin panel.',
+              style: AdminMenuStyles.pageSubtitleStyle,
+            ),
+            const SizedBox(height: 18),
+            if (isMobile) ...[
+              const _StatCard(
+                title: 'Total Revenue',
+                value: '\$2.45M',
+                glowColor: AdminMenuStyles.primaryColor,
+              ),
+              const SizedBox(height: 12),
+              const _StatCard(
+                title: 'Active Users',
+                value: '48.3K',
+                glowColor: Color(0xFF34D399),
+              ),
+              const SizedBox(height: 12),
+              const _StatCard(
+                title: 'Orders',
+                value: '1,284',
+                glowColor: AdminMenuStyles.secondaryColor,
+              ),
+              const SizedBox(height: 14),
+              const _BigPanel(
+                title: 'Sales Overview',
+                subtitle: 'Analytics panel placeholder',
+                height: 220,
+              ),
+              const SizedBox(height: 14),
+              const _BigPanel(
+                title: 'Recent Activity',
+                subtitle: 'Recent logs placeholder',
+                height: 220,
+              ),
+            ] else ...[
+              Row(
+                children: const [
+                  Expanded(
+                    child: _StatCard(
+                      title: 'Total Revenue',
+                      value: '\$2.45M',
+                      glowColor: AdminMenuStyles.primaryColor,
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: _StatCard(
+                      title: 'Active Users',
+                      value: '48.3K',
+                      glowColor: Color(0xFF34D399),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: _StatCard(
+                      title: 'Orders',
+                      value: '1,284',
+                      glowColor: AdminMenuStyles.secondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: const [
+                  Expanded(
+                    flex: 2,
+                    child: _BigPanel(
+                      title: 'Sales Overview',
+                      subtitle: 'Analytics panel placeholder',
+                      height: 420,
+                    ),
+                  ),
+                  SizedBox(width: 18),
+                  Expanded(
+                    child: _BigPanel(
+                      title: 'Recent Activity',
+                      subtitle: 'Recent logs placeholder',
+                      height: 420,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _AddItemsView extends StatelessWidget {
-  const _AddItemsView({super.key});
+  final bool isMobile;
+
+  const _AddItemsView({super.key, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AdminMenuStyles.panelDecoration,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Add Items', style: AdminMenuStyles.pageTitleStyle),
-          const SizedBox(height: 8),
-          const Text(
-            'Add your product or item details here.',
-            style: AdminMenuStyles.pageSubtitleStyle,
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Center(
-              child: Container(
+      decoration: isMobile
+          ? AdminMenuStyles.mobilePanelDecoration
+          : AdminMenuStyles.panelDecoration,
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add Items',
+              style: isMobile
+                  ? AdminMenuStyles.pageTitleMobileStyle
+                  : AdminMenuStyles.pageTitleStyle,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add your product or item details here.',
+              style: AdminMenuStyles.pageSubtitleStyle,
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 700),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10172F),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AdminMenuStyles.borderColor,
-                    width: 1.1,
+                child: Container(
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10172F),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AdminMenuStyles.borderColor,
+                      width: 1.1,
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _InputField(
-                      label: 'Item Name',
-                      hintText: 'Enter item name',
-                      icon: Icons.inventory_2_outlined,
-                    ),
-                    const SizedBox(height: 16),
-                    _InputField(
-                      label: 'Price',
-                      hintText: 'Enter price',
-                      icon: Icons.payments_outlined,
-                    ),
-                    const SizedBox(height: 16),
-                    _InputField(
-                      label: 'Description',
-                      hintText: 'Enter description',
-                      icon: Icons.description_outlined,
-                      maxLines: 4,
-                    ),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: AdminMenuStyles.logoutButtonStyle,
-                        child: const Text(
-                          'Save Item',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const _InputField(
+                        label: 'Item Name',
+                        hintText: 'Enter item name',
+                        icon: Icons.inventory_2_outlined,
+                      ),
+                      const SizedBox(height: 16),
+                      const _InputField(
+                        label: 'Price',
+                        hintText: 'Enter price',
+                        icon: Icons.payments_outlined,
+                      ),
+                      const SizedBox(height: 16),
+                      const _InputField(
+                        label: 'Description',
+                        hintText: 'Enter description',
+                        icon: Icons.description_outlined,
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: AdminMenuStyles.logoutButtonStyle,
+                          child: const Text(
+                            'Save Item',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -406,30 +532,9 @@ class _InputField extends StatelessWidget {
         TextField(
           maxLines: maxLines,
           style: const TextStyle(color: AdminMenuStyles.textPrimary),
-          decoration: InputDecoration(
+          decoration: AdminMenuStyles.inputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(color: AdminMenuStyles.textMuted),
-            prefixIcon: Icon(icon, color: AdminMenuStyles.textSecondary),
-            filled: true,
-            fillColor: const Color(0xFF0E1730),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 18,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: AdminMenuStyles.borderColor,
-                width: 1.1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: AdminMenuStyles.primaryColor,
-                width: 1.4,
-              ),
-            ),
+            prefixIcon: icon,
           ),
         ),
       ],
@@ -451,6 +556,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
@@ -469,7 +575,14 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(title, style: AdminMenuStyles.cardTitleStyle),
           const SizedBox(height: 10),
-          Text(value, style: AdminMenuStyles.cardValueStyle),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AdminMenuStyles.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
@@ -479,12 +592,18 @@ class _StatCard extends StatelessWidget {
 class _BigPanel extends StatelessWidget {
   final String title;
   final String subtitle;
+  final double height;
 
-  const _BigPanel({required this.title, required this.subtitle});
+  const _BigPanel({
+    required this.title,
+    required this.subtitle,
+    required this.height,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         color: const Color(0xFF10172F),
@@ -508,7 +627,7 @@ class _BigPanel extends StatelessWidget {
           Center(
             child: Icon(
               Icons.auto_graph_rounded,
-              size: 90,
+              size: 72,
               color: AdminMenuStyles.primaryColor.withOpacity(0.85),
             ),
           ),
