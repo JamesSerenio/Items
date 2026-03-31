@@ -18,8 +18,28 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   late final AnimationController _floatController;
   late final AnimationController _cardController;
+  late final AnimationController _contentController;
+
   late final Animation<double> _cardScale;
   late final Animation<double> _cardOpacity;
+
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+
+  late final Animation<double> _emailLabelFade;
+  late final Animation<Offset> _emailLabelSlide;
+
+  late final Animation<double> _emailFieldFade;
+  late final Animation<Offset> _emailFieldSlide;
+
+  late final Animation<double> _passwordLabelFade;
+  late final Animation<Offset> _passwordLabelSlide;
+
+  late final Animation<double> _passwordFieldFade;
+  late final Animation<Offset> _passwordFieldSlide;
+
+  late final Animation<double> _buttonFade;
+  late final Animation<Offset> _buttonSlide;
 
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -38,6 +58,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 900),
     );
 
+    _contentController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
     _cardScale = Tween<double>(begin: 0.94, end: 1.0).animate(
       CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic),
     );
@@ -47,7 +72,80 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       end: 1.0,
     ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
 
+    _titleFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.00, 0.18, curve: Curves.easeOut),
+    );
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.00, 0.18, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _emailLabelFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.12, 0.30, curve: Curves.easeOut),
+    );
+    _emailLabelSlide =
+        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.12, 0.30, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _emailFieldFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.24, 0.44, curve: Curves.easeOut),
+    );
+    _emailFieldSlide =
+        Tween<Offset>(begin: const Offset(0, 0.20), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.24, 0.44, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _passwordLabelFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.38, 0.56, curve: Curves.easeOut),
+    );
+    _passwordLabelSlide =
+        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.38, 0.56, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _passwordFieldFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.50, 0.72, curve: Curves.easeOut),
+    );
+    _passwordFieldSlide =
+        Tween<Offset>(begin: const Offset(0, 0.20), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.50, 0.72, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _buttonFade = CurvedAnimation(
+      parent: _contentController,
+      curve: const Interval(0.68, 1.00, curve: Curves.easeOut),
+    );
+    _buttonSlide = Tween<Offset>(begin: const Offset(0, 0.22), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: const Interval(0.68, 1.00, curve: Curves.easeOutCubic),
+          ),
+        );
+
     _cardController.forward();
+    _contentController.forward();
   }
 
   @override
@@ -56,6 +154,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _passwordController.dispose();
     _floatController.dispose();
     _cardController.dispose();
+    _contentController.dispose();
     super.dispose();
   }
 
@@ -180,98 +279,149 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Center(
-                                    child: Text(
-                                      'LOGIN',
-                                      style: LoginStyles.titleStyle,
-                                      textAlign: TextAlign.center,
+                                  Center(
+                                    child: FadeTransition(
+                                      opacity: _titleFade,
+                                      child: SlideTransition(
+                                        position: _titleSlide,
+                                        child: const Text(
+                                          'LOGIN',
+                                          style: LoginStyles.titleStyle,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 30),
-                                  const Text(
-                                    'Email',
-                                    style: LoginStyles.labelStyle,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    style: LoginStyles.inputTextStyle,
-                                    validator: _validateEmail,
-                                    decoration: LoginStyles.inputDecoration(
-                                      hintText: 'Enter your email',
-                                      prefixIcon: Icons.mail_outline_rounded,
+
+                                  FadeTransition(
+                                    opacity: _emailLabelFade,
+                                    child: SlideTransition(
+                                      position: _emailLabelSlide,
+                                      child: const Text(
+                                        'Email',
+                                        style: LoginStyles.labelStyle,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(height: 10),
+
+                                  FadeTransition(
+                                    opacity: _emailFieldFade,
+                                    child: SlideTransition(
+                                      position: _emailFieldSlide,
+                                      child: TextFormField(
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        style: LoginStyles.inputTextStyle,
+                                        validator: _validateEmail,
+                                        decoration: LoginStyles.inputDecoration(
+                                          hintText: 'Enter your email',
+                                          prefixIcon:
+                                              Icons.mail_outline_rounded,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
                                   const SizedBox(height: 18),
-                                  const Text(
-                                    'Password',
-                                    style: LoginStyles.labelStyle,
+
+                                  FadeTransition(
+                                    opacity: _passwordLabelFade,
+                                    child: SlideTransition(
+                                      position: _passwordLabelSlide,
+                                      child: const Text(
+                                        'Password',
+                                        style: LoginStyles.labelStyle,
+                                      ),
+                                    ),
                                   ),
                                   const SizedBox(height: 10),
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: _obscurePassword,
-                                    style: LoginStyles.inputTextStyle,
-                                    validator: _validatePassword,
-                                    decoration:
-                                        LoginStyles.inputDecoration(
-                                          hintText: 'Enter your password',
-                                          prefixIcon:
-                                              Icons.lock_outline_rounded,
-                                        ).copyWith(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              _obscurePassword
-                                                  ? Icons
-                                                        .visibility_off_outlined
-                                                  : Icons.visibility_outlined,
-                                              color: LoginStyles.textSecondary,
+
+                                  FadeTransition(
+                                    opacity: _passwordFieldFade,
+                                    child: SlideTransition(
+                                      position: _passwordFieldSlide,
+                                      child: TextFormField(
+                                        controller: _passwordController,
+                                        obscureText: _obscurePassword,
+                                        style: LoginStyles.inputTextStyle,
+                                        validator: _validatePassword,
+                                        decoration:
+                                            LoginStyles.inputDecoration(
+                                              hintText: 'Enter your password',
+                                              prefixIcon:
+                                                  Icons.lock_outline_rounded,
+                                            ).copyWith(
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons
+                                                            .visibility_off_outlined
+                                                      : Icons
+                                                            .visibility_outlined,
+                                                  color:
+                                                      LoginStyles.textSecondary,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _obscurePassword =
+                                                        !_obscurePassword;
+                                                  });
+                                                },
+                                              ),
                                             ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _obscurePassword =
-                                                    !_obscurePassword;
-                                              });
-                                            },
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 28),
+
+                                  FadeTransition(
+                                    opacity: _buttonFade,
+                                    child: SlideTransition(
+                                      position: _buttonSlide,
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: LoginStyles.primaryColor
+                                                    .withOpacity(0.28),
+                                                blurRadius: 24,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ElevatedButton(
+                                            onPressed: _isLoading
+                                                ? null
+                                                : _handleLogin,
+                                            style: LoginStyles.loginButtonStyle,
+                                            child: _isLoading
+                                                ? const SizedBox(
+                                                    height: 22,
+                                                    width: 22,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2.5,
+                                                          color: Color(
+                                                            0xFF07111F,
+                                                          ),
+                                                        ),
+                                                  )
+                                                : const Text(
+                                                    'Login',
+                                                    style: LoginStyles
+                                                        .buttonTextStyle,
+                                                  ),
                                           ),
                                         ),
-                                  ),
-                                  const SizedBox(height: 28),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(20),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: LoginStyles.primaryColor
-                                                .withOpacity(0.28),
-                                            blurRadius: 24,
-                                            offset: const Offset(0, 8),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ElevatedButton(
-                                        onPressed: _isLoading
-                                            ? null
-                                            : _handleLogin,
-                                        style: LoginStyles.loginButtonStyle,
-                                        child: _isLoading
-                                            ? const SizedBox(
-                                                height: 22,
-                                                width: 22,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2.5,
-                                                      color: Color(0xFF07111F),
-                                                    ),
-                                              )
-                                            : const Text(
-                                                'Login',
-                                                style:
-                                                    LoginStyles.buttonTextStyle,
-                                              ),
                                       ),
                                     ),
                                   ),
