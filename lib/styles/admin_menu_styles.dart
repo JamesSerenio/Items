@@ -87,13 +87,6 @@ class AdminMenuStyles {
     border: Border.all(color: Colors.transparent, width: 1),
   );
 
-  static const TextStyle brandStyle = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w800,
-    color: textPrimary,
-    letterSpacing: 0.3,
-  );
-
   static const TextStyle menuTextStyle = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
@@ -134,12 +127,6 @@ class AdminMenuStyles {
     fontSize: 30,
     fontWeight: FontWeight.w800,
     color: textPrimary,
-  );
-
-  static const TextStyle smallTextStyle = TextStyle(
-    fontSize: 13,
-    color: textMuted,
-    fontWeight: FontWeight.w500,
   );
 
   static final ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(

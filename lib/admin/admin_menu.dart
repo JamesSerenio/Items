@@ -21,10 +21,38 @@ class _AdminMenuState extends State<AdminMenu> {
     });
   }
 
+  void _toggleSidebar() {
+    setState(() {
+      _isCollapsed = !_isCollapsed;
+    });
+  }
+
   void _logout() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
+
+  Widget _buildBrand() {
+    return RichText(
+      text: const TextSpan(
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+        ),
+        children: [
+          TextSpan(
+            text: 'DATA',
+            style: TextStyle(color: AdminMenuStyles.textPrimary),
+          ),
+          TextSpan(
+            text: 'CORE',
+            style: TextStyle(color: AdminMenuStyles.primaryColor),
+          ),
+        ],
+      ),
     );
   }
 
@@ -37,84 +65,74 @@ class _AdminMenuState extends State<AdminMenu> {
     }
   }
 
-  Widget _buildSidebar({required bool isMobile, required bool isCollapsed}) {
+  Widget _buildDesktopSidebar() {
     return Container(
-      width: isMobile ? null : (_isCollapsed ? 96 : 270),
-      margin: isMobile ? EdgeInsets.zero : const EdgeInsets.all(18),
-      padding: EdgeInsets.all(isMobile ? 16 : 16),
+      width: _isCollapsed ? 96 : 270,
+      margin: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: AdminMenuStyles.sidebarDecoration,
       child: Column(
         children: [
-          Row(
-            children: [
-              if (!isMobile)
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isCollapsed = !_isCollapsed;
-                    });
-                  },
-                  icon: const Icon(
-                    Icons.menu_rounded,
-                    color: AdminMenuStyles.textPrimary,
-                    size: 28,
-                  ),
-                ),
-              if (!isMobile && !_isCollapsed) const SizedBox(width: 6),
-              Expanded(
-                child: isMobile || !isCollapsed
-                    ? RichText(
-                        overflow: TextOverflow.ellipsis,
-                        text: const TextSpan(
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'DATA',
-                              style: TextStyle(
-                                color: AdminMenuStyles.textPrimary,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'CORE',
-                              style: TextStyle(
-                                color: AdminMenuStyles.primaryColor,
-                              ),
-                            ),
-                          ],
+          SizedBox(
+            height: 52,
+            child: _isCollapsed
+                ? Center(
+                    child: IconButton(
+                      onPressed: _toggleSidebar,
+                      icon: const Icon(
+                        Icons.menu_rounded,
+                        color: AdminMenuStyles.textPrimary,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                : Row(
+                    children: [
+                      IconButton(
+                        onPressed: _toggleSidebar,
+                        icon: const Icon(
+                          Icons.menu_rounded,
+                          color: AdminMenuStyles.textPrimary,
+                          size: 28,
                         ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildBrand(),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
           const SizedBox(height: 26),
           _SidebarMenuTile(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
-            isCollapsed: isMobile ? false : isCollapsed,
+            isCollapsed: _isCollapsed,
             isActive: _selectedSection == AdminSection.dashboard,
-            onTap: () {
-              _selectSection(AdminSection.dashboard);
-              if (isMobile) Navigator.pop(context);
-            },
+            onTap: () => _selectSection(AdminSection.dashboard),
           ),
           const SizedBox(height: 12),
           _SidebarMenuTile(
             icon: Icons.add_box_outlined,
             label: 'Add Items',
-            isCollapsed: isMobile ? false : isCollapsed,
+            isCollapsed: _isCollapsed,
             isActive: _selectedSection == AdminSection.addItems,
-            onTap: () {
-              _selectSection(AdminSection.addItems);
-              if (isMobile) Navigator.pop(context);
-            },
+            onTap: () => _selectSection(AdminSection.addItems),
           ),
           const Spacer(),
-          if (isMobile || !isCollapsed)
+          if (_isCollapsed)
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: AdminMenuStyles.primaryColor,
+                size: 28,
+              ),
+            )
+          else
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -126,16 +144,74 @@ class _AdminMenuState extends State<AdminMenu> {
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ),
-            )
-          else
-            IconButton(
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileSidebar() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AdminMenuStyles.sidebarDecoration,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 52,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildBrand(),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AdminMenuStyles.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 26),
+          _SidebarMenuTile(
+            icon: Icons.dashboard_outlined,
+            label: 'Dashboard',
+            isCollapsed: false,
+            isActive: _selectedSection == AdminSection.dashboard,
+            onTap: () {
+              _selectSection(AdminSection.dashboard);
+              Navigator.pop(context);
+            },
+          ),
+          const SizedBox(height: 12),
+          _SidebarMenuTile(
+            icon: Icons.add_box_outlined,
+            label: 'Add Items',
+            isCollapsed: false,
+            isActive: _selectedSection == AdminSection.addItems,
+            onTap: () {
+              _selectSection(AdminSection.addItems);
+              Navigator.pop(context);
+            },
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: _logout,
-              icon: const Icon(
-                Icons.logout_rounded,
-                color: AdminMenuStyles.primaryColor,
-                size: 28,
+              style: AdminMenuStyles.logoutButtonStyle,
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text(
+                'Logout',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
               ),
             ),
+          ),
         ],
       ),
     );
@@ -147,69 +223,57 @@ class _AdminMenuState extends State<AdminMenu> {
     final bool isMobile = width < 768;
 
     if (isMobile) {
-      return Scaffold(
-        drawer: Drawer(
+      return Container(
+        decoration: AdminMenuStyles.pageBackground,
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
-              child: _buildSidebar(isMobile: true, isCollapsed: false),
-            ),
-          ),
-        ),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: AdminMenuStyles.textPrimary),
-          title: RichText(
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+          drawerScrimColor: Colors.black54,
+          drawer: Drawer(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: _buildMobileSidebar(),
               ),
-              children: [
-                TextSpan(
-                  text: 'DATA',
-                  style: TextStyle(color: AdminMenuStyles.textPrimary),
-                ),
-                TextSpan(
-                  text: 'CORE',
-                  style: TextStyle(color: AdminMenuStyles.primaryColor),
-                ),
-              ],
             ),
           ),
-        ),
-        body: Container(
-          decoration: AdminMenuStyles.pageBackground,
-          child: SafeArea(
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            iconTheme: const IconThemeData(color: AdminMenuStyles.textPrimary),
+            titleSpacing: 0,
+            title: _buildBrand(),
+          ),
+          body: SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: _buildCurrentPage(true),
+            bottom: false,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: AdminMenuStyles.pageBackground,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: _buildCurrentPage(true),
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      body: Container(
-        decoration: AdminMenuStyles.pageBackground,
-        child: SafeArea(
+    return Container(
+      decoration: AdminMenuStyles.pageBackground,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          bottom: false,
           child: Row(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeInOut,
-                width: _isCollapsed ? 96 : 270,
-                child: _buildSidebar(
-                  isMobile: false,
-                  isCollapsed: _isCollapsed,
-                ),
-              ),
+              _buildDesktopSidebar(),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(0, 18, 18, 18),
