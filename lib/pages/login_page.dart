@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../admin/admin_menu.dart';
 import '../styles/login_styles.dart';
 
 class LoginPage extends StatefulWidget {
@@ -106,9 +107,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       _isLoading = false;
     });
 
-    ScaffoldMessenger.of(
+    Navigator.pushReplacement(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Login button clicked')));
+      MaterialPageRoute(builder: (_) => const AdminMenu()),
+    );
   }
 
   @override
