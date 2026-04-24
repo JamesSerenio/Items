@@ -3,8 +3,9 @@ import '../pages/login_page.dart';
 import '../styles/admin_menu_styles.dart';
 import 'dashboard.dart';
 import 'add_items.dart';
+import 'product.dart';
 
-enum AdminSection { dashboard, addItems }
+enum AdminSection { dashboard, addItems, product }
 
 class AdminMenu extends StatefulWidget {
   const AdminMenu({super.key});
@@ -64,7 +65,48 @@ class _AdminMenuState extends State<AdminMenu> {
         return const DashboardPage();
       case AdminSection.addItems:
         return const AddItemsPage();
+      case AdminSection.product:
+        return const ProductPage();
     }
+  }
+
+  Widget _menuTiles({required bool isMobile}) {
+    return Column(
+      children: [
+        _SidebarMenuTile(
+          icon: Icons.dashboard_outlined,
+          label: 'Dashboard',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.dashboard,
+          onTap: () {
+            _selectSection(AdminSection.dashboard);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
+        _SidebarMenuTile(
+          icon: Icons.add_box_outlined,
+          label: 'Add Items',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.addItems,
+          onTap: () {
+            _selectSection(AdminSection.addItems);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
+        _SidebarMenuTile(
+          icon: Icons.inventory_2_outlined,
+          label: 'Product',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.product,
+          onTap: () {
+            _selectSection(AdminSection.product);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+      ],
+    );
   }
 
   Widget _buildDesktopSidebar() {
@@ -109,21 +151,7 @@ class _AdminMenuState extends State<AdminMenu> {
                   ),
           ),
           const SizedBox(height: 26),
-          _SidebarMenuTile(
-            icon: Icons.dashboard_outlined,
-            label: 'Dashboard',
-            isCollapsed: _isCollapsed,
-            isActive: _selectedSection == AdminSection.dashboard,
-            onTap: () => _selectSection(AdminSection.dashboard),
-          ),
-          const SizedBox(height: 12),
-          _SidebarMenuTile(
-            icon: Icons.add_box_outlined,
-            label: 'Add Items',
-            isCollapsed: _isCollapsed,
-            isActive: _selectedSection == AdminSection.addItems,
-            onTap: () => _selectSection(AdminSection.addItems),
-          ),
+          _menuTiles(isMobile: false),
           const Spacer(),
           if (_isCollapsed)
             IconButton(
@@ -180,27 +208,7 @@ class _AdminMenuState extends State<AdminMenu> {
             ),
           ),
           const SizedBox(height: 26),
-          _SidebarMenuTile(
-            icon: Icons.dashboard_outlined,
-            label: 'Dashboard',
-            isCollapsed: false,
-            isActive: _selectedSection == AdminSection.dashboard,
-            onTap: () {
-              _selectSection(AdminSection.dashboard);
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 12),
-          _SidebarMenuTile(
-            icon: Icons.add_box_outlined,
-            label: 'Add Items',
-            isCollapsed: false,
-            isActive: _selectedSection == AdminSection.addItems,
-            onTap: () {
-              _selectSection(AdminSection.addItems);
-              Navigator.pop(context);
-            },
-          ),
+          _menuTiles(isMobile: true),
           const Spacer(),
           SizedBox(
             width: double.infinity,

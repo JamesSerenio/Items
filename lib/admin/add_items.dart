@@ -16,6 +16,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
   final _supplierController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _unitController = TextEditingController();
+  final _unitValueController = TextEditingController(text: '1');
   final _priceController = TextEditingController();
   final _quantityController = TextEditingController();
   final _locationController = TextEditingController();
@@ -24,6 +25,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
 
   List<String> _suppliers = [];
   List<String> _units = [];
+  List<String> _unitValues = [];
   List<String> _locations = [];
 
   double get _price => double.tryParse(_priceController.text.trim()) ?? 0;
@@ -41,6 +43,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
     _supplierController.dispose();
     _descriptionController.dispose();
     _unitController.dispose();
+    _unitValueController.dispose();
     _priceController.dispose();
     _quantityController.dispose();
     _locationController.dispose();
@@ -51,19 +54,22 @@ class _AddItemsPageState extends State<AddItemsPage> {
     try {
       final data = await Supabase.instance.client
           .from('materials')
-          .select('supplier_name, unit, location');
+          .select('supplier_name, unit, unit_value, location');
 
       final suppliers = <String>{};
       final units = <String>{};
+      final unitValues = <String>{};
       final locations = <String>{};
 
       for (final row in data) {
         final supplier = row['supplier_name']?.toString().trim() ?? '';
         final unit = row['unit']?.toString().trim() ?? '';
+        final unitValue = row['unit_value']?.toString().trim() ?? '';
         final location = row['location']?.toString().trim() ?? '';
 
         if (supplier.isNotEmpty) suppliers.add(supplier);
         if (unit.isNotEmpty) units.add(unit);
+        if (unitValue.isNotEmpty) unitValues.add(unitValue);
         if (location.isNotEmpty) locations.add(location);
       }
 
@@ -72,6 +78,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
       setState(() {
         _suppliers = suppliers.toList()..sort();
         _units = units.toList()..sort();
+        _unitValues = unitValues.toList()..sort();
         _locations = locations.toList()..sort();
       });
     } catch (_) {}
@@ -87,6 +94,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
         'supplier_name': _supplierController.text.trim(),
         'description': _descriptionController.text.trim(),
         'unit': _unitController.text.trim(),
+        'unit_value': double.parse(_unitValueController.text.trim()),
         'price': double.parse(_priceController.text.trim()),
         'quantity': double.parse(_quantityController.text.trim()),
         'location': _locationController.text.trim(),
@@ -101,12 +109,14 @@ class _AddItemsPageState extends State<AddItemsPage> {
       _supplierController.clear();
       _descriptionController.clear();
       _unitController.clear();
+      _unitValueController.text = '1';
       _priceController.clear();
       _quantityController.clear();
       _locationController.clear();
 
       await _loadDropdownData();
-      setState(() {});
+
+      if (mounted) setState(() {});
     } catch (e) {
       if (!mounted) return;
 
@@ -118,6 +128,31 @@ class _AddItemsPageState extends State<AddItemsPage> {
     if (mounted) {
       setState(() => _isSaving = false);
     }
+  }
+
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required';
+    }
+    return null;
+  }
+
+  String? _numberValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required';
+    }
+
+    final number = double.tryParse(value.trim());
+
+    if (number == null) {
+      return 'Enter a valid number';
+    }
+
+    if (number <= 0) {
+      return 'Value must be greater than 0';
+    }
+
+    return null;
   }
 
   @override
@@ -144,7 +179,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Add supplier, material, unit, price, quantity, and location.',
+                'Add supplier, material, unit, unit value, price, quantity, and location.',
                 style: AddItemsStyles.pageSubtitleStyle,
               ),
               const SizedBox(height: 20),
@@ -180,9 +215,19 @@ class _AddItemsPageState extends State<AddItemsPage> {
                             controller: _unitController,
                             options: _units,
                             label: 'Unit',
-                            hintText: 'Type unit ex: pc, bag, kg, 1/2, 0.5',
+                            hintText: 'Type unit ex: pc, bag, kg, load',
                             icon: Icons.category_outlined,
                             validator: _requiredValidator,
+                          ),
+                          const SizedBox(height: 16),
+                          _AutocompleteInputField(
+                            controller: _unitValueController,
+                            options: _unitValues,
+                            label: 'Unit Value',
+                            hintText: 'Type unit value ex: 1 or 0.5',
+                            icon: Icons.scale_outlined,
+                            keyboardType: TextInputType.number,
+                            validator: _numberValidator,
                           ),
                           const SizedBox(height: 16),
                           _InputField(
@@ -270,25 +315,6 @@ class _AddItemsPageState extends State<AddItemsPage> {
       ),
     );
   }
-
-  String? _requiredValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'This field is required';
-    }
-    return null;
-  }
-
-  String? _numberValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'This field is required';
-    }
-
-    final number = double.tryParse(value.trim());
-    if (number == null) return 'Enter a valid number';
-    if (number <= 0) return 'Value must be greater than 0';
-
-    return null;
-  }
 }
 
 class _InputField extends StatelessWidget {
@@ -345,6 +371,7 @@ class _AutocompleteInputField extends StatelessWidget {
   final String label;
   final String hintText;
   final IconData icon;
+  final TextInputType? keyboardType;
   final String? Function(String?)? validator;
 
   const _AutocompleteInputField({
@@ -353,14 +380,17 @@ class _AutocompleteInputField extends StatelessWidget {
     required this.label,
     required this.hintText,
     required this.icon,
+    this.keyboardType,
     this.validator,
   });
 
   @override
   Widget build(BuildContext context) {
+    final focusNode = FocusNode();
+
     return RawAutocomplete<String>(
       textEditingController: controller,
-      focusNode: FocusNode(),
+      focusNode: focusNode,
       optionsBuilder: (TextEditingValue value) {
         final query = value.text.trim().toLowerCase();
 
@@ -373,7 +403,7 @@ class _AutocompleteInputField extends StatelessWidget {
       onSelected: (String selected) {
         controller.text = selected;
       },
-      fieldViewBuilder: (context, textController, focusNode, onSubmitted) {
+      fieldViewBuilder: (context, textController, node, onSubmitted) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -381,7 +411,8 @@ class _AutocompleteInputField extends StatelessWidget {
             const SizedBox(height: 10),
             TextFormField(
               controller: textController,
-              focusNode: focusNode,
+              focusNode: node,
+              keyboardType: keyboardType,
               validator: validator,
               style: const TextStyle(color: AddItemsStyles.textPrimary),
               decoration: AddItemsStyles.inputDecoration(
