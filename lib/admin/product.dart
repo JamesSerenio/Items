@@ -54,7 +54,6 @@ class _ProductPageState extends State<ProductPage> {
 
   List<Map<String, dynamic>> get _filteredMaterials {
     final query = _searchController.text.trim().toLowerCase();
-
     if (query.isEmpty) return _materials;
 
     return _materials.where((item) {
@@ -84,12 +83,12 @@ class _ProductPageState extends State<ProductPage> {
     return total;
   }
 
+  String _text(dynamic value) => value?.toString() ?? '-';
+
   String _money(dynamic value) {
     final number = num.tryParse(value?.toString() ?? '0') ?? 0;
     return '₱${number.toStringAsFixed(2)}';
   }
-
-  String _text(dynamic value) => value?.toString() ?? '-';
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(
@@ -97,12 +96,23 @@ class _ProductPageState extends State<ProductPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Required';
+    return null;
+  }
+
+  String? _numberValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Required';
+    final number = double.tryParse(value.trim());
+    if (number == null) return 'Invalid number';
+    if (number <= 0) return 'Must be greater than 0';
+    return null;
+  }
+
   Future<void> _deleteMaterial(String id) async {
     try {
       await Supabase.instance.client.from('materials').delete().eq('id', id);
-
       if (!mounted) return;
-
       _showSnack('Material deleted');
       await _loadMaterials();
     } catch (e) {
@@ -169,7 +179,6 @@ class _ProductPageState extends State<ProductPage> {
           .eq('id', id);
 
       if (!mounted) return;
-
       _showSnack('Material updated');
       await _loadMaterials();
     } catch (e) {
@@ -205,28 +214,14 @@ class _ProductPageState extends State<ProductPage> {
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
+            horizontal: 18,
+            vertical: 18,
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: ProductStyles.panelCardColor,
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(
-                  color: ProductStyles.borderColor,
-                  width: 1.2,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x66000000),
-                    blurRadius: 30,
-                    offset: Offset(0, 16),
-                  ),
-                ],
-              ),
+              decoration: ProductStyles.editDialogDecoration,
               child: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -238,11 +233,7 @@ class _ProductPageState extends State<ProductPage> {
                           const Expanded(
                             child: Text(
                               'Edit Material',
-                              style: TextStyle(
-                                color: ProductStyles.textPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
+                              style: ProductStyles.dialogTitleStyle,
                             ),
                           ),
                           IconButton(
@@ -262,7 +253,7 @@ class _ProductPageState extends State<ProductPage> {
                       const SizedBox(height: 14),
                       _EditField(
                         controller: descriptionController,
-                        label: 'Description of Materials',
+                        label: 'Description',
                         icon: Icons.inventory_2_outlined,
                         validator: _requiredValidator,
                       ),
@@ -326,18 +317,7 @@ class _ProductPageState extends State<ProductPage> {
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: ProductStyles.textPrimary,
-                                side: const BorderSide(
-                                  color: ProductStyles.borderColor,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
+                              style: ProductStyles.cancelButtonStyle,
                               child: const Text('Cancel'),
                             ),
                           ),
@@ -367,17 +347,7 @@ class _ProductPageState extends State<ProductPage> {
                                   location: locationController.text.trim(),
                                 );
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ProductStyles.primaryColor,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
+                              style: ProductStyles.saveEditButtonStyle,
                               child: const Text(
                                 'Save Changes',
                                 style: TextStyle(fontWeight: FontWeight.w900),
@@ -394,34 +364,7 @@ class _ProductPageState extends State<ProductPage> {
           ),
         );
       },
-    ).then((_) {
-      supplierController.dispose();
-      descriptionController.dispose();
-      unitController.dispose();
-      unitValueController.dispose();
-      priceController.dispose();
-      quantityController.dispose();
-      locationController.dispose();
-    });
-  }
-
-  String? _requiredValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Required';
-    }
-    return null;
-  }
-
-  String? _numberValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Required';
-    }
-
-    final number = double.tryParse(value.trim());
-    if (number == null) return 'Invalid number';
-    if (number <= 0) return 'Must be greater than 0';
-
-    return null;
+    );
   }
 
   Widget _statCard({
@@ -457,7 +400,111 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  Widget _buildTable() {
+  Widget _buildStats(bool isMobile) {
+    if (isMobile) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              _statCard(
+                label: 'Items',
+                value: _filteredMaterials.length.toString(),
+                icon: Icons.inventory_2_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _statCard(
+                label: 'Quantity',
+                value: _totalQuantity.toString(),
+                icon: Icons.format_list_numbered_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _statCard(
+                label: 'Total Value',
+                value: '₱${_grandTotal.toStringAsFixed(2)}',
+                icon: Icons.payments_outlined,
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        _statCard(
+          label: 'Items',
+          value: _filteredMaterials.length.toString(),
+          icon: Icons.inventory_2_outlined,
+        ),
+        const SizedBox(width: 14),
+        _statCard(
+          label: 'Quantity',
+          value: _totalQuantity.toString(),
+          icon: Icons.format_list_numbered_outlined,
+        ),
+        const SizedBox(width: 14),
+        _statCard(
+          label: 'Total Value',
+          value: '₱${_grandTotal.toStringAsFixed(2)}',
+          icon: Icons.payments_outlined,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchAndRefresh(bool isMobile) {
+    if (isMobile) {
+      return Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(color: ProductStyles.textPrimary),
+            decoration: ProductStyles.searchDecoration,
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _loadMaterials,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Refresh'),
+              style: ProductStyles.mobileRefreshButtonStyle,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(color: ProductStyles.textPrimary),
+            decoration: ProductStyles.searchDecoration,
+          ),
+        ),
+        const SizedBox(width: 12),
+        IconButton(
+          onPressed: _loadMaterials,
+          icon: const Icon(Icons.refresh_rounded),
+          style: ProductStyles.refreshButtonStyle,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTable(bool isMobile) {
     final items = _filteredMaterials;
 
     if (items.isEmpty) {
@@ -469,160 +516,112 @@ class _ProductPageState extends State<ProductPage> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: ProductStyles.tableContainerDecoration,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowHeight: 58,
-            dataRowMinHeight: 62,
-            dataRowMaxHeight: 68,
-            horizontalMargin: 22,
-            columnSpacing: 34,
-            dividerThickness: 0.7,
-            headingRowColor: WidgetStateProperty.all(
-              ProductStyles.tableHeaderColor,
-            ),
-            dataRowColor: WidgetStateProperty.resolveWith((states) {
-              return ProductStyles.tableRowColor;
-            }),
-            columns: [
-              DataColumn(label: _HeaderText('Supplier')),
-              DataColumn(label: _HeaderText('Description')),
-              DataColumn(label: _HeaderText('Unit')),
-              DataColumn(label: _HeaderText('Unit Value')),
-              DataColumn(label: _HeaderText('Price')),
-              DataColumn(label: _HeaderText('Qty')),
-              DataColumn(label: _HeaderText('Total')),
-              DataColumn(label: _HeaderText('Location')),
-              DataColumn(label: _HeaderText('Action')),
-            ],
-            rows: items.map((item) {
-              return DataRow(
-                cells: [
-                  DataCell(_CellText(_text(item['supplier_name']))),
-                  DataCell(
-                    SizedBox(
-                      width: 180,
-                      child: _CellText(_text(item['description'])),
-                    ),
-                  ),
-                  DataCell(_UnitPill(_text(item['unit']))),
-                  DataCell(_CellText(_text(item['unit_value']))),
-                  DataCell(_CellText(_money(item['price']))),
-                  DataCell(_CellText(_text(item['quantity']))),
-                  DataCell(_CellText(_money(item['total']), isHighlight: true)),
-                  DataCell(_CellText(_text(item['location']))),
-                  DataCell(
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _ActionButton(
-                          icon: Icons.edit_rounded,
-                          color: ProductStyles.primaryColor,
-                          onTap: () => _openEditDialog(item),
-                        ),
-                        const SizedBox(width: 8),
-                        _ActionButton(
-                          icon: Icons.delete_outline_rounded,
-                          color: ProductStyles.dangerColor,
-                          onTap: () => _confirmDelete(item),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double minTableWidth = isMobile ? 900 : constraints.maxWidth;
 
-  Widget _buildMobileList() {
-    final items = _filteredMaterials;
-
-    if (items.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(30),
-          child: Text('No materials found', style: ProductStyles.emptyStyle),
-        ),
-      );
-    }
-
-    return Column(
-      children: items.map((item) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(16),
-          decoration: ProductStyles.mobileCardDecoration,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _text(item['description']),
-                style: ProductStyles.mobileTitleStyle,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Supplier: ${_text(item['supplier_name'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              Text(
-                'Unit: ${_text(item['unit'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              Text(
-                'Unit Value: ${_text(item['unit_value'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              Text(
-                'Qty: ${_text(item['quantity'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              Text(
-                'Price: ${_money(item['price'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              Text(
-                'Total: ${_money(item['total'])}',
-                style: ProductStyles.mobileTotalStyle,
-              ),
-              Text(
-                'Location: ${_text(item['location'])}',
-                style: ProductStyles.mobileSubStyle,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openEditDialog(item),
-                      icon: const Icon(Icons.edit_rounded),
-                      label: const Text('Edit'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ProductStyles.primaryColor,
-                        foregroundColor: Colors.black,
+          width: double.infinity,
+          decoration: ProductStyles.tableOuterDecoration,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: minTableWidth,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: DataTable(
+                        headingRowHeight: 58,
+                        dataRowMinHeight: 60,
+                        dataRowMaxHeight: 66,
+                        horizontalMargin: isMobile ? 12 : 22,
+                        columnSpacing: isMobile ? 16 : 26,
+                        dividerThickness: 0.6,
+                        headingRowColor: WidgetStateProperty.all(
+                          ProductStyles.tableHeaderColor,
+                        ),
+                        dataRowColor: WidgetStateProperty.resolveWith(
+                          (states) => ProductStyles.tableRowColor,
+                        ),
+                        columns: const [
+                          DataColumn(label: _HeaderText('Supplier')),
+                          DataColumn(label: _HeaderText('Description')),
+                          DataColumn(label: _HeaderText('Unit')),
+                          DataColumn(label: _HeaderText('Unit Value')),
+                          DataColumn(label: _HeaderText('Price')),
+                          DataColumn(label: _HeaderText('Qty')),
+                          DataColumn(label: _HeaderText('Total')),
+                          DataColumn(label: _HeaderText('Location')),
+                          DataColumn(label: _HeaderText('Action')),
+                        ],
+                        rows: items.map((item) {
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                SizedBox(
+                                  width: isMobile ? 100 : 130,
+                                  child: _CellText(
+                                    _text(item['supplier_name']),
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                SizedBox(
+                                  width: isMobile ? 120 : 180,
+                                  child: _CellText(_text(item['description'])),
+                                ),
+                              ),
+                              DataCell(_UnitPill(_text(item['unit']))),
+                              DataCell(_CellText(_text(item['unit_value']))),
+                              DataCell(_CellText(_money(item['price']))),
+                              DataCell(_CellText(_text(item['quantity']))),
+                              DataCell(
+                                _CellText(
+                                  _money(item['total']),
+                                  isHighlight: true,
+                                ),
+                              ),
+                              DataCell(
+                                SizedBox(
+                                  width: isMobile ? 100 : 130,
+                                  child: _CellText(_text(item['location'])),
+                                ),
+                              ),
+                              DataCell(
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _ActionButton(
+                                      icon: Icons.edit_rounded,
+                                      color: ProductStyles.primaryColor,
+                                      onTap: () => _openEditDialog(item),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _ActionButton(
+                                      icon: Icons.delete_outline_rounded,
+                                      color: ProductStyles.dangerColor,
+                                      onTap: () => _confirmDelete(item),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    onPressed: () => _confirmDelete(item),
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    color: ProductStyles.dangerColor,
-                  ),
-                ],
+                ),
               ),
-            ],
+            ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -637,7 +636,7 @@ class _ProductPageState extends State<ProductPage> {
         decoration: isMobile
             ? ProductStyles.mobilePanelDecoration
             : ProductStyles.panelDecoration,
-        padding: EdgeInsets.all(isMobile ? 16 : 26),
+        padding: EdgeInsets.all(isMobile ? 14 : 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -653,87 +652,14 @@ class _ProductPageState extends State<ProductPage> {
               style: ProductStyles.pageSubtitleStyle,
             ),
             const SizedBox(height: 20),
-            isMobile
-                ? Column(
-                    children: [
-                      Row(
-                        children: [
-                          _statCard(
-                            label: 'Items',
-                            value: _filteredMaterials.length.toString(),
-                            icon: Icons.inventory_2_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _statCard(
-                            label: 'Quantity',
-                            value: _totalQuantity.toString(),
-                            icon: Icons.format_list_numbered_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _statCard(
-                            label: 'Total Value',
-                            value: '₱${_grandTotal.toStringAsFixed(2)}',
-                            icon: Icons.payments_outlined,
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      _statCard(
-                        label: 'Items',
-                        value: _filteredMaterials.length.toString(),
-                        icon: Icons.inventory_2_outlined,
-                      ),
-                      const SizedBox(width: 14),
-                      _statCard(
-                        label: 'Quantity',
-                        value: _totalQuantity.toString(),
-                        icon: Icons.format_list_numbered_outlined,
-                      ),
-                      const SizedBox(width: 14),
-                      _statCard(
-                        label: 'Total Value',
-                        value: '₱${_grandTotal.toStringAsFixed(2)}',
-                        icon: Icons.payments_outlined,
-                      ),
-                    ],
-                  ),
+            _buildStats(isMobile),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (_) => setState(() {}),
-                    style: const TextStyle(color: ProductStyles.textPrimary),
-                    decoration: ProductStyles.searchDecoration,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  onPressed: _loadMaterials,
-                  icon: const Icon(Icons.refresh_rounded),
-                  style: ProductStyles.refreshButtonStyle,
-                ),
-              ],
-            ),
+            _buildSearchAndRefresh(isMobile),
             const SizedBox(height: 18),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : isMobile
-                  ? SingleChildScrollView(child: _buildMobileList())
-                  : SingleChildScrollView(child: _buildTable()),
+                  : _buildTable(isMobile),
             ),
           ],
         ),
@@ -779,7 +705,7 @@ class _UnitPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
       decoration: ProductStyles.unitPillDecoration,
       child: Text(text, style: ProductStyles.unitPillTextStyle),
     );
@@ -799,17 +725,20 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.11),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.35)),
+    return Tooltip(
+      message: icon == Icons.edit_rounded ? 'Edit' : 'Delete',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.13),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withOpacity(0.45)),
+          ),
+          child: Icon(icon, color: color, size: 18),
         ),
-        child: Icon(icon, color: color, size: 18),
       ),
     );
   }

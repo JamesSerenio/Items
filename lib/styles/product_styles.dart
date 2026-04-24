@@ -21,31 +21,18 @@ class ProductStyles {
     borderRadius: BorderRadius.circular(32),
     color: const Color(0x1AFFFFFF),
     border: Border.all(color: borderColor, width: 1.2),
-    boxShadow: const [
-      BoxShadow(
-        color: Color(0x26000000),
-        blurRadius: 22,
-        offset: Offset(0, 10),
-      ),
-    ],
   );
 
   static final BoxDecoration mobilePanelDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(24),
     color: const Color(0x1AFFFFFF),
     border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 8)),
-    ],
   );
 
   static final BoxDecoration statCardDecoration = BoxDecoration(
     color: panelCardColor,
     borderRadius: BorderRadius.circular(22),
     border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(color: Color(0x22000000), blurRadius: 14, offset: Offset(0, 8)),
-    ],
   );
 
   static final BoxDecoration statIconDecoration = BoxDecoration(
@@ -54,32 +41,28 @@ class ProductStyles {
     border: Border.all(color: primaryColor, width: 1.1),
   );
 
-  static final BoxDecoration tableContainerDecoration = BoxDecoration(
+  static final BoxDecoration tableOuterDecoration = BoxDecoration(
     color: panelCardColor,
-    borderRadius: BorderRadius.circular(26),
+    borderRadius: BorderRadius.circular(24),
     border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(
-        color: Color(0x30000000),
-        blurRadius: 18,
-        offset: Offset(0, 10),
-      ),
-    ],
   );
 
-  static final BoxDecoration mobileCardDecoration = BoxDecoration(
+  static final BoxDecoration editDialogDecoration = BoxDecoration(
     color: panelCardColor,
-    borderRadius: BorderRadius.circular(22),
-    border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(color: Color(0x22000000), blurRadius: 14, offset: Offset(0, 8)),
-    ],
+    borderRadius: BorderRadius.circular(26),
+    border: Border.all(color: borderColor, width: 1.2),
   );
 
   static final BoxDecoration unitPillDecoration = BoxDecoration(
     color: primaryColor.withOpacity(0.12),
     borderRadius: BorderRadius.circular(999),
     border: Border.all(color: primaryColor.withOpacity(0.35)),
+  );
+
+  static const TextStyle dialogTitleStyle = TextStyle(
+    color: textPrimary,
+    fontSize: 22,
+    fontWeight: FontWeight.w900,
   );
 
   static const TextStyle unitPillTextStyle = TextStyle(
@@ -92,14 +75,12 @@ class ProductStyles {
     color: textPrimary,
     fontSize: 30,
     fontWeight: FontWeight.w800,
-    height: 1.1,
   );
 
   static const TextStyle pageTitleMobileStyle = TextStyle(
     color: textPrimary,
     fontSize: 24,
     fontWeight: FontWeight.w800,
-    height: 1.1,
   );
 
   static const TextStyle pageSubtitleStyle = TextStyle(
@@ -138,26 +119,6 @@ class ProductStyles {
     fontWeight: FontWeight.w900,
   );
 
-  static const TextStyle mobileTitleStyle = TextStyle(
-    color: textPrimary,
-    fontSize: 16,
-    fontWeight: FontWeight.w800,
-  );
-
-  static const TextStyle mobileSubStyle = TextStyle(
-    color: textSecondary,
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    height: 1.5,
-  );
-
-  static const TextStyle mobileTotalStyle = TextStyle(
-    color: primaryColor,
-    fontSize: 15,
-    fontWeight: FontWeight.w800,
-    height: 1.6,
-  );
-
   static const TextStyle emptyStyle = TextStyle(
     color: textSecondary,
     fontSize: 15,
@@ -167,17 +128,8 @@ class ProductStyles {
   static InputDecoration get searchDecoration {
     return InputDecoration(
       hintText: 'Search supplier, material, unit, or location...',
-      hintStyle: const TextStyle(
-        color: textSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      prefixIcon: const Icon(
-        Icons.search_rounded,
-        color: textSecondary,
-        size: 24,
-      ),
-      prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      hintStyle: const TextStyle(color: textSecondary),
+      prefixIcon: const Icon(Icons.search_rounded, color: textSecondary),
       filled: true,
       fillColor: inputFill,
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -202,6 +154,36 @@ class ProductStyles {
       foregroundColor: Colors.black,
       padding: const EdgeInsets.all(16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
+
+  static ButtonStyle get mobileRefreshButtonStyle {
+    return ElevatedButton.styleFrom(
+      backgroundColor: primaryColor,
+      foregroundColor: Colors.black,
+      elevation: 0,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+    );
+  }
+
+  static ButtonStyle get cancelButtonStyle {
+    return OutlinedButton.styleFrom(
+      foregroundColor: textPrimary,
+      side: const BorderSide(color: borderColor),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  static ButtonStyle get saveEditButtonStyle {
+    return ElevatedButton.styleFrom(
+      backgroundColor: primaryColor,
+      foregroundColor: Colors.black,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
