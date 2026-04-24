@@ -1,56 +1,105 @@
 import 'package:flutter/material.dart';
 
 class ProductStyles {
-  static const Color primaryColor = Color(0xFF27E0C3);
-  static const Color secondaryColor = Color(0xFF7C3AED);
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color primaryColor = Color(0xFF31C7E3);
+  static const Color textPrimary = Color(0xFFF4F7FF);
+  static const Color textSecondary = Color(0xFF9FAAC7);
+  static const Color borderColor = Color(0xFF1D3D7A);
+  static const Color inputFill = Color(0xFF061542);
+  static const Color panelCardColor = Color(0xFF0A1745);
   static const Color dangerColor = Color(0xFFFF6B6B);
 
-  static BoxDecoration get pageBackground {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Color(0xFF020617), Color(0xFF07111F), Color(0xFF020617)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+  static const BoxDecoration pageBackground = BoxDecoration(
+    gradient: LinearGradient(
+      colors: [Color(0xFF020B2D), Color(0xFF041247), Color(0xFF020B2D)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  );
+
+  static final BoxDecoration panelDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(32),
+    color: const Color(0x1AFFFFFF),
+    border: Border.all(color: borderColor, width: 1.2),
+    boxShadow: const [
+      BoxShadow(
+        color: Color(0x26000000),
+        blurRadius: 22,
+        offset: Offset(0, 10),
       ),
-    );
-  }
+    ],
+  );
 
-  static BoxDecoration get panelDecoration {
-    return BoxDecoration(
-      color: const Color(0xFF07111F).withOpacity(0.82),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.32),
-          blurRadius: 35,
-          offset: const Offset(0, 18),
-        ),
-      ],
-    );
-  }
+  static final BoxDecoration mobilePanelDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(24),
+    color: const Color(0x1AFFFFFF),
+    border: Border.all(color: borderColor, width: 1.1),
+    boxShadow: const [
+      BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 8)),
+    ],
+  );
 
-  static BoxDecoration get mobilePanelDecoration {
-    return BoxDecoration(
-      color: const Color(0xFF07111F).withOpacity(0.90),
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
-    );
-  }
+  static final BoxDecoration statCardDecoration = BoxDecoration(
+    color: panelCardColor,
+    borderRadius: BorderRadius.circular(22),
+    border: Border.all(color: borderColor, width: 1.1),
+    boxShadow: const [
+      BoxShadow(color: Color(0x22000000), blurRadius: 14, offset: Offset(0, 8)),
+    ],
+  );
+
+  static final BoxDecoration statIconDecoration = BoxDecoration(
+    color: inputFill,
+    borderRadius: BorderRadius.circular(15),
+    border: Border.all(color: primaryColor, width: 1.1),
+  );
+
+  static final BoxDecoration tableContainerDecoration = BoxDecoration(
+    color: panelCardColor,
+    borderRadius: BorderRadius.circular(26),
+    border: Border.all(color: borderColor, width: 1.1),
+    boxShadow: const [
+      BoxShadow(
+        color: Color(0x30000000),
+        blurRadius: 18,
+        offset: Offset(0, 10),
+      ),
+    ],
+  );
+
+  static final BoxDecoration mobileCardDecoration = BoxDecoration(
+    color: panelCardColor,
+    borderRadius: BorderRadius.circular(22),
+    border: Border.all(color: borderColor, width: 1.1),
+    boxShadow: const [
+      BoxShadow(color: Color(0x22000000), blurRadius: 14, offset: Offset(0, 8)),
+    ],
+  );
+
+  static final BoxDecoration unitPillDecoration = BoxDecoration(
+    color: primaryColor.withOpacity(0.12),
+    borderRadius: BorderRadius.circular(999),
+    border: Border.all(color: primaryColor.withOpacity(0.35)),
+  );
+
+  static const TextStyle unitPillTextStyle = TextStyle(
+    color: primaryColor,
+    fontSize: 12,
+    fontWeight: FontWeight.w900,
+  );
 
   static const TextStyle pageTitleStyle = TextStyle(
     color: textPrimary,
     fontSize: 30,
-    fontWeight: FontWeight.w900,
-    letterSpacing: 0.2,
+    fontWeight: FontWeight.w800,
+    height: 1.1,
   );
 
   static const TextStyle pageTitleMobileStyle = TextStyle(
     color: textPrimary,
     fontSize: 24,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w800,
+    height: 1.1,
   );
 
   static const TextStyle pageSubtitleStyle = TextStyle(
@@ -59,91 +108,53 @@ class ProductStyles {
     fontWeight: FontWeight.w500,
   );
 
-  static BoxDecoration get statCardDecoration {
-    return BoxDecoration(
-      color: Colors.white.withOpacity(0.055),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white.withOpacity(0.09)),
-    );
-  }
-
-  static BoxDecoration get statIconDecoration {
-    return BoxDecoration(
-      color: primaryColor.withOpacity(0.12),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: primaryColor.withOpacity(0.22)),
-    );
-  }
-
   static const TextStyle statLabelStyle = TextStyle(
     color: textSecondary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: FontWeight.w600,
   );
 
   static const TextStyle statValueStyle = TextStyle(
     color: textPrimary,
     fontSize: 18,
+    fontWeight: FontWeight.w800,
+  );
+
+  static const TextStyle tableHeaderTextStyle = TextStyle(
+    color: textPrimary,
+    fontSize: 13,
     fontWeight: FontWeight.w900,
   );
 
-  static InputDecoration get searchDecoration {
-    return InputDecoration(
-      hintText: 'Search supplier, material, unit, or location...',
-      hintStyle: TextStyle(color: textSecondary.withOpacity(0.72)),
-      prefixIcon: const Icon(Icons.search_rounded, color: textSecondary),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.055),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: primaryColor.withOpacity(0.75)),
-      ),
-    );
-  }
+  static const TextStyle tableCellTextStyle = TextStyle(
+    color: textPrimary,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+  );
 
-  static ButtonStyle get refreshButtonStyle {
-    return IconButton.styleFrom(
-      backgroundColor: primaryColor.withOpacity(0.12),
-      foregroundColor: primaryColor,
-      padding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  static Color get tableHeaderColor => Colors.white.withOpacity(0.09);
-
-  static Color get tableRowColor => Colors.white.withOpacity(0.035);
-
-  static BoxDecoration get mobileCardDecoration {
-    return BoxDecoration(
-      color: Colors.white.withOpacity(0.055),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white.withOpacity(0.09)),
-    );
-  }
+  static const TextStyle tableHighlightTextStyle = TextStyle(
+    color: primaryColor,
+    fontSize: 14,
+    fontWeight: FontWeight.w900,
+  );
 
   static const TextStyle mobileTitleStyle = TextStyle(
     color: textPrimary,
     fontSize: 16,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w800,
   );
 
   static const TextStyle mobileSubStyle = TextStyle(
     color: textSecondary,
     fontSize: 13,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     height: 1.5,
   );
 
   static const TextStyle mobileTotalStyle = TextStyle(
     color: primaryColor,
     fontSize: 15,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w800,
     height: 1.6,
   );
 
@@ -152,4 +163,48 @@ class ProductStyles {
     fontSize: 15,
     fontWeight: FontWeight.w700,
   );
+
+  static InputDecoration get searchDecoration {
+    return InputDecoration(
+      hintText: 'Search supplier, material, unit, or location...',
+      hintStyle: const TextStyle(
+        color: textSecondary,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixIcon: const Icon(
+        Icons.search_rounded,
+        color: textSecondary,
+        size: 24,
+      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      filled: true,
+      fillColor: inputFill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderColor, width: 1.1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: primaryColor, width: 1.2),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderColor, width: 1.1),
+      ),
+    );
+  }
+
+  static ButtonStyle get refreshButtonStyle {
+    return IconButton.styleFrom(
+      backgroundColor: primaryColor,
+      foregroundColor: Colors.black,
+      padding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
+
+  static Color get tableHeaderColor => const Color(0xFF0B1B54);
+  static Color get tableRowColor => const Color(0xFF07184D);
 }

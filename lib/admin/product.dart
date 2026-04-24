@@ -34,7 +34,9 @@ class _ProductPageState extends State<ProductPage> {
     try {
       final data = await Supabase.instance.client
           .from('materials')
-          .select()
+          .select(
+            'id, supplier_name, description, unit, unit_value, price, quantity, total, location, created_at',
+          )
           .order('created_at', ascending: false);
 
       if (!mounted) return;
@@ -44,15 +46,10 @@ class _ProductPageState extends State<ProductPage> {
       });
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Load failed: $e')));
+      _showSnack('Load failed: $e');
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   List<Map<String, dynamic>> get _filteredMaterials {
@@ -61,15 +58,13 @@ class _ProductPageState extends State<ProductPage> {
     if (query.isEmpty) return _materials;
 
     return _materials.where((item) {
-      final supplier = item['supplier_name']?.toString().toLowerCase() ?? '';
-      final description = item['description']?.toString().toLowerCase() ?? '';
-      final unit = item['unit']?.toString().toLowerCase() ?? '';
-      final location = item['location']?.toString().toLowerCase() ?? '';
-
-      return supplier.contains(query) ||
-          description.contains(query) ||
-          unit.contains(query) ||
-          location.contains(query);
+      return [
+        item['supplier_name'],
+        item['description'],
+        item['unit'],
+        item['unit_value'],
+        item['location'],
+      ].any((v) => (v?.toString().toLowerCase() ?? '').contains(query));
     }).toList();
   }
 
@@ -94,14 +89,12 @@ class _ProductPageState extends State<ProductPage> {
     return '₱${number.toStringAsFixed(2)}';
   }
 
-  String _text(dynamic value) {
-    return value?.toString() ?? '-';
-  }
+  String _text(dynamic value) => value?.toString() ?? '-';
 
-  String _unitLabel(Map<String, dynamic> item) {
-    final unitValue = item['unit_value']?.toString() ?? '1';
-    final unit = item['unit']?.toString() ?? '';
-    return '$unitValue $unit';
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _deleteMaterial(String id) async {
@@ -110,17 +103,11 @@ class _ProductPageState extends State<ProductPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Material deleted')));
-
+      _showSnack('Material deleted');
       await _loadMaterials();
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      _showSnack('Delete failed: $e');
     }
   }
 
@@ -128,8 +115,15 @@ class _ProductPageState extends State<ProductPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Material'),
-        content: Text('Delete ${_text(item['description'])}?'),
+        backgroundColor: ProductStyles.panelCardColor,
+        title: const Text(
+          'Delete Material',
+          style: TextStyle(color: ProductStyles.textPrimary),
+        ),
+        content: Text(
+          'Delete ${_text(item['description'])}?',
+          style: const TextStyle(color: ProductStyles.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -140,11 +134,294 @@ class _ProductPageState extends State<ProductPage> {
               Navigator.pop(context);
               _deleteMaterial(item['id'].toString());
             },
-            child: const Text('Delete'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: ProductStyles.dangerColor),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _updateMaterial({
+    required String id,
+    required String supplierName,
+    required String description,
+    required String unit,
+    required double unitValue,
+    required double price,
+    required double quantity,
+    required String location,
+  }) async {
+    try {
+      await Supabase.instance.client
+          .from('materials')
+          .update({
+            'supplier_name': supplierName,
+            'description': description,
+            'unit': unit,
+            'unit_value': unitValue,
+            'price': price,
+            'quantity': quantity,
+            'location': location,
+          })
+          .eq('id', id);
+
+      if (!mounted) return;
+
+      _showSnack('Material updated');
+      await _loadMaterials();
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Update failed: $e');
+    }
+  }
+
+  void _openEditDialog(Map<String, dynamic> item) {
+    final supplierController = TextEditingController(
+      text: _text(item['supplier_name']),
+    );
+    final descriptionController = TextEditingController(
+      text: _text(item['description']),
+    );
+    final unitController = TextEditingController(text: _text(item['unit']));
+    final unitValueController = TextEditingController(
+      text: _text(item['unit_value']),
+    );
+    final priceController = TextEditingController(text: _text(item['price']));
+    final quantityController = TextEditingController(
+      text: _text(item['quantity']),
+    );
+    final locationController = TextEditingController(
+      text: _text(item['location']),
+    );
+
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 20,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ProductStyles.panelCardColor,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: ProductStyles.borderColor,
+                  width: 1.2,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 30,
+                    offset: Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Edit Material',
+                              style: TextStyle(
+                                color: ProductStyles.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close_rounded),
+                            color: ProductStyles.textSecondary,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      _EditField(
+                        controller: supplierController,
+                        label: 'Name of Supplier',
+                        icon: Icons.storefront_outlined,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 14),
+                      _EditField(
+                        controller: descriptionController,
+                        label: 'Description of Materials',
+                        icon: Icons.inventory_2_outlined,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _EditField(
+                              controller: unitController,
+                              label: 'Unit',
+                              icon: Icons.category_outlined,
+                              validator: _requiredValidator,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _EditField(
+                              controller: unitValueController,
+                              label: 'Unit Value',
+                              icon: Icons.scale_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: _numberValidator,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _EditField(
+                              controller: priceController,
+                              label: 'Price',
+                              icon: Icons.payments_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: _numberValidator,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _EditField(
+                              controller: quantityController,
+                              label: 'Quantity',
+                              icon: Icons.format_list_numbered_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: _numberValidator,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _EditField(
+                        controller: locationController,
+                        label: 'Location',
+                        icon: Icons.location_on_outlined,
+                        validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: ProductStyles.textPrimary,
+                                side: const BorderSide(
+                                  color: ProductStyles.borderColor,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (!formKey.currentState!.validate()) return;
+
+                                Navigator.pop(context);
+
+                                await _updateMaterial(
+                                  id: item['id'].toString(),
+                                  supplierName: supplierController.text.trim(),
+                                  description: descriptionController.text
+                                      .trim(),
+                                  unit: unitController.text.trim(),
+                                  unitValue: double.parse(
+                                    unitValueController.text.trim(),
+                                  ),
+                                  price: double.parse(
+                                    priceController.text.trim(),
+                                  ),
+                                  quantity: double.parse(
+                                    quantityController.text.trim(),
+                                  ),
+                                  location: locationController.text.trim(),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ProductStyles.primaryColor,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'Save Changes',
+                                style: TextStyle(fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      supplierController.dispose();
+      descriptionController.dispose();
+      unitController.dispose();
+      unitValueController.dispose();
+      priceController.dispose();
+      quantityController.dispose();
+      locationController.dispose();
+    });
+  }
+
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+    return null;
+  }
+
+  String? _numberValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+
+    final number = double.tryParse(value.trim());
+    if (number == null) return 'Invalid number';
+    if (number <= 0) return 'Must be greater than 0';
+
+    return null;
   }
 
   Widget _statCard({
@@ -154,27 +431,113 @@ class _ProductPageState extends State<ProductPage> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: ProductStyles.statCardDecoration,
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(11),
+              padding: const EdgeInsets.all(12),
               decoration: ProductStyles.statIconDecoration,
               child: Icon(icon, color: ProductStyles.primaryColor, size: 22),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 13),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label, style: ProductStyles.statLabelStyle),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(value, style: ProductStyles.statValueStyle),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTable() {
+    final items = _filteredMaterials;
+
+    if (items.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Text('No materials found', style: ProductStyles.emptyStyle),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: ProductStyles.tableContainerDecoration,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowHeight: 58,
+            dataRowMinHeight: 62,
+            dataRowMaxHeight: 68,
+            horizontalMargin: 22,
+            columnSpacing: 34,
+            dividerThickness: 0.7,
+            headingRowColor: WidgetStateProperty.all(
+              ProductStyles.tableHeaderColor,
+            ),
+            dataRowColor: WidgetStateProperty.resolveWith((states) {
+              return ProductStyles.tableRowColor;
+            }),
+            columns: [
+              DataColumn(label: _HeaderText('Supplier')),
+              DataColumn(label: _HeaderText('Description')),
+              DataColumn(label: _HeaderText('Unit')),
+              DataColumn(label: _HeaderText('Unit Value')),
+              DataColumn(label: _HeaderText('Price')),
+              DataColumn(label: _HeaderText('Qty')),
+              DataColumn(label: _HeaderText('Total')),
+              DataColumn(label: _HeaderText('Location')),
+              DataColumn(label: _HeaderText('Action')),
+            ],
+            rows: items.map((item) {
+              return DataRow(
+                cells: [
+                  DataCell(_CellText(_text(item['supplier_name']))),
+                  DataCell(
+                    SizedBox(
+                      width: 180,
+                      child: _CellText(_text(item['description'])),
+                    ),
+                  ),
+                  DataCell(_UnitPill(_text(item['unit']))),
+                  DataCell(_CellText(_text(item['unit_value']))),
+                  DataCell(_CellText(_money(item['price']))),
+                  DataCell(_CellText(_text(item['quantity']))),
+                  DataCell(_CellText(_money(item['total']), isHighlight: true)),
+                  DataCell(_CellText(_text(item['location']))),
+                  DataCell(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ActionButton(
+                          icon: Icons.edit_rounded,
+                          color: ProductStyles.primaryColor,
+                          onTap: () => _openEditDialog(item),
+                        ),
+                        const SizedBox(width: 8),
+                        _ActionButton(
+                          icon: Icons.delete_outline_rounded,
+                          color: ProductStyles.dangerColor,
+                          onTap: () => _confirmDelete(item),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
@@ -211,7 +574,11 @@ class _ProductPageState extends State<ProductPage> {
                 style: ProductStyles.mobileSubStyle,
               ),
               Text(
-                'Unit: ${_unitLabel(item)}',
+                'Unit: ${_text(item['unit'])}',
+                style: ProductStyles.mobileSubStyle,
+              ),
+              Text(
+                'Unit Value: ${_text(item['unit_value'])}',
                 style: ProductStyles.mobileSubStyle,
               ),
               Text(
@@ -230,76 +597,32 @@ class _ProductPageState extends State<ProductPage> {
                 'Location: ${_text(item['location'])}',
                 style: ProductStyles.mobileSubStyle,
               ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  onPressed: () => _confirmDelete(item),
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  color: ProductStyles.dangerColor,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTable() {
-    final items = _filteredMaterials;
-
-    if (items.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text('No materials found', style: ProductStyles.emptyStyle),
-        ),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(
-            ProductStyles.tableHeaderColor,
-          ),
-          dataRowColor: WidgetStateProperty.all(ProductStyles.tableRowColor),
-          columnSpacing: 28,
-          columns: const [
-            DataColumn(label: Text('Supplier')),
-            DataColumn(label: Text('Description')),
-            DataColumn(label: Text('Unit')),
-            DataColumn(label: Text('Price')),
-            DataColumn(label: Text('Qty')),
-            DataColumn(label: Text('Total')),
-            DataColumn(label: Text('Location')),
-            DataColumn(label: Text('Action')),
-          ],
-          rows: items.map((item) {
-            return DataRow(
-              cells: [
-                DataCell(Text(_text(item['supplier_name']))),
-                DataCell(Text(_text(item['description']))),
-                DataCell(Text(_unitLabel(item))),
-                DataCell(Text(_money(item['price']))),
-                DataCell(Text(_text(item['quantity']))),
-                DataCell(Text(_money(item['total']))),
-                DataCell(Text(_text(item['location']))),
-                DataCell(
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openEditDialog(item),
+                      icon: const Icon(Icons.edit_rounded),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ProductStyles.primaryColor,
+                        foregroundColor: Colors.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   IconButton(
                     onPressed: () => _confirmDelete(item),
                     icon: const Icon(Icons.delete_outline_rounded),
                     color: ProductStyles.dangerColor,
                   ),
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -314,7 +637,7 @@ class _ProductPageState extends State<ProductPage> {
         decoration: isMobile
             ? ProductStyles.mobilePanelDecoration
             : ProductStyles.panelDecoration,
-        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        padding: EdgeInsets.all(isMobile ? 16 : 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -326,10 +649,10 @@ class _ProductPageState extends State<ProductPage> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'View all saved materials and inventory records.',
+              'View, update, and manage all saved materials.',
               style: ProductStyles.pageSubtitleStyle,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             isMobile
                 ? Column(
                     children: [
@@ -413,6 +736,128 @@ class _ProductPageState extends State<ProductPage> {
                   : SingleChildScrollView(child: _buildTable()),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderText extends StatelessWidget {
+  final String text;
+
+  const _HeaderText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: ProductStyles.tableHeaderTextStyle);
+  }
+}
+
+class _CellText extends StatelessWidget {
+  final String text;
+  final bool isHighlight;
+
+  const _CellText(this.text, {this.isHighlight = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      overflow: TextOverflow.ellipsis,
+      style: isHighlight
+          ? ProductStyles.tableHighlightTextStyle
+          : ProductStyles.tableCellTextStyle,
+    );
+  }
+}
+
+class _UnitPill extends StatelessWidget {
+  final String text;
+
+  const _UnitPill(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: ProductStyles.unitPillDecoration,
+      child: Text(text, style: ProductStyles.unitPillTextStyle),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.11),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Icon(icon, color: color, size: 18),
+      ),
+    );
+  }
+}
+
+class _EditField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  const _EditField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: const TextStyle(color: ProductStyles.textPrimary),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: ProductStyles.textSecondary),
+        prefixIcon: Icon(icon, color: ProductStyles.textSecondary),
+        filled: true,
+        fillColor: ProductStyles.inputFill,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: ProductStyles.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: ProductStyles.primaryColor),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: ProductStyles.dangerColor),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: ProductStyles.dangerColor),
         ),
       ),
     );
