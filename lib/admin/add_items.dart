@@ -11,32 +11,76 @@ class AddItemsPage extends StatelessWidget {
 
     return Container(
       decoration: AddItemsStyles.pageBackground,
-      padding: EdgeInsets.all(isMobile ? 16 : 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10172F),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                _InputField(label: 'Item Name', hint: 'Enter item name'),
-                SizedBox(height: 16),
-                _InputField(label: 'Price', hint: 'Enter price'),
-                SizedBox(height: 16),
-                _InputField(
-                  label: 'Description',
-                  hint: 'Enter description',
-                  maxLines: 3,
+      child: Container(
+        decoration: isMobile
+            ? AddItemsStyles.mobilePanelDecoration
+            : AddItemsStyles.panelDecoration,
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Add Items',
+                style: isMobile
+                    ? AddItemsStyles.pageTitleMobileStyle
+                    : AddItemsStyles.pageTitleStyle,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Add your product or item details here.',
+                style: AddItemsStyles.pageSubtitleStyle,
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Container(
+                    padding: EdgeInsets.all(isMobile ? 16 : 24),
+                    decoration: AddItemsStyles.formCardDecoration,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _InputField(
+                          label: 'Item Name',
+                          hintText: 'Enter item name',
+                          icon: Icons.inventory_2_outlined,
+                        ),
+                        const SizedBox(height: 16),
+                        const _InputField(
+                          label: 'Price',
+                          hintText: 'Enter price',
+                          icon: Icons.payments_outlined,
+                        ),
+                        const SizedBox(height: 16),
+                        const _InputField(
+                          label: 'Description',
+                          hintText: 'Enter description',
+                          icon: Icons.description_outlined,
+                          maxLines: 4,
+                        ),
+                        const SizedBox(height: 22),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: AddItemsStyles.saveButtonStyle,
+                            child: const Text(
+                              'Save Item',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                SizedBox(height: 20),
-                _SaveButton(),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -46,59 +90,36 @@ class AddItemsPage extends StatelessWidget {
 
 class _InputField extends StatelessWidget {
   final String label;
-  final String hint;
+  final String hintText;
+  final IconData icon;
   final int maxLines;
 
   const _InputField({
     required this.label,
-    required this.hint,
+    required this.hintText,
+    required this.icon,
     this.maxLines = 1,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isMultiLine = maxLines > 1;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AddItemsStyles.label),
-        const SizedBox(height: 8),
+        Text(label, style: AddItemsStyles.labelStyle),
+        const SizedBox(height: 10),
         TextField(
           maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white54),
-            filled: true,
-            fillColor: const Color(0xFF1A2440),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
+          style: const TextStyle(color: AddItemsStyles.textPrimary),
+          decoration: AddItemsStyles.inputDecoration(
+            hintText: hintText,
+            prefixIcon: icon,
+            alignLabelTop: isMultiLine,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SaveButton extends StatelessWidget {
-  const _SaveButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: const Text(
-          'Save Item',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
     );
   }
 }

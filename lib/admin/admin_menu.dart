@@ -46,11 +46,11 @@ class _AdminMenuState extends State<AdminMenu> {
         ),
         children: [
           TextSpan(
-            text: 'DATA',
+            text: 'MEGA',
             style: TextStyle(color: AdminMenuStyles.textPrimary),
           ),
           TextSpan(
-            text: 'CORE',
+            text: 'PLUTO',
             style: TextStyle(color: AdminMenuStyles.primaryColor),
           ),
         ],
