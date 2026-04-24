@@ -1,6 +1,10 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../admin/admin_menu.dart';
+import '../coder/coder_menu.dart';
 import '../styles/login_styles.dart';
 
 class LoginPage extends StatefulWidget {
@@ -76,6 +80,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.00, 0.18, curve: Curves.easeOut),
     );
+
     _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
         .animate(
           CurvedAnimation(
@@ -88,6 +93,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.12, 0.30, curve: Curves.easeOut),
     );
+
     _emailLabelSlide =
         Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
           CurvedAnimation(
@@ -100,6 +106,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.24, 0.44, curve: Curves.easeOut),
     );
+
     _emailFieldSlide =
         Tween<Offset>(begin: const Offset(0, 0.20), end: Offset.zero).animate(
           CurvedAnimation(
@@ -112,6 +119,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.38, 0.56, curve: Curves.easeOut),
     );
+
     _passwordLabelSlide =
         Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
           CurvedAnimation(
@@ -124,6 +132,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.50, 0.72, curve: Curves.easeOut),
     );
+
     _passwordFieldSlide =
         Tween<Offset>(begin: const Offset(0, 0.20), end: Offset.zero).animate(
           CurvedAnimation(
@@ -136,6 +145,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _contentController,
       curve: const Interval(0.68, 1.00, curve: Curves.easeOut),
     );
+
     _buttonSlide = Tween<Offset>(begin: const Offset(0, 0.22), end: Offset.zero)
         .animate(
           CurvedAnimation(
@@ -190,25 +200,72 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
-      return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final res = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      final user = res.user;
+
+      if (user == null) {
+        _showError('Invalid login credentials');
+        return;
+      }
+
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+      final String role = profile['role'].toString();
+
+      if (!mounted) return;
+
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminMenu()),
+        );
+      } else if (role == 'coder') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CoderMenu()),
+        );
+      } else {
+        _showError('No role assigned');
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Login failed');
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
 
-    await Future<void>.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminMenu()),
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Login Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -293,7 +350,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   const SizedBox(height: 30),
-
                                   FadeTransition(
                                     opacity: _emailLabelFade,
                                     child: SlideTransition(
@@ -305,7 +361,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   const SizedBox(height: 10),
-
                                   FadeTransition(
                                     opacity: _emailFieldFade,
                                     child: SlideTransition(
@@ -324,9 +379,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-
                                   const SizedBox(height: 18),
-
                                   FadeTransition(
                                     opacity: _passwordLabelFade,
                                     child: SlideTransition(
@@ -338,7 +391,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   const SizedBox(height: 10),
-
                                   FadeTransition(
                                     opacity: _passwordFieldFade,
                                     child: SlideTransition(
@@ -375,9 +427,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-
                                   const SizedBox(height: 28),
-
                                   FadeTransition(
                                     opacity: _buttonFade,
                                     child: SlideTransition(
