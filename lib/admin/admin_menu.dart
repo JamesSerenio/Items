@@ -76,7 +76,7 @@ class _AdminMenuState extends State<AdminMenu>
       builder: (context, _) {
         return Container(
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 7),
           decoration: AdminMenuStyles.brandBoxDecoration,
           child: Stack(
             alignment: Alignment.centerLeft,

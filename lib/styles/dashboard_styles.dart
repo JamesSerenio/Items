@@ -1,82 +1,86 @@
 import 'package:flutter/material.dart';
 
 class DashboardStyles {
-  static const Color primaryColor = Color(0xFF2ED0FF);
-  static const Color secondaryColor = Color(0xFF6C63FF);
+  // ===== COLORS =====
+  static const Color megaGreen = Color(0xFF1FAF7A);
+  static const Color megaGreenSoft = Color(0xFF42D99D);
 
-  static const Color textPrimary = Color(0xFFF4F7FF);
-  static const Color textSecondary = Color(0xFF9FAAC7);
+  static const Color plutoGold = Color(0xFFE5C76B);
+  static const Color plutoGoldDeep = Color(0xFFB88735);
 
-  static const Color borderColor = Color(0xFF1D3D7A);
-  static const Color cardColor = Color(0xFF0D1B4D);
-  static const Color panelCardColor = Color(0xFF0A1745);
+  static const Color textPrimary = Color(0xFFF9F2D7);
+  static const Color textSecondary = Color(0xFFC6B98F);
 
+  // ===== BACKGROUND =====
   static const BoxDecoration pageBackground = BoxDecoration(
     gradient: LinearGradient(
-      colors: [Color(0xFF020B2D), Color(0xFF041247), Color(0xFF020B2D)],
+      colors: [Color(0xFF03110B), Color(0xFF07180F), Color(0xFF020604)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
   );
 
+  // ===== MAIN PANEL =====
   static final BoxDecoration panelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(32),
-    color: const Color(0x1AFFFFFF),
-    border: Border.all(color: borderColor, width: 1.2),
-    boxShadow: const [
+    borderRadius: BorderRadius.circular(28),
+    gradient: const LinearGradient(
+      colors: [Color(0xFF0B1B13), Color(0xFF13140C)],
+    ),
+    border: Border.all(color: plutoGoldDeep.withOpacity(0.5), width: 1.2),
+    boxShadow: [
       BoxShadow(
-        color: Color(0x26000000),
-        blurRadius: 22,
-        offset: Offset(0, 10),
+        color: Colors.black.withOpacity(0.4),
+        blurRadius: 25,
+        offset: const Offset(0, 12),
       ),
     ],
   );
 
-  static final BoxDecoration mobilePanelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(24),
-    color: const Color(0x1AFFFFFF),
-    border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 8)),
-    ],
-  );
+  static final BoxDecoration mobilePanelDecoration = panelDecoration;
 
+  // ===== CARD =====
+  static const Color cardColor = Color(0xFF0E1E16);
+
+  static const Color borderColor = plutoGold;
+  // ===== PANEL CARD =====
+  static const Color panelCardColor = Color(0xFF0F1B14);
+
+  // ===== TEXT =====
   static const TextStyle pageTitleStyle = TextStyle(
-    color: textPrimary,
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: FontWeight.w800,
-    height: 1.1,
+    color: textPrimary,
   );
 
   static const TextStyle pageTitleMobileStyle = TextStyle(
-    color: textPrimary,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: FontWeight.w800,
-    height: 1.1,
+    color: textPrimary,
   );
 
   static const TextStyle pageSubtitleStyle = TextStyle(
-    color: textSecondary,
     fontSize: 14,
-    fontWeight: FontWeight.w500,
+    color: textSecondary,
   );
 
   static const TextStyle cardTitleStyle = TextStyle(
-    color: textSecondary,
     fontSize: 14,
-    fontWeight: FontWeight.w500,
+    color: textSecondary,
   );
 
   static const TextStyle cardValueStyle = TextStyle(
-    color: textPrimary,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: FontWeight.w800,
-    height: 1.15,
+    color: textPrimary,
   );
 
   static const TextStyle panelTitleStyle = TextStyle(
-    color: textPrimary,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: FontWeight.w700,
+    color: textPrimary,
   );
+
+  // ===== COLORS FOR GLOW =====
+  static const Color primaryColor = plutoGold;
+  static const Color secondaryColor = megaGreen;
 }

@@ -10,12 +10,31 @@ class DashboardPage extends StatelessWidget {
     final isMobile = width < 768;
 
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: DashboardStyles.pageBackground,
       child: Container(
-        decoration: isMobile
-            ? DashboardStyles.mobilePanelDecoration
-            : DashboardStyles.panelDecoration,
+        margin: EdgeInsets.zero,
         padding: EdgeInsets.all(isMobile ? 16 : 24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(isMobile ? 24 : 28),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0B1B13), Color(0xFF13140C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: DashboardStyles.plutoGold.withOpacity(0.85),
+            width: 1.25,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: DashboardStyles.plutoGold.withOpacity(0.12),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,19 +56,19 @@ class DashboardPage extends StatelessWidget {
                 const _StatCard(
                   title: 'Total Revenue',
                   value: '\$2.45M',
-                  glowColor: DashboardStyles.primaryColor,
+                  glowColor: DashboardStyles.plutoGold,
                 ),
                 const SizedBox(height: 12),
                 const _StatCard(
                   title: 'Active Users',
                   value: '48.3K',
-                  glowColor: Color(0xFF34D399),
+                  glowColor: DashboardStyles.megaGreen,
                 ),
                 const SizedBox(height: 12),
                 const _StatCard(
                   title: 'Orders',
                   value: '1,284',
-                  glowColor: DashboardStyles.secondaryColor,
+                  glowColor: DashboardStyles.plutoGold,
                 ),
                 const SizedBox(height: 14),
                 const _BigPanel(
@@ -64,13 +83,13 @@ class DashboardPage extends StatelessWidget {
                   height: 220,
                 ),
               ] else ...[
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Expanded(
                       child: _StatCard(
                         title: 'Total Revenue',
                         value: '\$2.45M',
-                        glowColor: DashboardStyles.primaryColor,
+                        glowColor: DashboardStyles.plutoGold,
                       ),
                     ),
                     SizedBox(width: 16),
@@ -78,7 +97,7 @@ class DashboardPage extends StatelessWidget {
                       child: _StatCard(
                         title: 'Active Users',
                         value: '48.3K',
-                        glowColor: Color(0xFF34D399),
+                        glowColor: DashboardStyles.megaGreen,
                       ),
                     ),
                     SizedBox(width: 16),
@@ -86,15 +105,15 @@ class DashboardPage extends StatelessWidget {
                       child: _StatCard(
                         title: 'Orders',
                         value: '1,284',
-                        glowColor: DashboardStyles.secondaryColor,
+                        glowColor: DashboardStyles.plutoGold,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                Row(
+                const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Expanded(
                       flex: 2,
                       child: _BigPanel(
@@ -135,19 +154,19 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: DashboardStyles.cardColor,
-        border: Border.all(color: DashboardStyles.borderColor, width: 1.1),
+        border: Border.all(
+          color: DashboardStyles.plutoGold.withOpacity(0.85),
+          width: 1.15,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: glowColor.withOpacity(0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 0),
-          ),
+          BoxShadow(color: glowColor.withOpacity(0.13), blurRadius: 18),
         ],
       ),
       child: Column(
@@ -180,7 +199,16 @@ class _BigPanel extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         color: DashboardStyles.panelCardColor,
-        border: Border.all(color: DashboardStyles.borderColor, width: 1.1),
+        border: Border.all(
+          color: DashboardStyles.plutoGold.withOpacity(0.85),
+          width: 1.15,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: DashboardStyles.plutoGold.withOpacity(0.08),
+            blurRadius: 16,
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(22),
       child: Column(
@@ -194,7 +222,7 @@ class _BigPanel extends StatelessWidget {
             child: Icon(
               Icons.auto_graph_rounded,
               size: 72,
-              color: DashboardStyles.primaryColor.withOpacity(0.85),
+              color: DashboardStyles.plutoGold.withOpacity(0.85),
             ),
           ),
           const Spacer(),
