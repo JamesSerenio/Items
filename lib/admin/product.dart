@@ -211,16 +211,18 @@ class _ProductPageState extends State<ProductPage> {
     showDialog(
       context: context,
       builder: (_) {
+        final isMobile = MediaQuery.of(context).size.width < 600;
+
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 12 : 18,
             vertical: 18,
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               decoration: ProductStyles.editDialogDecoration,
               child: Form(
                 key: formKey,
@@ -349,7 +351,7 @@ class _ProductPageState extends State<ProductPage> {
                               },
                               style: ProductStyles.saveEditButtonStyle,
                               child: const Text(
-                                'Save Changes',
+                                'Save',
                                 style: TextStyle(fontWeight: FontWeight.w900),
                               ),
                             ),
@@ -367,30 +369,59 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  Widget _statCard({
+  Widget _compactStatCard({
     required String label,
     required String value,
     required IconData icon,
+    required bool isMobile,
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: ProductStyles.statCardDecoration,
+        height: isMobile ? 68 : 92,
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 10 : 18,
+          vertical: isMobile ? 8 : 16,
+        ),
+        decoration: ProductStyles.statCardDecoration.copyWith(
+          borderRadius: BorderRadius.circular(isMobile ? 16 : 22),
+        ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: ProductStyles.statIconDecoration,
-              child: Icon(icon, color: ProductStyles.primaryColor, size: 22),
+              width: isMobile ? 34 : 48,
+              height: isMobile ? 34 : 48,
+              decoration: ProductStyles.statIconDecoration.copyWith(
+                borderRadius: BorderRadius.circular(isMobile ? 11 : 15),
+              ),
+              child: Icon(
+                icon,
+                color: ProductStyles.primaryColor,
+                size: isMobile ? 17 : 22,
+              ),
             ),
-            const SizedBox(width: 13),
+            SizedBox(width: isMobile ? 8 : 13),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: ProductStyles.statLabelStyle),
-                  const SizedBox(height: 5),
-                  Text(value, style: ProductStyles.statValueStyle),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ProductStyles.statLabelStyle.copyWith(
+                      fontSize: isMobile ? 10.5 : 13,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 2 : 5),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ProductStyles.statValueStyle.copyWith(
+                      fontSize: isMobile ? 13.5 : 18,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -401,104 +432,63 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Widget _buildStats(bool isMobile) {
-    if (isMobile) {
-      return Column(
-        children: [
-          Row(
-            children: [
-              _statCard(
-                label: 'Items',
-                value: _filteredMaterials.length.toString(),
-                icon: Icons.inventory_2_outlined,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _statCard(
-                label: 'Quantity',
-                value: _totalQuantity.toString(),
-                icon: Icons.format_list_numbered_outlined,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _statCard(
-                label: 'Total Value',
-                value: '₱${_grandTotal.toStringAsFixed(2)}',
-                icon: Icons.payments_outlined,
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
     return Row(
       children: [
-        _statCard(
+        _compactStatCard(
           label: 'Items',
           value: _filteredMaterials.length.toString(),
           icon: Icons.inventory_2_outlined,
+          isMobile: isMobile,
         ),
-        const SizedBox(width: 14),
-        _statCard(
+        SizedBox(width: isMobile ? 8 : 14),
+        _compactStatCard(
           label: 'Quantity',
           value: _totalQuantity.toString(),
           icon: Icons.format_list_numbered_outlined,
+          isMobile: isMobile,
         ),
-        const SizedBox(width: 14),
-        _statCard(
+        SizedBox(width: isMobile ? 8 : 14),
+        _compactStatCard(
           label: 'Total Value',
           value: '₱${_grandTotal.toStringAsFixed(2)}',
           icon: Icons.payments_outlined,
+          isMobile: isMobile,
         ),
       ],
     );
   }
 
   Widget _buildSearchAndRefresh(bool isMobile) {
-    if (isMobile) {
-      return Column(
-        children: [
-          TextField(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            style: const TextStyle(color: ProductStyles.textPrimary),
-            decoration: ProductStyles.searchDecoration,
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _loadMaterials,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Refresh'),
-              style: ProductStyles.mobileRefreshButtonStyle,
-            ),
-          ),
-        ],
-      );
-    }
-
     return Row(
       children: [
         Expanded(
-          child: TextField(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            style: const TextStyle(color: ProductStyles.textPrimary),
-            decoration: ProductStyles.searchDecoration,
+          child: SizedBox(
+            height: isMobile ? 48 : 58,
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: ProductStyles.textPrimary),
+              decoration: ProductStyles.searchDecoration.copyWith(
+                hintText: isMobile
+                    ? 'Search material...'
+                    : 'Search supplier, material, unit, or location...',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 12 : 18,
+                  vertical: isMobile ? 12 : 18,
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        IconButton(
-          onPressed: _loadMaterials,
-          icon: const Icon(Icons.refresh_rounded),
-          style: ProductStyles.refreshButtonStyle,
+        const SizedBox(width: 10),
+        SizedBox(
+          height: isMobile ? 48 : 58,
+          width: isMobile ? 52 : 58,
+          child: IconButton(
+            onPressed: _loadMaterials,
+            icon: const Icon(Icons.refresh_rounded),
+            style: ProductStyles.refreshButtonStyle,
+          ),
         ),
       ],
     );
@@ -518,103 +508,94 @@ class _ProductPageState extends State<ProductPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double minTableWidth = isMobile ? 900 : constraints.maxWidth;
+        final double minTableWidth = isMobile ? 820 : constraints.maxWidth;
 
         return Container(
           width: double.infinity,
           decoration: ProductStyles.tableOuterDecoration,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: minTableWidth,
-                  child: Scrollbar(
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: DataTable(
-                        headingRowHeight: 58,
-                        dataRowMinHeight: 60,
-                        dataRowMaxHeight: 66,
-                        horizontalMargin: isMobile ? 12 : 22,
-                        columnSpacing: isMobile ? 16 : 26,
-                        dividerThickness: 0.6,
-                        headingRowColor: WidgetStateProperty.all(
-                          ProductStyles.tableHeaderColor,
-                        ),
-                        dataRowColor: WidgetStateProperty.resolveWith(
-                          (states) => ProductStyles.tableRowColor,
-                        ),
-                        columns: const [
-                          DataColumn(label: _HeaderText('Supplier')),
-                          DataColumn(label: _HeaderText('Description')),
-                          DataColumn(label: _HeaderText('Unit')),
-                          DataColumn(label: _HeaderText('Unit Value')),
-                          DataColumn(label: _HeaderText('Price')),
-                          DataColumn(label: _HeaderText('Qty')),
-                          DataColumn(label: _HeaderText('Total')),
-                          DataColumn(label: _HeaderText('Location')),
-                          DataColumn(label: _HeaderText('Action')),
-                        ],
-                        rows: items.map((item) {
-                          return DataRow(
-                            cells: [
-                              DataCell(
-                                SizedBox(
-                                  width: isMobile ? 100 : 130,
-                                  child: _CellText(
-                                    _text(item['supplier_name']),
-                                  ),
-                                ),
-                              ),
-                              DataCell(
-                                SizedBox(
-                                  width: isMobile ? 120 : 180,
-                                  child: _CellText(_text(item['description'])),
-                                ),
-                              ),
-                              DataCell(_UnitPill(_text(item['unit']))),
-                              DataCell(_CellText(_text(item['unit_value']))),
-                              DataCell(_CellText(_money(item['price']))),
-                              DataCell(_CellText(_text(item['quantity']))),
-                              DataCell(
-                                _CellText(
-                                  _money(item['total']),
-                                  isHighlight: true,
-                                ),
-                              ),
-                              DataCell(
-                                SizedBox(
-                                  width: isMobile ? 100 : 130,
-                                  child: _CellText(_text(item['location'])),
-                                ),
-                              ),
-                              DataCell(
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _ActionButton(
-                                      icon: Icons.edit_rounded,
-                                      color: ProductStyles.primaryColor,
-                                      onTap: () => _openEditDialog(item),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _ActionButton(
-                                      icon: Icons.delete_outline_rounded,
-                                      color: ProductStyles.dangerColor,
-                                      onTap: () => _confirmDelete(item),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
+            child: SingleChildScrollView(
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: minTableWidth,
+                child: SingleChildScrollView(
+                  primary: false,
+                  scrollDirection: Axis.vertical,
+                  child: DataTable(
+                    headingRowHeight: isMobile ? 48 : 58,
+                    dataRowMinHeight: isMobile ? 52 : 60,
+                    dataRowMaxHeight: isMobile ? 58 : 66,
+                    horizontalMargin: isMobile ? 10 : 22,
+                    columnSpacing: isMobile ? 14 : 26,
+                    dividerThickness: 0.6,
+                    headingRowColor: WidgetStateProperty.all(
+                      ProductStyles.tableHeaderColor,
                     ),
+                    dataRowColor: WidgetStateProperty.resolveWith(
+                      (states) => ProductStyles.tableRowColor,
+                    ),
+                    columns: const [
+                      DataColumn(label: _HeaderText('Supplier')),
+                      DataColumn(label: _HeaderText('Description')),
+                      DataColumn(label: _HeaderText('Unit')),
+                      DataColumn(label: _HeaderText('Unit Value')),
+                      DataColumn(label: _HeaderText('Price')),
+                      DataColumn(label: _HeaderText('Qty')),
+                      DataColumn(label: _HeaderText('Total')),
+                      DataColumn(label: _HeaderText('Location')),
+                      DataColumn(label: _HeaderText('Action')),
+                    ],
+                    rows: items.map((item) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            SizedBox(
+                              width: isMobile ? 88 : 130,
+                              child: _CellText(_text(item['supplier_name'])),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: isMobile ? 110 : 180,
+                              child: _CellText(_text(item['description'])),
+                            ),
+                          ),
+                          DataCell(_UnitPill(_text(item['unit']))),
+                          DataCell(_CellText(_text(item['unit_value']))),
+                          DataCell(_CellText(_money(item['price']))),
+                          DataCell(_CellText(_text(item['quantity']))),
+                          DataCell(
+                            _CellText(_money(item['total']), isHighlight: true),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: isMobile ? 90 : 130,
+                              child: _CellText(_text(item['location'])),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _ActionButton(
+                                  icon: Icons.edit_rounded,
+                                  color: ProductStyles.primaryColor,
+                                  onTap: () => _openEditDialog(item),
+                                ),
+                                const SizedBox(width: 7),
+                                _ActionButton(
+                                  icon: Icons.delete_outline_rounded,
+                                  color: ProductStyles.dangerColor,
+                                  onTap: () => _confirmDelete(item),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
@@ -636,26 +617,28 @@ class _ProductPageState extends State<ProductPage> {
         decoration: isMobile
             ? ProductStyles.mobilePanelDecoration
             : ProductStyles.panelDecoration,
-        padding: EdgeInsets.all(isMobile ? 14 : 26),
+        padding: EdgeInsets.all(isMobile ? 12 : 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Product / Materials',
               style: isMobile
-                  ? ProductStyles.pageTitleMobileStyle
+                  ? ProductStyles.pageTitleMobileStyle.copyWith(fontSize: 22)
                   : ProductStyles.pageTitleStyle,
             ),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: 5),
+            Text(
               'View, update, and manage all saved materials.',
-              style: ProductStyles.pageSubtitleStyle,
+              style: ProductStyles.pageSubtitleStyle.copyWith(
+                fontSize: isMobile ? 12.5 : 14,
+              ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: isMobile ? 12 : 20),
             _buildStats(isMobile),
-            const SizedBox(height: 18),
+            SizedBox(height: isMobile ? 12 : 18),
             _buildSearchAndRefresh(isMobile),
-            const SizedBox(height: 18),
+            SizedBox(height: isMobile ? 12 : 18),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -705,7 +688,7 @@ class _UnitPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: ProductStyles.unitPillDecoration,
       child: Text(text, style: ProductStyles.unitPillTextStyle),
     );
@@ -728,16 +711,16 @@ class _ActionButton extends StatelessWidget {
     return Tooltip(
       message: icon == Icons.edit_rounded ? 'Edit' : 'Delete',
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(13),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(9),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.13),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(color: color.withOpacity(0.45)),
           ),
-          child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: color, size: 17),
         ),
       ),
     );
