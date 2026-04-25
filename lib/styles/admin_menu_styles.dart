@@ -46,8 +46,16 @@ class AdminMenuStyles {
     ],
   );
 
-  static final BoxDecoration brandBoxDecoration = const BoxDecoration(
-    color: Colors.transparent,
+  static final BoxDecoration brandBoxDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(16),
+    gradient: LinearGradient(
+      colors: [megaGreen.withOpacity(0.18), plutoGold.withOpacity(0.18)],
+    ),
+    border: Border.all(color: plutoGold.withOpacity(0.65)),
+    boxShadow: [
+      BoxShadow(color: plutoGold.withOpacity(0.16), blurRadius: 16),
+      BoxShadow(color: megaGreen.withOpacity(0.12), blurRadius: 16),
+    ],
   );
 
   static final BoxDecoration brandCollapsedDecoration = BoxDecoration(

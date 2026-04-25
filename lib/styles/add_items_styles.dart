@@ -1,47 +1,40 @@
 import 'package:flutter/material.dart';
 
 class AddItemsStyles {
-  static const Color primaryColor = Color(0xFF31C7E3);
-  static const Color textPrimary = Color(0xFFF4F7FF);
-  static const Color textSecondary = Color(0xFF9FAAC7);
-  static const Color borderColor = Color(0xFF1D3D7A);
-  static const Color inputFill = Color(0xFF061542);
-  static const Color panelCardColor = Color(0xFF0A1745);
+  static const Color megaGreen = Color(0xFF1FAF7A);
+  static const Color plutoGold = Color(0xFFE5C76B);
+
+  static const Color primaryColor = plutoGold;
+  static const Color textPrimary = Color(0xFFF9F2D7);
+  static const Color textSecondary = Color(0xFFC6B98F);
+  static const Color borderColor = plutoGold;
+  static const Color inputFill = Color(0xFF07120D);
+  static const Color panelCardColor = Color(0xFF0F1B14);
 
   static const BoxDecoration pageBackground = BoxDecoration(
     gradient: LinearGradient(
-      colors: [Color(0xFF020B2D), Color(0xFF041247), Color(0xFF020B2D)],
+      colors: [Color(0xFF03110B), Color(0xFF07180F), Color(0xFF020604)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
   );
 
   static final BoxDecoration panelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(32),
-    color: const Color(0x1AFFFFFF),
-    border: Border.all(color: borderColor, width: 1.2),
-    boxShadow: const [
-      BoxShadow(
-        color: Color(0x26000000),
-        blurRadius: 22,
-        offset: Offset(0, 10),
-      ),
-    ],
+    borderRadius: BorderRadius.circular(28),
+    gradient: const LinearGradient(
+      colors: [Color(0xFF0B1B13), Color(0xFF13140C)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    border: Border.all(color: plutoGold.withOpacity(0.85), width: 1.25),
   );
 
-  static final BoxDecoration mobilePanelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(24),
-    color: const Color(0x1AFFFFFF),
-    border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const [
-      BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 8)),
-    ],
-  );
+  static final BoxDecoration mobilePanelDecoration = panelDecoration;
 
   static final BoxDecoration formCardDecoration = BoxDecoration(
-    color: panelCardColor,
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: borderColor, width: 1.1),
+    color: panelCardColor,
+    border: Border.all(color: plutoGold.withOpacity(0.75), width: 1.15),
   );
 
   static const TextStyle pageTitleStyle = TextStyle(
@@ -71,8 +64,8 @@ class AddItemsStyles {
   );
 
   static ButtonStyle get saveButtonStyle => ElevatedButton.styleFrom(
-    backgroundColor: primaryColor,
-    foregroundColor: Colors.black,
+    backgroundColor: plutoGold,
+    foregroundColor: const Color(0xFF07100B),
     elevation: 0,
     padding: const EdgeInsets.symmetric(vertical: 18),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -93,9 +86,9 @@ class AddItemsStyles {
       prefixIcon: alignLabelTop
           ? Padding(
               padding: const EdgeInsets.only(left: 14, right: 10, bottom: 54),
-              child: Icon(prefixIcon, color: textSecondary, size: 24),
+              child: Icon(prefixIcon, color: plutoGold, size: 24),
             )
-          : Icon(prefixIcon, color: textSecondary, size: 24),
+          : Icon(prefixIcon, color: plutoGold, size: 24),
       prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       filled: true,
       fillColor: inputFill,
@@ -105,15 +98,15 @@ class AddItemsStyles {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: borderColor, width: 1.1),
+        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1.1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: primaryColor, width: 1.2),
+        borderSide: const BorderSide(color: plutoGold, width: 1.4),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: borderColor, width: 1.1),
+        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1.1),
       ),
     );
   }

@@ -26,8 +26,8 @@ class _AdminMenuState extends State<AdminMenu>
     super.initState();
     _brandController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2300),
-    )..repeat();
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -55,80 +55,50 @@ class _AdminMenuState extends State<AdminMenu>
     final collapsed = _isCollapsed && !mobile;
 
     if (collapsed) {
-      return AnimatedScale(
-        scale: 1,
-        duration: const Duration(milliseconds: 300),
-        child: Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: AdminMenuStyles.brandCollapsedDecoration,
-          child: const Text(
-            'MP',
-            style: AdminMenuStyles.brandCollapsedTextStyle,
-          ),
-        ),
-      );
+      return const SizedBox.shrink(); // ✅ wala nang MP kapag collapsed
     }
 
-    return AnimatedBuilder(
-      animation: _brandController,
-      builder: (context, _) {
-        return Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 7),
-          decoration: AdminMenuStyles.brandBoxDecoration,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              RichText(
-                text: const TextSpan(
-                  style: AdminMenuStyles.brandTextStyle,
-                  children: [
-                    TextSpan(
-                      text: 'MEGA ',
-                      style: AdminMenuStyles.brandMegaTextStyle,
-                    ),
-                    TextSpan(
-                      text: 'PLUTO',
-                      style: AdminMenuStyles.brandPlutoTextStyle,
-                    ),
-                  ],
-                ),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ShaderMask(
-                    blendMode: BlendMode.srcATop,
-                    shaderCallback: (bounds) {
-                      final x = -1.25 + (_brandController.value * 2.5);
-                      return LinearGradient(
-                        begin: Alignment(x, 0),
-                        end: Alignment(x + 0.45, 0),
-                        colors: [
-                          Colors.transparent,
-                          Colors.white.withOpacity(0.28),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.25, 0.5, 0.75],
-                      ).createShader(bounds);
-                    },
-                    child: RichText(
-                      text: const TextSpan(
-                        style: AdminMenuStyles.brandTextStyle,
-                        children: [
-                          TextSpan(text: 'MEGA '),
-                          TextSpan(text: 'PLUTO'),
-                        ],
-                      ),
+    return SizedBox(
+      height: 58,
+      child: AnimatedBuilder(
+        animation: _brandController,
+        builder: (context, _) {
+          final glow = 0.35 + (_brandController.value * 0.35);
+
+          return Padding(
+            padding: const EdgeInsets.only(top: 19), // ✅ pababa konti
+            child: RichText(
+              text: TextSpan(
+                style: AdminMenuStyles.brandTextStyle,
+                children: [
+                  TextSpan(
+                    text: 'MEGA ',
+                    style: AdminMenuStyles.brandMegaTextStyle.copyWith(
+                      shadows: [
+                        Shadow(
+                          color: AdminMenuStyles.megaGreen.withOpacity(glow),
+                          blurRadius: 9,
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  TextSpan(
+                    text: 'PLUTO',
+                    style: AdminMenuStyles.brandPlutoTextStyle.copyWith(
+                      shadows: [
+                        Shadow(
+                          color: AdminMenuStyles.plutoGold.withOpacity(glow),
+                          blurRadius: 9,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -192,33 +162,24 @@ class _AdminMenuState extends State<AdminMenu>
         children: [
           SizedBox(
             height: 58,
-            child: _isCollapsed
-                ? Center(
-                    child: IconButton(
-                      onPressed: _toggleSidebar,
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        color: AdminMenuStyles.textPrimary,
-                        size: 28,
-                      ),
-                    ),
-                  )
-                : Row(
-                    children: [
-                      IconButton(
-                        onPressed: _toggleSidebar,
-                        icon: const Icon(
-                          Icons.menu_rounded,
-                          color: AdminMenuStyles.textPrimary,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildBrand()),
-                    ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: _toggleSidebar,
+                  icon: const Icon(
+                    Icons.menu_rounded,
+                    color: AdminMenuStyles.textPrimary,
+                    size: 28,
                   ),
+                ),
+                if (!_isCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildBrand()),
+                ],
+              ],
+            ),
           ),
-          if (_isCollapsed) ...[const SizedBox(height: 10), _buildBrand()],
           const SizedBox(height: 26),
           _menuTiles(isMobile: false),
           const Spacer(),
