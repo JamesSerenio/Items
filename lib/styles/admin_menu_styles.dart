@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
 
 class AdminMenuStyles {
-  static const Color backgroundColor = Color(0xFF0A1022);
-  static const Color backgroundTop = Color(0xFF0C1430);
-  static const Color backgroundBottom = Color(0xFF070B18);
+  static const Color backgroundTop = Color(0xFF03110B);
+  static const Color backgroundMid = Color(0xFF07180F);
+  static const Color backgroundBottom = Color(0xFF020604);
 
-  static const Color sidebarColor = Color(0xFF131B37);
-  static const Color sidebarColor2 = Color(0xFF10172F);
-  static const Color panelColor = Color(0xFF151D3A);
-  static const Color panelColor2 = Color(0xFF10182F);
-
-  static const Color borderColor = Color(0xFF24345F);
-  static const Color primaryColor = Color(0xFF24D6F2);
+  static const Color sidebarColor = Color(0xFF07120D);
+  static const Color sidebarColor2 = Color(0xFF141006);
 
   static const Color megaGreen = Color(0xFF1FAF7A);
+  static const Color megaGreenSoft = Color(0xFF42D99D);
   static const Color plutoGold = Color(0xFFE5C76B);
+  static const Color plutoGoldDeep = Color(0xFFB88735);
 
-  static const Color textPrimary = Color(0xFFF4F8FF);
-  static const Color textSecondary = Color(0xFFA7B4D3);
-  static const Color textMuted = Color(0xFF7182A8);
+  static const Color textPrimary = Color(0xFFF9F2D7);
+  static const Color textSecondary = Color(0xFFC6B98F);
+  static const Color textMuted = Color(0xFF8B8061);
 
-  static final BoxDecoration pageBackground = const BoxDecoration(
+  static const Color borderColor = plutoGoldDeep;
+  static const Color primaryColor = plutoGold;
+
+  static const BoxDecoration pageBackground = BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: <Color>[backgroundTop, backgroundColor, backgroundBottom],
+      colors: [backgroundTop, backgroundMid, backgroundBottom],
     ),
   );
 
@@ -33,51 +33,49 @@ class AdminMenuStyles {
     gradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: <Color>[sidebarColor, sidebarColor2],
+      colors: [sidebarColor, sidebarColor2],
     ),
-    border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const <BoxShadow>[
+    border: Border.all(color: plutoGoldDeep.withOpacity(0.65), width: 1.2),
+    boxShadow: [
       BoxShadow(
-        color: Color(0x33000000),
+        color: Colors.black.withOpacity(0.40),
         blurRadius: 30,
-        offset: Offset(0, 18),
+        offset: const Offset(0, 18),
       ),
-      BoxShadow(color: Color(0x1424D6F2), blurRadius: 20),
+      BoxShadow(color: megaGreen.withOpacity(0.12), blurRadius: 22),
+      BoxShadow(color: plutoGold.withOpacity(0.12), blurRadius: 22),
     ],
   );
 
   static final BoxDecoration brandBoxDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(16),
     gradient: LinearGradient(
-      colors: [megaGreen.withOpacity(0.12), plutoGold.withOpacity(0.09)],
+      colors: [megaGreen.withOpacity(0.16), plutoGold.withOpacity(0.15)],
     ),
-    border: Border.all(color: plutoGold.withOpacity(0.20)),
+    border: Border.all(color: plutoGold.withOpacity(0.38)),
     boxShadow: [
-      BoxShadow(
-        color: plutoGold.withOpacity(0.08),
-        blurRadius: 16,
-        offset: const Offset(0, 6),
-      ),
+      BoxShadow(color: plutoGold.withOpacity(0.12), blurRadius: 16),
+      BoxShadow(color: megaGreen.withOpacity(0.10), blurRadius: 16),
     ],
   );
 
   static final BoxDecoration brandCollapsedDecoration = BoxDecoration(
     shape: BoxShape.circle,
     gradient: LinearGradient(
-      colors: [megaGreen.withOpacity(0.22), plutoGold.withOpacity(0.18)],
+      colors: [megaGreen.withOpacity(0.32), plutoGold.withOpacity(0.25)],
     ),
-    border: Border.all(color: plutoGold.withOpacity(0.35)),
+    border: Border.all(color: plutoGold.withOpacity(0.55)),
   );
 
   static const TextStyle brandTextStyle = TextStyle(
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: FontWeight.w900,
-    letterSpacing: 1.1,
+    letterSpacing: 1,
     height: 1,
   );
 
   static const TextStyle brandMegaTextStyle = TextStyle(
-    color: megaGreen,
+    color: megaGreenSoft,
     shadows: [Shadow(color: Color(0x661FAF7A), blurRadius: 8)],
   );
 
@@ -90,34 +88,34 @@ class AdminMenuStyles {
     fontSize: 15,
     fontWeight: FontWeight.w900,
     color: plutoGold,
-    letterSpacing: 0.5,
   );
 
   static final BoxDecoration activeMenuDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(18),
     gradient: LinearGradient(
-      colors: [megaGreen.withOpacity(0.20), plutoGold.withOpacity(0.13)],
+      colors: [megaGreen.withOpacity(0.30), plutoGold.withOpacity(0.20)],
     ),
-    border: Border.all(color: plutoGold.withOpacity(0.28)),
+    border: Border.all(color: plutoGold.withOpacity(0.45), width: 1.1),
     boxShadow: [
       BoxShadow(
-        color: megaGreen.withOpacity(0.12),
-        blurRadius: 14,
+        color: megaGreen.withOpacity(0.16),
+        blurRadius: 16,
         offset: const Offset(0, 6),
       ),
+      BoxShadow(color: plutoGold.withOpacity(0.13), blurRadius: 16),
     ],
   );
 
   static final BoxDecoration inactiveMenuDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(18),
     color: Colors.transparent,
-    border: Border.all(color: Colors.transparent, width: 1),
+    border: Border.all(color: Colors.transparent),
   );
 
   static const TextStyle menuTextStyle = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w800,
-    color: Colors.white,
+    color: textPrimary,
   );
 
   static const TextStyle menuInactiveTextStyle = TextStyle(
@@ -127,8 +125,8 @@ class AdminMenuStyles {
   );
 
   static final ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: primaryColor,
-    foregroundColor: const Color(0xFF07111F),
+    backgroundColor: plutoGold,
+    foregroundColor: const Color(0xFF07100B),
     elevation: 0,
     minimumSize: const Size(double.infinity, 52),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),

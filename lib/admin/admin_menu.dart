@@ -26,7 +26,7 @@ class _AdminMenuState extends State<AdminMenu>
     super.initState();
     _brandController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2300),
     )..repeat();
   }
 
@@ -55,12 +55,19 @@ class _AdminMenuState extends State<AdminMenu>
     final collapsed = _isCollapsed && !mobile;
 
     if (collapsed) {
-      return Container(
-        width: 42,
-        height: 42,
-        alignment: Alignment.center,
-        decoration: AdminMenuStyles.brandCollapsedDecoration,
-        child: const Text('MP', style: AdminMenuStyles.brandCollapsedTextStyle),
+      return AnimatedScale(
+        scale: 1,
+        duration: const Duration(milliseconds: 300),
+        child: Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: AdminMenuStyles.brandCollapsedDecoration,
+          child: const Text(
+            'MP',
+            style: AdminMenuStyles.brandCollapsedTextStyle,
+          ),
+        ),
       );
     }
 
@@ -94,7 +101,7 @@ class _AdminMenuState extends State<AdminMenu>
                   child: ShaderMask(
                     blendMode: BlendMode.srcATop,
                     shaderCallback: (bounds) {
-                      final x = -1.2 + (_brandController.value * 2.4);
+                      final x = -1.25 + (_brandController.value * 2.5);
                       return LinearGradient(
                         begin: Alignment(x, 0),
                         end: Alignment(x + 0.45, 0),
@@ -220,7 +227,7 @@ class _AdminMenuState extends State<AdminMenu>
               onPressed: _logout,
               icon: const Icon(
                 Icons.logout_rounded,
-                color: AdminMenuStyles.primaryColor,
+                color: AdminMenuStyles.plutoGold,
                 size: 28,
               ),
             )
@@ -312,7 +319,6 @@ class _AdminMenuState extends State<AdminMenu>
             surfaceTintColor: Colors.transparent,
             iconTheme: const IconThemeData(color: AdminMenuStyles.textPrimary),
             titleSpacing: 0,
-            title: _buildBrand(mobile: true),
           ),
           body: SafeArea(
             top: false,
