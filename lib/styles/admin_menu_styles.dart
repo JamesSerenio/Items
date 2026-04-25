@@ -12,8 +12,9 @@ class AdminMenuStyles {
 
   static const Color borderColor = Color(0xFF24345F);
   static const Color primaryColor = Color(0xFF24D6F2);
-  static const Color secondaryColor = Color(0xFF8B5CF6);
-  static const Color accentPink = Color(0xFFEC4899);
+
+  static const Color megaGreen = Color(0xFF1FAF7A);
+  static const Color plutoGold = Color(0xFFE5C76B);
 
   static const Color textPrimary = Color(0xFFF4F8FF);
   static const Color textSecondary = Color(0xFFA7B4D3);
@@ -41,43 +42,69 @@ class AdminMenuStyles {
         blurRadius: 30,
         offset: Offset(0, 18),
       ),
-      BoxShadow(color: Color(0x1424D6F2), blurRadius: 20, offset: Offset(0, 0)),
+      BoxShadow(color: Color(0x1424D6F2), blurRadius: 20),
     ],
   );
 
-  static final BoxDecoration panelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(28),
-    gradient: const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: <Color>[panelColor, panelColor2],
+  static final BoxDecoration brandBoxDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(16),
+    gradient: LinearGradient(
+      colors: [megaGreen.withOpacity(0.12), plutoGold.withOpacity(0.09)],
     ),
-    border: Border.all(color: borderColor, width: 1.1),
-    boxShadow: const <BoxShadow>[
+    border: Border.all(color: plutoGold.withOpacity(0.20)),
+    boxShadow: [
       BoxShadow(
-        color: Color(0x22000000),
-        blurRadius: 24,
-        offset: Offset(0, 12),
+        color: plutoGold.withOpacity(0.08),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
       ),
     ],
   );
 
-  static final BoxDecoration mobilePanelDecoration = BoxDecoration(
-    borderRadius: BorderRadius.circular(22),
-    gradient: const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: <Color>[panelColor, panelColor2],
+  static final BoxDecoration brandCollapsedDecoration = BoxDecoration(
+    shape: BoxShape.circle,
+    gradient: LinearGradient(
+      colors: [megaGreen.withOpacity(0.22), plutoGold.withOpacity(0.18)],
     ),
-    border: Border.all(color: borderColor, width: 1.0),
+    border: Border.all(color: plutoGold.withOpacity(0.35)),
+  );
+
+  static const TextStyle brandTextStyle = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 1.1,
+    height: 1,
+  );
+
+  static const TextStyle brandMegaTextStyle = TextStyle(
+    color: megaGreen,
+    shadows: [Shadow(color: Color(0x661FAF7A), blurRadius: 8)],
+  );
+
+  static const TextStyle brandPlutoTextStyle = TextStyle(
+    color: plutoGold,
+    shadows: [Shadow(color: Color(0x66E5C76B), blurRadius: 8)],
+  );
+
+  static const TextStyle brandCollapsedTextStyle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w900,
+    color: plutoGold,
+    letterSpacing: 0.5,
   );
 
   static final BoxDecoration activeMenuDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(18),
-    color: const Color(0x1624D6F2),
-    border: Border.all(color: const Color(0x3324D6F2), width: 1),
-    boxShadow: const <BoxShadow>[
-      BoxShadow(color: Color(0x1424D6F2), blurRadius: 16, offset: Offset(0, 0)),
+    gradient: LinearGradient(
+      colors: [megaGreen.withOpacity(0.20), plutoGold.withOpacity(0.13)],
+    ),
+    border: Border.all(color: plutoGold.withOpacity(0.28)),
+    boxShadow: [
+      BoxShadow(
+        color: megaGreen.withOpacity(0.12),
+        blurRadius: 14,
+        offset: const Offset(0, 6),
+      ),
     ],
   );
 
@@ -89,44 +116,14 @@ class AdminMenuStyles {
 
   static const TextStyle menuTextStyle = TextStyle(
     fontSize: 15,
-    fontWeight: FontWeight.w600,
-    color: textPrimary,
+    fontWeight: FontWeight.w800,
+    color: Colors.white,
   );
 
   static const TextStyle menuInactiveTextStyle = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w500,
     color: textSecondary,
-  );
-
-  static const TextStyle pageTitleStyle = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.w800,
-    color: textPrimary,
-  );
-
-  static const TextStyle pageTitleMobileStyle = TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.w800,
-    color: textPrimary,
-  );
-
-  static const TextStyle pageSubtitleStyle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: textSecondary,
-  );
-
-  static const TextStyle cardTitleStyle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: textSecondary,
-  );
-
-  static const TextStyle cardValueStyle = TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.w800,
-    color: textPrimary,
   );
 
   static final ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(
@@ -136,26 +133,4 @@ class AdminMenuStyles {
     minimumSize: const Size(double.infinity, 52),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
   );
-
-  static InputDecoration inputDecoration({
-    required String hintText,
-    required IconData prefixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(color: textMuted, fontSize: 14),
-      prefixIcon: Icon(prefixIcon, color: textSecondary),
-      filled: true,
-      fillColor: const Color(0xFF0E1730),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: borderColor, width: 1.1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: primaryColor, width: 1.4),
-      ),
-    );
-  }
 }

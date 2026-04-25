@@ -379,7 +379,7 @@ class _ProductPageState extends State<ProductPage> {
       child: Container(
         height: isMobile ? 68 : 92,
         padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 10 : 18,
+          horizontal: isMobile ? 7 : 18,
           vertical: isMobile ? 8 : 16,
         ),
         decoration: ProductStyles.statCardDecoration.copyWith(
@@ -388,8 +388,8 @@ class _ProductPageState extends State<ProductPage> {
         child: Row(
           children: [
             Container(
-              width: isMobile ? 34 : 48,
-              height: isMobile ? 34 : 48,
+              width: isMobile ? 28 : 48,
+              height: isMobile ? 28 : 48,
               decoration: ProductStyles.statIconDecoration.copyWith(
                 borderRadius: BorderRadius.circular(isMobile ? 11 : 15),
               ),
@@ -399,7 +399,7 @@ class _ProductPageState extends State<ProductPage> {
                 size: isMobile ? 17 : 22,
               ),
             ),
-            SizedBox(width: isMobile ? 8 : 13),
+            SizedBox(width: isMobile ? 6 : 13),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -419,7 +419,7 @@ class _ProductPageState extends State<ProductPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: ProductStyles.statValueStyle.copyWith(
-                      fontSize: isMobile ? 13.5 : 18,
+                      fontSize: isMobile ? 12.5 : 18,
                     ),
                   ),
                 ],
@@ -449,8 +449,10 @@ class _ProductPageState extends State<ProductPage> {
         ),
         SizedBox(width: isMobile ? 8 : 14),
         _compactStatCard(
-          label: 'Total Value',
-          value: '₱${_grandTotal.toStringAsFixed(2)}',
+          label: isMobile ? 'Value' : 'Total Value',
+          value: isMobile
+              ? _money(_grandTotal)
+              : '₱${_grandTotal.toStringAsFixed(2)}',
           icon: Icons.payments_outlined,
           isMobile: isMobile,
         ),

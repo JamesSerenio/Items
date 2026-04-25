@@ -14,20 +14,34 @@ class AdminMenu extends StatefulWidget {
   State<AdminMenu> createState() => _AdminMenuState();
 }
 
-class _AdminMenuState extends State<AdminMenu> {
+class _AdminMenuState extends State<AdminMenu>
+    with SingleTickerProviderStateMixin {
   bool _isCollapsed = false;
   AdminSection _selectedSection = AdminSection.dashboard;
 
+  late final AnimationController _brandController;
+
+  @override
+  void initState() {
+    super.initState();
+    _brandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _brandController.dispose();
+    super.dispose();
+  }
+
   void _selectSection(AdminSection section) {
-    setState(() {
-      _selectedSection = section;
-    });
+    setState(() => _selectedSection = section);
   }
 
   void _toggleSidebar() {
-    setState(() {
-      _isCollapsed = !_isCollapsed;
-    });
+    setState(() => _isCollapsed = !_isCollapsed);
   }
 
   void _logout() {
@@ -37,25 +51,77 @@ class _AdminMenuState extends State<AdminMenu> {
     );
   }
 
-  Widget _buildBrand() {
-    return RichText(
-      text: const TextSpan(
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-        children: [
-          TextSpan(
-            text: 'MEGA',
-            style: TextStyle(color: AdminMenuStyles.textPrimary),
+  Widget _buildBrand({bool mobile = false}) {
+    final collapsed = _isCollapsed && !mobile;
+
+    if (collapsed) {
+      return Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        decoration: AdminMenuStyles.brandCollapsedDecoration,
+        child: const Text('MP', style: AdminMenuStyles.brandCollapsedTextStyle),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _brandController,
+      builder: (context, _) {
+        return Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: AdminMenuStyles.brandBoxDecoration,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  style: AdminMenuStyles.brandTextStyle,
+                  children: [
+                    TextSpan(
+                      text: 'MEGA ',
+                      style: AdminMenuStyles.brandMegaTextStyle,
+                    ),
+                    TextSpan(
+                      text: 'PLUTO',
+                      style: AdminMenuStyles.brandPlutoTextStyle,
+                    ),
+                  ],
+                ),
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ShaderMask(
+                    blendMode: BlendMode.srcATop,
+                    shaderCallback: (bounds) {
+                      final x = -1.2 + (_brandController.value * 2.4);
+                      return LinearGradient(
+                        begin: Alignment(x, 0),
+                        end: Alignment(x + 0.45, 0),
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withOpacity(0.28),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.25, 0.5, 0.75],
+                      ).createShader(bounds);
+                    },
+                    child: RichText(
+                      text: const TextSpan(
+                        style: AdminMenuStyles.brandTextStyle,
+                        children: [
+                          TextSpan(text: 'MEGA '),
+                          TextSpan(text: 'PLUTO'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextSpan(
-            text: 'PLUTO',
-            style: TextStyle(color: AdminMenuStyles.primaryColor),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -118,7 +184,7 @@ class _AdminMenuState extends State<AdminMenu> {
       child: Column(
         children: [
           SizedBox(
-            height: 52,
+            height: 58,
             child: _isCollapsed
                 ? Center(
                     child: IconButton(
@@ -141,15 +207,11 @@ class _AdminMenuState extends State<AdminMenu> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _buildBrand(),
-                        ),
-                      ),
+                      Expanded(child: _buildBrand()),
                     ],
                   ),
           ),
+          if (_isCollapsed) ...[const SizedBox(height: 10), _buildBrand()],
           const SizedBox(height: 26),
           _menuTiles(isMobile: false),
           const Spacer(),
@@ -188,15 +250,10 @@ class _AdminMenuState extends State<AdminMenu> {
       child: Column(
         children: [
           SizedBox(
-            height: 52,
+            height: 58,
             child: Row(
               children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildBrand(),
-                  ),
-                ),
+                Expanded(child: _buildBrand(mobile: true)),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
@@ -229,8 +286,8 @@ class _AdminMenuState extends State<AdminMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
-    final bool isMobile = width < 768;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 768;
 
     if (isMobile) {
       return Container(
@@ -251,19 +308,16 @@ class _AdminMenuState extends State<AdminMenu> {
           ),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
-            scrolledUnderElevation: 0,
             elevation: 0,
             surfaceTintColor: Colors.transparent,
             iconTheme: const IconThemeData(color: AdminMenuStyles.textPrimary),
             titleSpacing: 0,
-            title: _buildBrand(),
+            title: _buildBrand(mobile: true),
           ),
           body: SafeArea(
             top: false,
             bottom: false,
             child: Container(
-              width: double.infinity,
-              height: double.infinity,
               decoration: AdminMenuStyles.pageBackground,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -326,7 +380,9 @@ class _SidebarMenuTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           width: double.infinity,
           padding: EdgeInsets.symmetric(
             horizontal: isCollapsed ? 0 : 16,
@@ -340,7 +396,7 @@ class _SidebarMenuTile extends StatelessWidget {
                   child: Icon(
                     icon,
                     color: isActive
-                        ? AdminMenuStyles.primaryColor
+                        ? AdminMenuStyles.plutoGold
                         : AdminMenuStyles.textSecondary,
                     size: 24,
                   ),
@@ -350,7 +406,7 @@ class _SidebarMenuTile extends StatelessWidget {
                     Icon(
                       icon,
                       color: isActive
-                          ? AdminMenuStyles.primaryColor
+                          ? AdminMenuStyles.plutoGold
                           : AdminMenuStyles.textSecondary,
                       size: 24,
                     ),
