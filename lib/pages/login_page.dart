@@ -23,6 +23,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   late final AnimationController _floatController;
   late final AnimationController _cardController;
   late final AnimationController _contentController;
+  late final AnimationController _logoController;
 
   late final Animation<double> _cardScale;
   late final Animation<double> _cardOpacity;
@@ -56,6 +57,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
+
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
 
     _cardController = AnimationController(
       vsync: this,
@@ -163,6 +169,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _emailController.dispose();
     _passwordController.dispose();
     _floatController.dispose();
+    _logoController.dispose();
     _cardController.dispose();
     _contentController.dispose();
     super.dispose();
@@ -171,14 +178,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   String? _validateEmail(String? value) {
     final String email = value?.trim() ?? '';
 
-    if (email.isEmpty) {
-      return 'Email is required';
-    }
+    if (email.isEmpty) return 'Email is required';
 
     final RegExp emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(email)) {
-      return 'Enter a valid email';
-    }
+    if (!emailRegex.hasMatch(email)) return 'Enter a valid email';
 
     return null;
   }
@@ -186,13 +189,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   String? _validatePassword(String? value) {
     final String password = value ?? '';
 
-    if (password.isEmpty) {
-      return 'Password is required';
-    }
-
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
+    if (password.isEmpty) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
 
     return null;
   }
@@ -248,9 +246,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       _showError('Login failed');
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _showError(String message) {
@@ -266,6 +262,86 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLogoHeader(bool isMobile) {
+    final double logoHeight = isMobile ? 145 : 160;
+
+    return Column(
+      children: [
+        AnimatedBuilder(
+          animation: _logoController,
+          builder: (context, child) {
+            final double pulse =
+                1.0 + (math.sin(_logoController.value * math.pi) * 0.035);
+            final double glow =
+                0.20 + (math.sin(_logoController.value * math.pi) * 0.22);
+
+            return Transform.scale(
+              scale: pulse,
+              child: Container(
+                height: logoHeight,
+                width: isMobile ? 230 : 260,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(35),
+                  boxShadow: [
+                    BoxShadow(
+                      color: LoginStyles.primaryColor.withOpacity(glow),
+                      blurRadius: 52,
+                      spreadRadius: 5,
+                    ),
+                    BoxShadow(
+                      color: LoginStyles.secondaryColor.withOpacity(
+                        glow * 0.65,
+                      ),
+                      blurRadius: 42,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Image.asset(
+                  'assets/logo.png',
+                  height: logoHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            );
+          },
+        ),
+        Transform.translate(
+          offset: const Offset(0, -18),
+          child: Container(
+            width: isMobile ? 118 : 135,
+            height: 5,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(99),
+              gradient: LinearGradient(
+                colors: [
+                  LoginStyles.primaryColor.withOpacity(0.00),
+                  LoginStyles.primaryColor.withOpacity(0.95),
+                  LoginStyles.secondaryColor.withOpacity(1),
+                  LoginStyles.accentGreen.withOpacity(0.95),
+                  LoginStyles.primaryColor.withOpacity(0.00),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: LoginStyles.primaryColor.withOpacity(0.38),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+                BoxShadow(
+                  color: LoginStyles.secondaryColor.withOpacity(0.28),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -287,27 +363,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             return Stack(
               children: [
                 _buildAnimatedGlow(
-                  top: -90 + math.sin(t) * 35,
-                  left: -80 + math.cos(t * 0.9) * 40,
+                  top: -95 + math.sin(t) * 35,
+                  left: -85 + math.cos(t * 0.9) * 40,
                   size: 260,
-                  color: LoginStyles.primaryColor.withOpacity(0.13),
+                  color: LoginStyles.primaryColor.withOpacity(0.12),
                 ),
                 _buildAnimatedGlow(
                   top: 90 + math.cos(t * 1.2) * 30,
                   right: -120 + math.sin(t * 1.1) * 45,
-                  size: 220,
+                  size: 225,
                   color: LoginStyles.secondaryColor.withOpacity(0.10),
                 ),
                 _buildAnimatedGlow(
                   bottom: -120 + math.cos(t * 0.8) * 35,
                   right: -70 + math.sin(t * 1.4) * 30,
-                  size: 300,
-                  color: LoginStyles.accentPink.withOpacity(0.09),
+                  size: 310,
+                  color: LoginStyles.accentGreen.withOpacity(0.09),
                 ),
                 _buildAnimatedGlow(
                   bottom: 120 + math.sin(t * 1.3) * 25,
                   left: 120 + math.cos(t) * 30,
-                  size: 140,
+                  size: 150,
                   color: LoginStyles.primaryColor.withOpacity(0.08),
                 ),
                 Center(
@@ -322,12 +398,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         scale: _cardScale,
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxWidth: isMobile ? 320 : 350,
+                            maxWidth: isMobile ? 340 : 390,
                           ),
                           child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isMobile ? 22 : 28,
-                              vertical: isMobile ? 24 : 30,
+                            padding: EdgeInsets.fromLTRB(
+                              isMobile ? 24 : 32,
+                              isMobile ? 14 : 16,
+                              isMobile ? 24 : 32,
+                              isMobile ? 26 : 30,
                             ),
                             decoration: LoginStyles.cardDecoration,
                             child: Form(
@@ -341,15 +419,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       opacity: _titleFade,
                                       child: SlideTransition(
                                         position: _titleSlide,
-                                        child: const Text(
-                                          'LOGIN',
-                                          style: LoginStyles.titleStyle,
-                                          textAlign: TextAlign.center,
-                                        ),
+                                        child: _buildLogoHeader(isMobile),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 30),
+                                  const SizedBox(height: 2),
                                   FadeTransition(
                                     opacity: _emailLabelFade,
                                     child: SlideTransition(
@@ -360,7 +434,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 9),
                                   FadeTransition(
                                     opacity: _emailFieldFade,
                                     child: SlideTransition(
@@ -379,7 +453,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 17),
                                   FadeTransition(
                                     opacity: _passwordLabelFade,
                                     child: SlideTransition(
@@ -390,7 +464,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 9),
                                   FadeTransition(
                                     opacity: _passwordFieldFade,
                                     child: SlideTransition(
@@ -427,7 +501,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 28),
+                                  const SizedBox(height: 27),
                                   FadeTransition(
                                     opacity: _buttonFade,
                                     child: SlideTransition(
@@ -442,9 +516,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                             boxShadow: [
                                               BoxShadow(
                                                 color: LoginStyles.primaryColor
-                                                    .withOpacity(0.28),
-                                                blurRadius: 24,
-                                                offset: const Offset(0, 8),
+                                                    .withOpacity(0.30),
+                                                blurRadius: 26,
+                                                offset: const Offset(0, 9),
                                               ),
                                             ],
                                           ),
@@ -461,7 +535,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                                         CircularProgressIndicator(
                                                           strokeWidth: 2.5,
                                                           color: Color(
-                                                            0xFF07111F,
+                                                            0xFF07100B,
                                                           ),
                                                         ),
                                                   )
@@ -513,7 +587,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             shape: BoxShape.circle,
             color: color,
             boxShadow: [
-              BoxShadow(color: color, blurRadius: 100, spreadRadius: 20),
+              BoxShadow(color: color, blurRadius: 110, spreadRadius: 22),
             ],
           ),
         ),
