@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class OrderStyles {
-  // ===== COLORS =====
   static const Color megaGreen = Color(0xFF1FAF7A);
   static const Color megaGreenSoft = Color(0xFF42D99D);
 
@@ -20,7 +19,6 @@ class OrderStyles {
   static const Color dangerColor = Color(0xFFFF6B6B);
   static const Color successColor = Color(0xFF42D99D);
 
-  // ===== BACKGROUND =====
   static const BoxDecoration pageBackground = BoxDecoration(
     gradient: LinearGradient(
       colors: [Color(0xFF03110B), Color(0xFF07180F), Color(0xFF020604)],
@@ -29,7 +27,6 @@ class OrderStyles {
     ),
   );
 
-  // ===== PANEL =====
   static final BoxDecoration panelDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(32),
     gradient: const LinearGradient(
@@ -48,7 +45,6 @@ class OrderStyles {
 
   static final BoxDecoration mobilePanelDecoration = panelDecoration;
 
-  // ===== STAT CARDS =====
   static final BoxDecoration statCardDecoration = BoxDecoration(
     color: panelCardColor,
     borderRadius: BorderRadius.circular(22),
@@ -61,7 +57,6 @@ class OrderStyles {
     border: Border.all(color: plutoGold.withOpacity(0.7)),
   );
 
-  // ===== TABLE =====
   static final BoxDecoration tableOuterDecoration = BoxDecoration(
     color: panelCardColor,
     borderRadius: BorderRadius.circular(24),
@@ -71,7 +66,6 @@ class OrderStyles {
   static Color get tableHeaderColor => const Color(0xFF0F2A1F);
   static Color get tableRowColor => const Color(0xFF07140F);
 
-  // ===== CART PANEL =====
   static final BoxDecoration cartPanelDecoration = BoxDecoration(
     color: panelCardColor,
     borderRadius: BorderRadius.circular(24),
@@ -97,12 +91,6 @@ class OrderStyles {
     border: Border.all(color: megaGreenSoft.withOpacity(0.32)),
   );
 
-  static final BoxDecoration cartIconDecoration = BoxDecoration(
-    color: plutoGold.withOpacity(0.12),
-    borderRadius: BorderRadius.circular(15),
-    border: Border.all(color: plutoGold.withOpacity(0.45)),
-  );
-
   static final BoxDecoration totalBoxDecoration = BoxDecoration(
     gradient: LinearGradient(
       colors: [plutoGold.withOpacity(0.20), megaGreen.withOpacity(0.13)],
@@ -111,7 +99,6 @@ class OrderStyles {
     border: Border.all(color: plutoGold.withOpacity(0.55)),
   );
 
-  // ===== BADGES =====
   static final BoxDecoration unitPillDecoration = BoxDecoration(
     color: plutoGold.withOpacity(0.15),
     borderRadius: BorderRadius.circular(999),
@@ -136,7 +123,52 @@ class OrderStyles {
     border: Border.all(color: plutoGold.withOpacity(0.45)),
   );
 
-  // ===== TEXT =====
+  static final BoxDecoration topIconDecoration = BoxDecoration(
+    color: panelCardColor,
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(color: plutoGold.withOpacity(0.55)),
+  );
+
+  static final BoxDecoration topIconActiveDecoration = BoxDecoration(
+    gradient: LinearGradient(
+      colors: [plutoGold.withOpacity(0.28), megaGreen.withOpacity(0.18)],
+    ),
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(color: plutoGold),
+    boxShadow: [BoxShadow(color: plutoGold.withOpacity(0.22), blurRadius: 18)],
+  );
+
+  static final BoxDecoration badgeDecoration = BoxDecoration(
+    color: plutoGold,
+    borderRadius: BorderRadius.circular(99),
+    border: Border.all(color: Colors.black.withOpacity(0.25)),
+  );
+
+  static final BoxDecoration flyIconDecoration = BoxDecoration(
+    color: plutoGold,
+    borderRadius: BorderRadius.circular(99),
+    boxShadow: [BoxShadow(color: plutoGold.withOpacity(0.55), blurRadius: 18)],
+  );
+
+  static final BoxDecoration popupDecoration = BoxDecoration(
+    color: panelCardColor,
+    borderRadius: BorderRadius.circular(26),
+    border: Border.all(color: plutoGold.withOpacity(0.7)),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.55),
+        blurRadius: 24,
+        offset: const Offset(0, 14),
+      ),
+    ],
+  );
+
+  static final BoxDecoration purchasePaperDecoration = BoxDecoration(
+    color: const Color(0xFFFAFAF7),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: Colors.black54),
+  );
+
   static const TextStyle pageTitleStyle = TextStyle(
     color: textPrimary,
     fontSize: 30,
@@ -247,7 +279,31 @@ class OrderStyles {
     fontWeight: FontWeight.w900,
   );
 
-  // ===== SEARCH =====
+  static const TextStyle badgeTextStyle = TextStyle(
+    color: Colors.black,
+    fontSize: 11,
+    fontWeight: FontWeight.w900,
+  );
+
+  static const TextStyle popupTitleStyle = TextStyle(
+    color: textPrimary,
+    fontSize: 20,
+    fontWeight: FontWeight.w900,
+  );
+
+  static const TextStyle purchaseTitleStyle = TextStyle(
+    color: Colors.black,
+    fontSize: 24,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 1,
+  );
+
+  static const TextStyle purchaseSubStyle = TextStyle(
+    color: Colors.black87,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+  );
+
   static InputDecoration get searchDecoration {
     return InputDecoration(
       hintStyle: const TextStyle(color: textSecondary),
@@ -265,7 +321,23 @@ class OrderStyles {
     );
   }
 
-  // ===== BUTTONS =====
+  static InputDecoration get descriptionInputDecoration {
+    return InputDecoration(
+      hintText: 'Write description here...',
+      hintStyle: const TextStyle(color: textSecondary),
+      filled: true,
+      fillColor: inputFill,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: plutoGold.withOpacity(0.5)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: plutoGold),
+      ),
+    );
+  }
+
   static ButtonStyle get refreshButtonStyle {
     return IconButton.styleFrom(
       backgroundColor: plutoGold,
@@ -292,6 +364,14 @@ class OrderStyles {
       foregroundColor: Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 0,
+    );
+  }
+
+  static ButtonStyle get cancelButtonStyle {
+    return OutlinedButton.styleFrom(
+      foregroundColor: textPrimary,
+      side: BorderSide(color: plutoGold.withOpacity(0.6)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     );
   }
 }
