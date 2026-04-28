@@ -222,6 +222,74 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     });
   }
 
+  void _removeCartItem(int index) {
+    setState(() {
+      _cart.removeAt(index);
+    });
+  }
+
+  Future<void> _editCartQty(int index) async {
+    final item = _cart[index];
+    final controller = TextEditingController(text: _text(item['quantity']));
+
+    final result = await showDialog<num>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: OrderStyles.panelCardColor,
+        title: const Text(
+          'Edit Quantity',
+          style: TextStyle(color: OrderStyles.textPrimary),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: OrderStyles.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter quantity',
+            hintStyle: const TextStyle(color: OrderStyles.textSecondary),
+            filled: true,
+            fillColor: OrderStyles.inputFill,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final qty = num.tryParse(controller.text.trim());
+              Navigator.pop(context, qty);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
+    final stock = _num(item['available_qty']);
+    final price = _num(item['unit_cost']);
+
+    if (result <= 0) {
+      _showSnack('Quantity must be greater than 0');
+      return;
+    }
+
+    if (result > stock) {
+      _showSnack('Only ${stock.toString()} stock available');
+      return;
+    }
+
+    setState(() {
+      _cart[index]['quantity'] = result;
+      _cart[index]['total_cost'] = result * price;
+    });
+  }
+
   Future<void> _checkout() async {
     if (_cart.isEmpty) {
       _showSnack('Cart is empty');
@@ -444,13 +512,72 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                           refreshModal();
                                         },
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(10),
+                                        onTap: () async {
+                                          await _editCartQty(index);
+                                          refreshModal();
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: OrderStyles.plutoGold
+                                                .withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            border: Border.all(
+                                              color: OrderStyles.plutoGold
+                                                  .withOpacity(0.45),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _text(item['quantity']),
+                                            style: OrderStyles.qtyTextStyle,
+                                          ),
                                         ),
-                                        child: Text(
-                                          _text(item['quantity']),
-                                          style: OrderStyles.qtyTextStyle,
+                                      ),
+                                      _QtyButton(
+                                        icon: Icons.add_rounded,
+                                        onTap: () {
+                                          _increaseQty(index);
+                                          refreshModal();
+                                        },
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _money(item['total_cost']),
+                                        style: OrderStyles.orderTotalStyle,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          _removeCartItem(index);
+                                          refreshModal();
+                                        },
+                                        child: Container(
+                                          width: 30,
+                                          height: 30,
+                                          decoration: BoxDecoration(
+                                            color: OrderStyles.dangerColor
+                                                .withOpacity(0.13),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: OrderStyles.dangerColor
+                                                  .withOpacity(0.5),
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            color: OrderStyles.dangerColor,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
                                       _QtyButton(
