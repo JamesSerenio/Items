@@ -404,7 +404,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   Future<void> _openCartModal() async {
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.62),
+      barrierColor: Colors.black.withOpacity(0.70),
       builder: (_) {
         final isMobile = MediaQuery.of(context).size.width < 768;
 
@@ -420,20 +420,44 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
               insetPadding: EdgeInsets.all(isMobile ? 12 : 22),
               child: Container(
                 constraints: BoxConstraints(
-                  maxWidth: isMobile ? double.infinity : 620,
-                  maxHeight: MediaQuery.of(context).size.height * 0.82,
+                  maxWidth: isMobile ? double.infinity : 680,
+                  maxHeight: MediaQuery.of(context).size.height * 0.84,
                 ),
-                decoration: OrderStyles.cartPanelDecoration,
+                decoration: BoxDecoration(
+                  color: OrderStyles.panelCardColor,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: OrderStyles.plutoGold.withOpacity(0.75),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.60),
+                      blurRadius: 35,
+                      offset: const Offset(0, 18),
+                    ),
+                    BoxShadow(
+                      color: OrderStyles.plutoGold.withOpacity(0.12),
+                      blurRadius: 25,
+                    ),
+                  ],
+                ),
                 padding: EdgeInsets.all(isMobile ? 14 : 18),
                 child: Column(
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.shopping_bag_outlined,
-                          color: OrderStyles.plutoGold,
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: OrderStyles.statIconDecoration,
+                          child: const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: OrderStyles.plutoGold,
+                            size: 21,
+                          ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         const Expanded(
                           child: Text(
                             'Current Order',
@@ -441,6 +465,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           ),
                         ),
                         _MiniPill(text: '${_cart.length} items'),
+                        const SizedBox(width: 8),
                         IconButton(
                           onPressed: () => Navigator.pop(dialogContext),
                           icon: const Icon(
@@ -450,7 +475,9 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 14),
+
                     Expanded(
                       child: _cart.isEmpty
                           ? const Center(
@@ -462,135 +489,208 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           : ListView.separated(
                               itemCount: _cart.length,
                               separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 12),
                               itemBuilder: (_, index) {
                                 final item = _cart[index];
 
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 250),
-                                  padding: const EdgeInsets.all(13),
-                                  decoration: OrderStyles.cartItemDecoration,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 42,
-                                        height: 42,
-                                        decoration:
-                                            OrderStyles.statIconDecoration,
-                                        child: const Icon(
-                                          Icons.inventory_2_outlined,
-                                          color: OrderStyles.plutoGold,
-                                          size: 20,
-                                        ),
+                                  curve: Curves.easeOutCubic,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        OrderStyles.inputFill,
+                                        OrderStyles.panelCardColor,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: OrderStyles.plutoGold.withOpacity(
+                                        0.42,
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.25),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 22,
+                                        ),
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              _text(item['item_description']),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style:
-                                                  OrderStyles.cartItemNameStyle,
+                                            Container(
+                                              width: 44,
+                                              height: 44,
+                                              decoration: OrderStyles
+                                                  .statIconDecoration,
+                                              child: const Icon(
+                                                Icons.inventory_2_outlined,
+                                                color: OrderStyles.plutoGold,
+                                                size: 20,
+                                              ),
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              '${_text(item['unit'])} • ${_money(item['unit_cost'])}',
-                                              style:
-                                                  OrderStyles.cartItemMetaStyle,
+
+                                            const SizedBox(width: 12),
+
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    _text(
+                                                      item['item_description'],
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: OrderStyles
+                                                        .cartItemNameStyle,
+                                                  ),
+                                                  const SizedBox(height: 5),
+                                                  Text(
+                                                    '${_text(item['unit'])} • ${_money(item['unit_cost'])}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: OrderStyles
+                                                        .cartItemMetaStyle,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            const SizedBox(width: 10),
+
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                _QtyButton(
+                                                  icon: Icons.remove_rounded,
+                                                  onTap: () {
+                                                    _decreaseQty(index);
+                                                    refreshModal();
+                                                  },
+                                                ),
+                                                const SizedBox(width: 7),
+
+                                                InkWell(
+                                                  borderRadius:
+                                                      BorderRadius.circular(13),
+                                                  onTap: () async {
+                                                    await _editCartQty(index);
+                                                    refreshModal();
+                                                  },
+                                                  child: Container(
+                                                    width: 48,
+                                                    height: 34,
+                                                    alignment: Alignment.center,
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          OrderStyles.plutoGold
+                                                              .withOpacity(
+                                                                0.22,
+                                                              ),
+                                                          OrderStyles.megaGreen
+                                                              .withOpacity(
+                                                                0.13,
+                                                              ),
+                                                        ],
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            13,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: OrderStyles
+                                                            .plutoGold
+                                                            .withOpacity(0.65),
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      _text(item['quantity']),
+                                                      style: OrderStyles
+                                                          .qtyTextStyle,
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                const SizedBox(width: 7),
+
+                                                _QtyButton(
+                                                  icon: Icons.add_rounded,
+                                                  onTap: () {
+                                                    _increaseQty(index);
+                                                    refreshModal();
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+
+                                            const SizedBox(width: 10),
+
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SizedBox(
+                                                  width: 80,
+                                                  child: Text(
+                                                    _money(item['total_cost']),
+                                                    textAlign: TextAlign.right,
+                                                    style: OrderStyles
+                                                        .orderTotalStyle,
+                                                  ),
+                                                ),
+
+                                                const SizedBox(width: 8),
+
+                                                InkWell(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        999,
+                                                      ),
+                                                  onTap: () {
+                                                    _removeCartItem(index);
+                                                    refreshModal();
+                                                  },
+                                                  child: Container(
+                                                    width: 28,
+                                                    height: 28,
+                                                    decoration: BoxDecoration(
+                                                      color: OrderStyles
+                                                          .dangerColor
+                                                          .withOpacity(0.10),
+                                                      shape: BoxShape.circle,
+                                                      border: Border.all(
+                                                        color: OrderStyles
+                                                            .dangerColor
+                                                            .withOpacity(0.6),
+                                                      ),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.close_rounded,
+                                                      size: 16,
+                                                      color: OrderStyles
+                                                          .dangerColor,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      _QtyButton(
-                                        icon: Icons.remove_rounded,
-                                        onTap: () {
-                                          _decreaseQty(index);
-                                          refreshModal();
-                                        },
-                                      ),
-                                      InkWell(
-                                        borderRadius: BorderRadius.circular(10),
-                                        onTap: () async {
-                                          await _editCartQty(index);
-                                          refreshModal();
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: OrderStyles.plutoGold
-                                                .withOpacity(0.12),
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            border: Border.all(
-                                              color: OrderStyles.plutoGold
-                                                  .withOpacity(0.45),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            _text(item['quantity']),
-                                            style: OrderStyles.qtyTextStyle,
-                                          ),
-                                        ),
-                                      ),
-                                      _QtyButton(
-                                        icon: Icons.add_rounded,
-                                        onTap: () {
-                                          _increaseQty(index);
-                                          refreshModal();
-                                        },
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _money(item['total_cost']),
-                                        style: OrderStyles.orderTotalStyle,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          _removeCartItem(index);
-                                          refreshModal();
-                                        },
-                                        child: Container(
-                                          width: 30,
-                                          height: 30,
-                                          decoration: BoxDecoration(
-                                            color: OrderStyles.dangerColor
-                                                .withOpacity(0.13),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: OrderStyles.dangerColor
-                                                  .withOpacity(0.5),
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.close_rounded,
-                                            color: OrderStyles.dangerColor,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                      _QtyButton(
-                                        icon: Icons.add_rounded,
-                                        onTap: () {
-                                          _increaseQty(index);
-                                          refreshModal();
-                                        },
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Text(
-                                        _money(item['total_cost']),
-                                        style: OrderStyles.orderTotalStyle,
                                       ),
                                     ],
                                   ),
@@ -598,10 +698,26 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                               },
                             ),
                     ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 14),
+
                     Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: OrderStyles.totalBoxDecoration,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 15,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            OrderStyles.plutoGold.withOpacity(0.22),
+                            OrderStyles.megaGreen.withOpacity(0.14),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: OrderStyles.plutoGold.withOpacity(0.65),
+                        ),
+                      ),
                       child: Row(
                         children: [
                           const Expanded(
@@ -612,15 +728,19 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           ),
                           Text(
                             _money(_cartTotal),
-                            style: OrderStyles.totalValueStyle,
+                            style: OrderStyles.totalValueStyle.copyWith(
+                              fontSize: 20,
+                            ),
                           ),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 12),
+
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: 52,
                       child: ElevatedButton.icon(
                         onPressed: _checkout,
                         style: OrderStyles.checkoutButtonStyle,
