@@ -726,7 +726,10 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(14),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 900, maxHeight: 760),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.95,
+              maxHeight: MediaQuery.of(context).size.height * 0.86,
+            ),
             padding: const EdgeInsets.all(18),
             decoration: OrderStyles.purchasePaperDecoration,
             child: Column(
@@ -774,7 +777,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
-                      width: 980,
+                      width: 1040,
                       child: SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
@@ -782,24 +785,88 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           ),
                           border: TableBorder.all(color: Colors.black54),
                           columns: const [
-                            DataColumn(label: Text('STOCK NO.')),
-                            DataColumn(label: Text('UNIT')),
-                            DataColumn(label: Text('ITEM DESCRIPTION')),
-                            DataColumn(label: Text('LOCATION')), // ✅ ADD
-                            DataColumn(label: Text('QTY')),
-                            DataColumn(label: Text('UNIT COST')),
-                            DataColumn(label: Text('TOTAL COST')),
+                            DataColumn(
+                              label: SizedBox(
+                                width: 80,
+                                child: Text('STOCK NO.'),
+                              ),
+                            ),
+                            DataColumn(
+                              label: SizedBox(width: 70, child: Text('UNIT')),
+                            ),
+                            DataColumn(
+                              label: SizedBox(
+                                width: 220,
+                                child: Text('ITEM DESCRIPTION'),
+                              ),
+                            ),
+                            DataColumn(
+                              label: SizedBox(
+                                width: 150,
+                                child: Text('LOCATION'),
+                              ),
+                            ),
+                            DataColumn(
+                              label: SizedBox(width: 60, child: Text('QTY')),
+                            ),
+                            DataColumn(
+                              label: SizedBox(
+                                width: 120,
+                                child: Text('UNIT COST'),
+                              ),
+                            ),
+                            DataColumn(
+                              label: SizedBox(
+                                width: 130,
+                                child: Text('TOTAL COST'),
+                              ),
+                            ),
                           ],
                           rows: List<Map<String, dynamic>>.from(items).map((i) {
                             return DataRow(
                               cells: [
-                                DataCell(Text(_text(i['stock_no']))),
-                                DataCell(Text(_text(i['unit']))),
-                                DataCell(Text(_text(i['item_description']))),
-                                DataCell(Text(_text(i['location']))), // ✅ ADD
-                                DataCell(Text(_text(i['quantity']))),
-                                DataCell(Text(_money(i['unit_cost']))),
-                                DataCell(Text(_money(i['total_cost']))),
+                                DataCell(
+                                  SizedBox(
+                                    width: 80,
+                                    child: Text(_text(i['stock_no'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 70,
+                                    child: Text(_text(i['unit'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 220,
+                                    child: Text(_text(i['item_description'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 150,
+                                    child: Text(_text(i['location'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 60,
+                                    child: Text(_text(i['quantity'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 120,
+                                    child: Text(_money(i['unit_cost'])),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 130,
+                                    child: Text(_money(i['total_cost'])),
+                                  ),
+                                ),
                               ],
                             );
                           }).toList(),
