@@ -845,36 +845,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 26),
-                    Row(
-                      children: const [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Prepared by:',
-                                style: TextStyle(color: Colors.black87),
-                              ),
-                              SizedBox(height: 38),
-                              Divider(color: Colors.black54),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 70),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Approved by:',
-                                style: TextStyle(color: Colors.black87),
-                              ),
-                              SizedBox(height: 38),
-                              Divider(color: Colors.black54),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox.shrink(),
                   ],
                 ),
               ),
