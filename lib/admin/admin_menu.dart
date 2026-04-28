@@ -4,8 +4,9 @@ import '../styles/admin_menu_styles.dart';
 import 'dashboard.dart';
 import 'add_items.dart';
 import 'product.dart';
+import 'order.dart';
 
-enum AdminSection { dashboard, addItems, product }
+enum AdminSection { dashboard, addItems, product, order }
 
 class AdminMenu extends StatefulWidget {
   const AdminMenu({super.key});
@@ -110,6 +111,8 @@ class _AdminMenuState extends State<AdminMenu>
         return const AddItemsPage();
       case AdminSection.product:
         return const ProductPage();
+      case AdminSection.order:
+        return const OrderPage();
     }
   }
 
@@ -145,6 +148,17 @@ class _AdminMenuState extends State<AdminMenu>
           isActive: _selectedSection == AdminSection.product,
           onTap: () {
             _selectSection(AdminSection.product);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
+        _SidebarMenuTile(
+          icon: Icons.shopping_cart_outlined,
+          label: 'Orders',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.order,
+          onTap: () {
+            _selectSection(AdminSection.order);
             if (isMobile) Navigator.pop(context);
           },
         ),
