@@ -725,35 +725,20 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(14),
-            child: Center(
-              child: Container(
-                width: 794, // A4 width (px approx)
-                height: 1123, // A4 height
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
-                      blurRadius: 25,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.95,
+              maxHeight: MediaQuery.of(context).size.height * 0.86,
+            ),
+            padding: const EdgeInsets.all(18),
+            decoration: OrderStyles.purchasePaperDecoration,
             child: Column(
               children: [
-                  Column(
-                    children: [
-                      const Text(
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
                         'PURCHASE ORDER',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                         textAlign: TextAlign.center,
                         style: OrderStyles.purchaseTitleStyle,
                       ),
@@ -769,10 +754,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Expanded(
-Text(
-  'Description: ${_text(order['description'])}',
-  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-),
+                      child: _InfoLine(
+                        label: 'Description',
                         value: _text(order['description']),
                       ),
                     ),
