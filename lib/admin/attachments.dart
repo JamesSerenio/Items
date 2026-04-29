@@ -740,164 +740,165 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.78),
-      builder: (_) {
-        final isMobile = MediaQuery.of(context).size.width < 650;
+      builder: (dialogContext) {
+        final screen = MediaQuery.of(dialogContext).size;
+        final isMobile = screen.width < 650;
 
         return StatefulBuilder(
-          builder: (context, refreshModal) {
+          builder: (modalContext, refreshModal) {
             final photos = _photosFor(order['id']);
+            final crossCount = isMobile ? 3 : 5;
+            final rows = photos.isEmpty
+                ? 1
+                : (photos.length / crossCount).ceil();
 
-            return Dialog(
-              backgroundColor: AttachmentsStyles.bg,
-              insetPadding: EdgeInsets.all(isMobile ? 10 : 18),
-              child: Container(
-                width: isMobile ? double.infinity : 900,
-                height: MediaQuery.of(context).size.height * 0.86,
-                padding: EdgeInsets.all(isMobile ? 14 : 18),
-                decoration: AttachmentsStyles.panel,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.photo_library_outlined,
-                          color: AttachmentsStyles.gold,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Uploaded Photos - ${_text(order['description'])}',
-                            style: AttachmentsStyles.title.copyWith(
-                              fontSize: isMobile ? 16 : 20,
-                            ),
+            final itemSize = isMobile ? 72.0 : 120.0;
+            final gridHeight = (rows * itemSize) + ((rows - 1) * 10);
+            final maxHeight = screen.height * (isMobile ? 0.58 : 0.78);
+            final dialogHeight = (gridHeight + 78).clamp(
+              isMobile ? 190.0 : 260.0,
+              maxHeight,
+            );
+
+            return Center(
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 14 : 26,
+                  vertical: 18,
+                ),
+                child: Container(
+                  width: isMobile ? screen.width * 0.92 : 760,
+                  height: dialogHeight,
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
+                  decoration: AttachmentsStyles.panel,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.photo_library_outlined,
+                            color: AttachmentsStyles.gold,
+                            size: 20,
                           ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: AttachmentsStyles.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: photos.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No uploaded photos yet',
-                                style: AttachmentsStyles.subtitle,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Uploaded Photos - ${_text(order['description'])}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AttachmentsStyles.title.copyWith(
+                                fontSize: isMobile ? 15 : 20,
                               ),
-                            )
-                          : GridView.builder(
-                              itemCount: photos.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isMobile ? 1 : 3,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    childAspectRatio: isMobile ? 1.05 : 0.85,
-                                  ),
-                              itemBuilder: (_, index) {
-                                final p = photos[index];
-
-                                return Stack(
-                                  children: [
-                                    InkWell(
-                                      onTap: () => zoomPhoto(p),
-                                      child: Container(
-                                        decoration: AttachmentsStyles.cardStyle,
-                                        child: Column(
-                                          children: [
-                                            Expanded(
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    const BorderRadius.vertical(
-                                                      top: Radius.circular(18),
-                                                    ),
-                                                child: Image.network(
-                                                  _text(p['image_url']),
-                                                  width: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(9),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    _text(
-                                                          p['description'],
-                                                        ).trim().isEmpty
-                                                        ? 'No description'
-                                                        : _text(
-                                                            p['description'],
-                                                          ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: AttachmentsStyles
-                                                        .goldText,
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    _formatDate(
-                                                      p['created_at'],
-                                                    ),
-                                                    style:
-                                                        AttachmentsStyles.small,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                        onTap: () async {
-                                          await deletePhoto(p);
-                                          await loadAll();
-                                          refreshModal(() {});
-                                        },
-                                        child: Container(
-                                          width: 34,
-                                          height: 34,
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.75,
-                                            ),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: AttachmentsStyles.danger
-                                                  .withOpacity(0.85),
-                                              width: 1.2,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.close_rounded,
-                                            color: Color(0xFFFFB4B4),
-                                            size: 19,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
                             ),
-                    ),
-                  ],
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: AttachmentsStyles.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: photos.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No uploaded photos yet',
+                                  style: AttachmentsStyles.subtitle,
+                                ),
+                              )
+                            : GridView.builder(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
+                                itemCount: photos.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: crossCount,
+                                      mainAxisSpacing: 10,
+                                      crossAxisSpacing: 10,
+                                      childAspectRatio: 1,
+                                    ),
+                                itemBuilder: (_, index) {
+                                  final p = photos[index];
+
+                                  return Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Positioned.fill(
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                          onTap: () => zoomPhoto(p),
+                                          child: Container(
+                                            decoration:
+                                                AttachmentsStyles.cardStyle,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              child: Image.network(
+                                                _text(p['image_url']),
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) {
+                                                  return const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .broken_image_outlined,
+                                                      color: AttachmentsStyles
+                                                          .gold,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: -6,
+                                        right: -6,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                          onTap: () async {
+                                            await deletePhoto(p);
+                                            refreshModal(() {});
+                                          },
+                                          child: Container(
+                                            width: isMobile ? 22 : 28,
+                                            height: isMobile ? 22 : 28,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(
+                                                0.82,
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: AttachmentsStyles.danger
+                                                    .withOpacity(0.9),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.close_rounded,
+                                              color: const Color(0xFFFFB4B4),
+                                              size: isMobile ? 14 : 17,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -910,53 +911,54 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   void zoomPhoto(Map<String, dynamic> photo) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.90),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(12),
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.6,
-                maxScale: 5,
-                child: Image.network(_text(photo['image_url'])),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              left: 12,
-              right: 60,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_text(photo['description']).trim().isNotEmpty)
-                    Text(
-                      _text(photo['description']),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
+      barrierColor: Colors.black.withOpacity(0.92),
+      builder: (zoomContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(14),
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.7,
+                  maxScale: 5,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.network(
+                      _text(photo['image_url']),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) {
+                        return Container(
+                          width: 280,
+                          height: 220,
+                          alignment: Alignment.center,
+                          color: Colors.black,
+                          child: const Text(
+                            'Image failed to load',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        );
+                      },
                     ),
-                  Text(
-                    _formatDate(photo['created_at']),
-                    style: const TextStyle(color: Colors.white70),
                   ),
-                ],
+                ),
               ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(zoomContext),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
