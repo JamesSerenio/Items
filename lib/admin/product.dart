@@ -216,13 +216,13 @@ class _ProductPageState extends State<ProductPage> {
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 18,
-            vertical: 18,
+            horizontal: isMobile ? 10 : 18,
+            vertical: 14,
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: Container(
-              padding: EdgeInsets.all(isMobile ? 16 : 24),
+              padding: EdgeInsets.all(isMobile ? 12 : 24),
               decoration: ProductStyles.editDialogDecoration,
               child: Form(
                 key: formKey,
@@ -232,10 +232,12 @@ class _ProductPageState extends State<ProductPage> {
                     children: [
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Edit Material',
-                              style: ProductStyles.dialogTitleStyle,
+                              style: ProductStyles.dialogTitleStyle.copyWith(
+                                fontSize: isMobile ? 18 : 22,
+                              ),
                             ),
                           ),
                           IconButton(
@@ -245,21 +247,21 @@ class _ProductPageState extends State<ProductPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
                       _EditField(
                         controller: supplierController,
                         label: 'Name of Supplier',
                         icon: Icons.storefront_outlined,
                         validator: _requiredValidator,
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       _EditField(
                         controller: descriptionController,
                         label: 'Description',
                         icon: Icons.inventory_2_outlined,
                         validator: _requiredValidator,
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
@@ -270,7 +272,7 @@ class _ProductPageState extends State<ProductPage> {
                               validator: _requiredValidator,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _EditField(
                               controller: unitValueController,
@@ -282,7 +284,7 @@ class _ProductPageState extends State<ProductPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
@@ -294,7 +296,7 @@ class _ProductPageState extends State<ProductPage> {
                               validator: _numberValidator,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _EditField(
                               controller: quantityController,
@@ -306,14 +308,14 @@ class _ProductPageState extends State<ProductPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       _EditField(
                         controller: locationController,
                         label: 'Location',
                         icon: Icons.location_on_outlined,
                         validator: _requiredValidator,
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -323,7 +325,7 @@ class _ProductPageState extends State<ProductPage> {
                               child: const Text('Cancel'),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () async {
@@ -377,29 +379,29 @@ class _ProductPageState extends State<ProductPage> {
   }) {
     return Expanded(
       child: Container(
-        height: isMobile ? 68 : 92,
+        height: isMobile ? 50 : 92,
         padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 7 : 18,
-          vertical: isMobile ? 8 : 16,
+          horizontal: isMobile ? 5 : 18,
+          vertical: isMobile ? 5 : 16,
         ),
         decoration: ProductStyles.statCardDecoration.copyWith(
-          borderRadius: BorderRadius.circular(isMobile ? 16 : 22),
+          borderRadius: BorderRadius.circular(isMobile ? 12 : 22),
         ),
         child: Row(
           children: [
             Container(
-              width: isMobile ? 28 : 48,
-              height: isMobile ? 28 : 48,
+              width: isMobile ? 21 : 48,
+              height: isMobile ? 21 : 48,
               decoration: ProductStyles.statIconDecoration.copyWith(
-                borderRadius: BorderRadius.circular(isMobile ? 11 : 15),
+                borderRadius: BorderRadius.circular(isMobile ? 7 : 15),
               ),
               child: Icon(
                 icon,
                 color: ProductStyles.primaryColor,
-                size: isMobile ? 17 : 22,
+                size: isMobile ? 12 : 22,
               ),
             ),
-            SizedBox(width: isMobile ? 6 : 13),
+            SizedBox(width: isMobile ? 4 : 13),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -410,16 +412,18 @@ class _ProductPageState extends State<ProductPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: ProductStyles.statLabelStyle.copyWith(
-                      fontSize: isMobile ? 10.5 : 13,
+                      fontSize: isMobile ? 8 : 13,
                     ),
                   ),
-                  SizedBox(height: isMobile ? 2 : 5),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: ProductStyles.statValueStyle.copyWith(
-                      fontSize: isMobile ? 12.5 : 18,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      style: ProductStyles.statValueStyle.copyWith(
+                        fontSize: isMobile ? 10 : 18,
+                      ),
                     ),
                   ),
                 ],
@@ -440,19 +444,17 @@ class _ProductPageState extends State<ProductPage> {
           icon: Icons.inventory_2_outlined,
           isMobile: isMobile,
         ),
-        SizedBox(width: isMobile ? 8 : 14),
+        SizedBox(width: isMobile ? 5 : 14),
         _compactStatCard(
-          label: 'Quantity',
+          label: 'Qty',
           value: _totalQuantity.toString(),
           icon: Icons.format_list_numbered_outlined,
           isMobile: isMobile,
         ),
-        SizedBox(width: isMobile ? 8 : 14),
+        SizedBox(width: isMobile ? 5 : 14),
         _compactStatCard(
-          label: isMobile ? 'Value' : 'Total Value',
-          value: isMobile
-              ? _money(_grandTotal)
-              : '₱${_grandTotal.toStringAsFixed(2)}',
+          label: 'Value',
+          value: _money(_grandTotal),
           icon: Icons.payments_outlined,
           isMobile: isMobile,
         ),
@@ -465,30 +467,33 @@ class _ProductPageState extends State<ProductPage> {
       children: [
         Expanded(
           child: SizedBox(
-            height: isMobile ? 48 : 58,
+            height: isMobile ? 38 : 58,
             child: TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(color: ProductStyles.textPrimary),
+              style: TextStyle(
+                color: ProductStyles.textPrimary,
+                fontSize: isMobile ? 11 : 14,
+              ),
               decoration: ProductStyles.searchDecoration.copyWith(
                 hintText: isMobile
                     ? 'Search material...'
                     : 'Search supplier, material, unit, or location...',
                 contentPadding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 12 : 18,
-                  vertical: isMobile ? 12 : 18,
+                  horizontal: isMobile ? 8 : 18,
+                  vertical: isMobile ? 7 : 18,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: isMobile ? 6 : 10),
         SizedBox(
-          height: isMobile ? 48 : 58,
-          width: isMobile ? 52 : 58,
+          height: isMobile ? 38 : 58,
+          width: isMobile ? 41 : 58,
           child: IconButton(
             onPressed: _loadMaterials,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icon(Icons.refresh_rounded, size: isMobile ? 17 : 24),
             style: ProductStyles.refreshButtonStyle,
           ),
         ),
@@ -501,17 +506,124 @@ class _ProductPageState extends State<ProductPage> {
 
     if (items.isEmpty) {
       return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text('No materials found', style: ProductStyles.emptyStyle),
+        child: Text('No materials found', style: ProductStyles.emptyStyle),
+      );
+    }
+
+    if (isMobile) {
+      return Container(
+        width: double.infinity,
+        decoration: ProductStyles.tableOuterDecoration.copyWith(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: DataTable(
+            headingRowHeight: 34,
+            dataRowMinHeight: 48,
+            dataRowMaxHeight: 54,
+            horizontalMargin: 6,
+            columnSpacing: 7,
+            dividerThickness: 0.45,
+            headingRowColor: WidgetStateProperty.all(
+              ProductStyles.tableHeaderColor,
+            ),
+            dataRowColor: WidgetStateProperty.resolveWith(
+              (states) => ProductStyles.tableRowColor,
+            ),
+            columns: const [
+              DataColumn(label: _MobileHeaderText('Supplier')),
+              DataColumn(label: _MobileHeaderText('Material')),
+              DataColumn(label: _MobileHeaderText('Qty')),
+              DataColumn(label: _MobileHeaderText('Total')),
+              DataColumn(label: _MobileHeaderText('Act')),
+            ],
+            rows: items.map((item) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    SizedBox(
+                      width: 58,
+                      child: _MobileCellText(_text(item['supplier_name'])),
+                    ),
+                  ),
+                  DataCell(
+                    SizedBox(
+                      width: 68,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _MobileCellText(_text(item['description'])),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ProductStyles.pageSubtitleStyle.copyWith(
+                              fontSize: 7,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    SizedBox(
+                      width: 25,
+                      child: Text(
+                        _text(item['quantity']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ProductStyles.tableCellTextStyle.copyWith(
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    SizedBox(
+                      width: 52,
+                      child: Text(
+                        _money(item['total']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ProductStyles.tableHighlightTextStyle.copyWith(
+                          fontSize: 8.7,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    SizedBox(
+                      width: 45,
+                      child: Row(
+                        children: [
+                          _TinyActionButton(
+                            icon: Icons.edit_rounded,
+                            color: ProductStyles.primaryColor,
+                            onTap: () => _openEditDialog(item),
+                          ),
+                          const SizedBox(width: 3),
+                          _TinyActionButton(
+                            icon: Icons.delete_outline_rounded,
+                            color: ProductStyles.dangerColor,
+                            onTap: () => _confirmDelete(item),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       );
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double minTableWidth = isMobile ? 820 : constraints.maxWidth;
-
         return Container(
           width: double.infinity,
           decoration: ProductStyles.tableOuterDecoration,
@@ -519,87 +631,80 @@ class _ProductPageState extends State<ProductPage> {
             borderRadius: BorderRadius.circular(24),
             child: SingleChildScrollView(
               primary: false,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: minTableWidth,
-                child: SingleChildScrollView(
-                  primary: false,
-                  scrollDirection: Axis.vertical,
-                  child: DataTable(
-                    headingRowHeight: isMobile ? 48 : 58,
-                    dataRowMinHeight: isMobile ? 52 : 60,
-                    dataRowMaxHeight: isMobile ? 58 : 66,
-                    horizontalMargin: isMobile ? 10 : 22,
-                    columnSpacing: isMobile ? 14 : 26,
-                    dividerThickness: 0.6,
-                    headingRowColor: WidgetStateProperty.all(
-                      ProductStyles.tableHeaderColor,
-                    ),
-                    dataRowColor: WidgetStateProperty.resolveWith(
-                      (states) => ProductStyles.tableRowColor,
-                    ),
-                    columns: const [
-                      DataColumn(label: _HeaderText('Supplier')),
-                      DataColumn(label: _HeaderText('Description')),
-                      DataColumn(label: _HeaderText('Unit')),
-                      DataColumn(label: _HeaderText('Unit Value')),
-                      DataColumn(label: _HeaderText('Price')),
-                      DataColumn(label: _HeaderText('Qty')),
-                      DataColumn(label: _HeaderText('Total')),
-                      DataColumn(label: _HeaderText('Location')),
-                      DataColumn(label: _HeaderText('Action')),
-                    ],
-                    rows: items.map((item) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 88 : 130,
-                              child: _CellText(_text(item['supplier_name'])),
-                            ),
-                          ),
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 110 : 180,
-                              child: _CellText(_text(item['description'])),
-                            ),
-                          ),
-                          DataCell(_UnitPill(_text(item['unit']))),
-                          DataCell(_CellText(_text(item['unit_value']))),
-                          DataCell(_CellText(_money(item['price']))),
-                          DataCell(_CellText(_text(item['quantity']))),
-                          DataCell(
-                            _CellText(_money(item['total']), isHighlight: true),
-                          ),
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 90 : 130,
-                              child: _CellText(_text(item['location'])),
-                            ),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _ActionButton(
-                                  icon: Icons.edit_rounded,
-                                  color: ProductStyles.primaryColor,
-                                  onTap: () => _openEditDialog(item),
-                                ),
-                                const SizedBox(width: 7),
-                                _ActionButton(
-                                  icon: Icons.delete_outline_rounded,
-                                  color: ProductStyles.dangerColor,
-                                  onTap: () => _confirmDelete(item),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+              scrollDirection: Axis.vertical,
+              child: DataTable(
+                headingRowHeight: 58,
+                dataRowMinHeight: 60,
+                dataRowMaxHeight: 66,
+                horizontalMargin: 22,
+                columnSpacing: 26,
+                dividerThickness: 0.6,
+                headingRowColor: WidgetStateProperty.all(
+                  ProductStyles.tableHeaderColor,
                 ),
+                dataRowColor: WidgetStateProperty.resolveWith(
+                  (states) => ProductStyles.tableRowColor,
+                ),
+                columns: const [
+                  DataColumn(label: _HeaderText('Supplier')),
+                  DataColumn(label: _HeaderText('Description')),
+                  DataColumn(label: _HeaderText('Unit')),
+                  DataColumn(label: _HeaderText('Unit Value')),
+                  DataColumn(label: _HeaderText('Price')),
+                  DataColumn(label: _HeaderText('Qty')),
+                  DataColumn(label: _HeaderText('Total')),
+                  DataColumn(label: _HeaderText('Location')),
+                  DataColumn(label: _HeaderText('Action')),
+                ],
+                rows: items.map((item) {
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        SizedBox(
+                          width: 130,
+                          child: _CellText(_text(item['supplier_name'])),
+                        ),
+                      ),
+                      DataCell(
+                        SizedBox(
+                          width: 180,
+                          child: _CellText(_text(item['description'])),
+                        ),
+                      ),
+                      DataCell(_UnitPill(_text(item['unit']))),
+                      DataCell(_CellText(_text(item['unit_value']))),
+                      DataCell(_CellText(_money(item['price']))),
+                      DataCell(_CellText(_text(item['quantity']))),
+                      DataCell(
+                        _CellText(_money(item['total']), isHighlight: true),
+                      ),
+                      DataCell(
+                        SizedBox(
+                          width: 130,
+                          child: _CellText(_text(item['location'])),
+                        ),
+                      ),
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ActionButton(
+                              icon: Icons.edit_rounded,
+                              color: ProductStyles.primaryColor,
+                              onTap: () => _openEditDialog(item),
+                            ),
+                            const SizedBox(width: 7),
+                            _ActionButton(
+                              icon: Icons.delete_outline_rounded,
+                              color: ProductStyles.dangerColor,
+                              onTap: () => _confirmDelete(item),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
           ),
@@ -619,28 +724,28 @@ class _ProductPageState extends State<ProductPage> {
         decoration: isMobile
             ? ProductStyles.mobilePanelDecoration
             : ProductStyles.panelDecoration,
-        padding: EdgeInsets.all(isMobile ? 12 : 26),
+        padding: EdgeInsets.all(isMobile ? 8 : 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Product / Materials',
               style: isMobile
-                  ? ProductStyles.pageTitleMobileStyle.copyWith(fontSize: 22)
+                  ? ProductStyles.pageTitleMobileStyle.copyWith(fontSize: 18)
                   : ProductStyles.pageTitleStyle,
             ),
-            const SizedBox(height: 5),
+            SizedBox(height: isMobile ? 2 : 5),
             Text(
               'View, update, and manage all saved materials.',
               style: ProductStyles.pageSubtitleStyle.copyWith(
-                fontSize: isMobile ? 12.5 : 14,
+                fontSize: isMobile ? 10 : 14,
               ),
             ),
-            SizedBox(height: isMobile ? 12 : 20),
+            SizedBox(height: isMobile ? 7 : 20),
             _buildStats(isMobile),
-            SizedBox(height: isMobile ? 12 : 18),
+            SizedBox(height: isMobile ? 7 : 18),
             _buildSearchAndRefresh(isMobile),
-            SizedBox(height: isMobile ? 12 : 18),
+            SizedBox(height: isMobile ? 7 : 18),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -664,6 +769,22 @@ class _HeaderText extends StatelessWidget {
   }
 }
 
+class _MobileHeaderText extends StatelessWidget {
+  final String text;
+
+  const _MobileHeaderText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: ProductStyles.tableHeaderTextStyle.copyWith(fontSize: 8.5),
+    );
+  }
+}
+
 class _CellText extends StatelessWidget {
   final String text;
   final bool isHighlight;
@@ -682,6 +803,25 @@ class _CellText extends StatelessWidget {
   }
 }
 
+class _MobileCellText extends StatelessWidget {
+  final String text;
+
+  const _MobileCellText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: ProductStyles.tableCellTextStyle.copyWith(
+        fontSize: 9,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
 class _UnitPill extends StatelessWidget {
   final String text;
 
@@ -693,6 +833,35 @@ class _UnitPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: ProductStyles.unitPillDecoration,
       child: Text(text, style: ProductStyles.unitPillTextStyle),
+    );
+  }
+}
+
+class _TinyActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TinyActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(7),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.13),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: color.withOpacity(0.45)),
+        ),
+        child: Icon(icon, color: color, size: 11),
+      ),
     );
   }
 }

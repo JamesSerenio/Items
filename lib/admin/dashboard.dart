@@ -148,10 +148,11 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   int get totalMaterials {
-    return filteredItems.fold<int>(
-      0,
-      (sum, i) => sum + _num(i['quantity']).toInt(),
-    );
+    return filteredItems
+        .map((i) => i['material_id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .length;
   }
 
   num get totalAmount {
@@ -278,7 +279,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     final list = map.values.where((s) => s.items > 0).toList();
-    list.sort((a, b) => b.items.compareTo(a.items));
+    list.sort((a, b) => b.amount.compareTo(a.amount));
     return list;
   }
 
@@ -339,7 +340,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         },
                       ),
                       SizedBox(height: isMobile ? 10 : 18),
-
                       Row(
                         children: [
                           Expanded(
@@ -370,36 +370,68 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ],
                       ),
-
                       SizedBox(height: isMobile ? 10 : 18),
-
-                      _Panel(
-                        title: 'Purchase Amount Trend',
-                        subtitle: 'Total amount ordered for $filterLabel.',
-                        child: SizedBox(
-                          height: isMobile ? 125 : 310,
-                          child: _LineChart(points: lineData),
+                      if (isMobile) ...[
+                        _Panel(
+                          title: 'Purchase Amount Trend',
+                          subtitle: 'Total amount ordered for $filterLabel.',
+                          child: SizedBox(
+                            height: 125,
+                            child: _LineChart(points: lineData),
+                          ),
                         ),
-                      ),
-
-                      SizedBox(height: isMobile ? 10 : 18),
-
-                      _Panel(
-                        title: 'Supplier Item Orders',
-                        subtitle: 'Number of items ordered per supplier.',
-                        child: SizedBox(
-                          height: isMobile ? 125 : 310,
-                          child: _BarChart(stats: supplierStats),
+                        const SizedBox(height: 10),
+                        _Panel(
+                          title: 'Supplier Amount Orders',
+                          subtitle: 'Total amount ordered per supplier.',
+                          child: SizedBox(
+                            height: 150,
+                            child: _BarChart(stats: supplierStats),
+                          ),
                         ),
-                      ),
-
-                      SizedBox(height: isMobile ? 10 : 18),
-
-                      _Panel(
-                        title: 'Supplier Share',
-                        subtitle: 'Percentage and total amount per supplier.',
-                        child: _DonutSection(stats: supplierStats),
-                      ),
+                        const SizedBox(height: 10),
+                        _Panel(
+                          title: 'Supplier Share',
+                          subtitle: 'Percentage and total amount per supplier.',
+                          child: _DonutSection(stats: supplierStats),
+                        ),
+                      ] else ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _Panel(
+                                title: 'Purchase Amount Trend',
+                                subtitle:
+                                    'Total amount ordered for $filterLabel.',
+                                child: SizedBox(
+                                  height: 260,
+                                  child: _LineChart(points: lineData),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 2,
+                              child: _Panel(
+                                title: 'Supplier Amount Orders',
+                                subtitle: 'Total amount ordered per supplier.',
+                                child: SizedBox(
+                                  height: 260,
+                                  child: _BarChart(stats: supplierStats),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _Panel(
+                          title: 'Supplier Share',
+                          subtitle: 'Percentage and total amount per supplier.',
+                          child: _DonutSection(stats: supplierStats),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -558,79 +590,6 @@ class _FilterPills extends StatelessWidget {
           ),
         );
       }).toList(),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final String subtitle;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 10 : 20),
-      decoration: BoxDecoration(
-        color: DashboardStyles.cardColor,
-        borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
-        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.68)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: isMobile ? 34 : 52,
-            height: isMobile ? 34 : 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.13),
-              border: Border.all(color: color.withOpacity(0.65)),
-            ),
-            child: Icon(icon, color: color, size: isMobile ? 17 : 24),
-          ),
-          SizedBox(width: isMobile ? 10 : 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: DashboardStyles.cardTitleStyle),
-                SizedBox(height: isMobile ? 3 : 8),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: DashboardStyles.cardValueStyle.copyWith(
-                      fontSize: isMobile ? 18 : 24,
-                    ),
-                  ),
-                ),
-                SizedBox(height: isMobile ? 2 : 5),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DashboardStyles.pageSubtitleStyle.copyWith(
-                    fontSize: isMobile ? 9.5 : 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -815,72 +774,126 @@ class _BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (stats.isEmpty) {
-      return const _EmptyChart(message: 'No supplier orders yet.');
+    if (stats.isEmpty || stats.every((e) => e.amount <= 0)) {
+      return const _EmptyChart(message: 'No supplier amount yet.');
     }
 
-    final maxItems = stats.map((e) => e.items).fold<int>(1, math.max);
-
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: stats.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (_, index) {
-        final s = stats[index];
-        final width = s.items / maxItems;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    s.supplier,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardStyles.smallGold.copyWith(fontSize: 9),
-                  ),
-                ),
-                Text(
-                  '${s.items} • ${_formatMoneyStatic(s.amount)}',
-                  style: DashboardStyles.pageSubtitleStyle.copyWith(
-                    fontSize: 9,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: Stack(
-                children: [
-                  Container(
-                    height: 8,
-                    color: DashboardStyles.plutoGold.withOpacity(0.12),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: width,
-                    child: Container(
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            DashboardStyles.megaGreen,
-                            DashboardStyles.plutoGold,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+    return CustomPaint(
+      painter: _VerticalAmountBarPainter(stats),
+      child: Container(),
     );
   }
+}
+
+class _VerticalAmountBarPainter extends CustomPainter {
+  final List<_SupplierStat> stats;
+
+  _VerticalAmountBarPainter(this.stats);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const left = 38.0;
+    const right = 8.0;
+    const top = 10.0;
+    const bottom = 25.0;
+
+    final chartW = size.width - left - right;
+    final chartH = size.height - top - bottom;
+
+    final maxAmount = math.max(
+      1,
+      stats.map((e) => e.amount.toDouble()).fold<double>(0, math.max),
+    );
+
+    final gridPaint = Paint()
+      ..color = DashboardStyles.plutoGold.withOpacity(0.12)
+      ..strokeWidth = 1;
+
+    final text = TextPainter(textDirection: TextDirection.ltr);
+
+    for (int i = 0; i <= 4; i++) {
+      final y = top + (chartH / 4) * i;
+      canvas.drawLine(
+        Offset(left, y),
+        Offset(size.width - right, y),
+        gridPaint,
+      );
+
+      final value = maxAmount - ((maxAmount / 4) * i);
+
+      text.text = TextSpan(
+        text: value >= 1000
+            ? '₱${(value / 1000).toStringAsFixed(1)}k'
+            : '₱${value.toStringAsFixed(0)}',
+        style: const TextStyle(
+          color: DashboardStyles.textSecondary,
+          fontSize: 7.5,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+      text.layout(maxWidth: 35);
+      text.paint(canvas, Offset(0, y - 5));
+    }
+
+    final count = stats.length;
+    final slotW = chartW / count;
+    final barW = math.min(24.0, slotW * 0.42);
+
+    for (int i = 0; i < count; i++) {
+      final s = stats[i];
+      final ratio = s.amount.toDouble() / maxAmount;
+      final barH = math.max(2.0, chartH * ratio);
+
+      final x = left + (slotW * i) + (slotW - barW) / 2;
+      final y = top + chartH - barH;
+
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, barW, barH),
+        const Radius.circular(5),
+      );
+
+      final paint = Paint()
+        ..shader = const LinearGradient(
+          colors: [DashboardStyles.megaGreen, DashboardStyles.plutoGold],
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+        ).createShader(Rect.fromLTWH(x, y, barW, barH));
+
+      canvas.drawRRect(rect, paint);
+
+      text.text = TextSpan(
+        text: _formatMoneyShort(s.amount),
+        style: const TextStyle(
+          color: DashboardStyles.plutoGold,
+          fontSize: 7.5,
+          fontWeight: FontWeight.w900,
+        ),
+      );
+      text.layout(maxWidth: slotW);
+      text.paint(canvas, Offset(x + (barW - text.width) / 2, y - 12));
+
+      final supplierLabel = s.supplier.length > 6
+          ? s.supplier.substring(0, 6)
+          : s.supplier;
+
+      text.text = TextSpan(
+        text: supplierLabel,
+        style: const TextStyle(
+          color: DashboardStyles.textSecondary,
+          fontSize: 7.5,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+      text.layout(maxWidth: slotW);
+      text.paint(
+        canvas,
+        Offset(left + (slotW * i) + (slotW - text.width) / 2, size.height - 15),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _DonutSection extends StatelessWidget {
@@ -908,6 +921,110 @@ class _DonutSection extends StatelessWidget {
       DashboardStyles.plutoGoldDeep,
       DashboardStyles.megaGreenSoft,
     ];
+
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    if (!isMobile) {
+      return SizedBox(
+        height: 210,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 160,
+              height: 160,
+              child: CustomPaint(
+                painter: _DonutPainter(
+                  stats: stats,
+                  colors: colors,
+                  strokeWidth: 20,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$totalItems',
+                        style: DashboardStyles.cardValueStyle.copyWith(
+                          fontSize: 24,
+                        ),
+                      ),
+                      Text('Items', style: DashboardStyles.pageSubtitleStyle),
+                      Text(
+                        _formatMoneyStatic(totalAmount),
+                        style: DashboardStyles.smallGold,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 22),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: stats.length,
+                itemBuilder: (_, index) {
+                  final s = stats[index];
+                  final pct = (s.items / totalItems) * 100;
+                  final color = colors[index % colors.length];
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: DashboardStyles.cardColor.withOpacity(0.78),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: color.withOpacity(0.42)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            s.supplier,
+                            style: DashboardStyles.smallGold.copyWith(
+                              color: DashboardStyles.textPrimary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${s.items} items',
+                          style: DashboardStyles.pageSubtitleStyle,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _formatMoneyStatic(s.amount),
+                          style: DashboardStyles.smallGold,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${pct.toStringAsFixed(1)}%',
+                          style: DashboardStyles.smallGold.copyWith(
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return SizedBox(
       height: 235,
@@ -1068,6 +1185,11 @@ class _DonutPainter extends CustomPainter {
 
 String _formatMoneyStatic(num value) {
   return '₱${value.toStringAsFixed(2)}';
+}
+
+String _formatMoneyShort(num value) {
+  if (value >= 1000) return '₱${(value / 1000).toStringAsFixed(1)}k';
+  return '₱${value.toStringAsFixed(0)}';
 }
 
 class _EmptyChart extends StatelessWidget {
