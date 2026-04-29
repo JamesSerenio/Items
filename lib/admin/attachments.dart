@@ -45,7 +45,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       final attachmentData = await supabase
           .from('order_attachments')
-          .select('id, order_id, image_url, file_name, description, created_at')
+          .select(
+            'id, order_id, image_url, file_name, description, storage_path, created_at',
+          )
           .order('created_at', ascending: false);
 
       if (!mounted) return;
