@@ -23,10 +23,36 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   List<Map<String, dynamic>> orders = [];
   List<Map<String, dynamic>> attachments = [];
 
+  RealtimeChannel? attachmentsChannel;
+
   @override
   void initState() {
     super.initState();
     loadAll();
+    listenAttachmentsRealtime();
+  }
+
+  @override
+  void dispose() {
+    if (attachmentsChannel != null) {
+      supabase.removeChannel(attachmentsChannel!);
+    }
+    super.dispose();
+  }
+
+  void listenAttachmentsRealtime() {
+    attachmentsChannel = supabase.channel('public:order_attachments');
+
+    attachmentsChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'order_attachments',
+          callback: (payload) async {
+            await loadAll();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> loadAll() async {
@@ -106,7 +132,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   String? _storagePathFromUrl(String url) {
     if (url.contains('/object/public/attachments/')) {
-      return Uri.decodeFull(url.split('/object/public/attachments/').last);
+      return Uri.decodeFull(
+        url.split('/object/public/attachments/').last.split('?').first,
+      );
     }
 
     if (url.contains('/object/sign/attachments/')) {
@@ -116,6 +144,42 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     }
 
     return null;
+  }
+
+  Future<void> _deleteStorageFile(Map<String, dynamic> photo) async {
+    final imageUrl = _text(photo['image_url']);
+    final orderId = photo['order_id']?.toString();
+
+    final savedPath = photo['storage_path']?.toString().trim();
+
+    final paths = <String>{};
+
+    if (savedPath != null && savedPath.isNotEmpty) {
+      paths.add(savedPath);
+    }
+
+    final pathFromUrl = _storagePathFromUrl(imageUrl);
+    if (pathFromUrl != null && pathFromUrl.trim().isNotEmpty) {
+      paths.add(pathFromUrl);
+    }
+
+    if (orderId != null && orderId.isNotEmpty) {
+      final fileName = imageUrl.split('/').last.split('?').first;
+      if (fileName.isNotEmpty && fileName != '-') {
+        paths.add('bucket_photos/$orderId/$fileName');
+        paths.add('$orderId/$fileName');
+      }
+    }
+
+    if (paths.isNotEmpty) {
+      final removed = await supabase.storage
+          .from('attachments')
+          .remove(paths.toList());
+
+      if (removed.isEmpty) {
+        throw Exception('Storage delete failed. Check bucket delete policy.');
+      }
+    }
   }
 
   Future<void> deletePhoto(Map<String, dynamic> photo) async {
@@ -155,29 +219,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
     try {
       final id = photo['id'];
-      final imageUrl = _text(photo['image_url']);
-      final storagePath =
-          photo['storage_path']?.toString().trim().isNotEmpty == true
-          ? photo['storage_path'].toString()
-          : _storagePathFromUrl(imageUrl);
 
-      if (storagePath != null && storagePath.trim().isNotEmpty) {
-        await supabase.storage.from('attachments').remove([storagePath]);
-      } else {
-        final orderId = photo['order_id']?.toString();
-
-        if (orderId != null && orderId.isNotEmpty) {
-          final files = await supabase.storage
-              .from('attachments')
-              .list(path: orderId);
-
-          if (files.isNotEmpty) {
-            final paths = files.map((f) => '$orderId/${f.name}').toList();
-            await supabase.storage.from('attachments').remove(paths);
-          }
-        }
-      }
-
+      await _deleteStorageFile(photo);
       await supabase.from('order_attachments').delete().eq('id', id);
 
       if (!mounted) return;
@@ -245,10 +288,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       for (final file in result.files) {
         if (file.bytes == null) continue;
 
-        final ext = file.extension ?? 'jpg';
         final safeName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
         final fileName =
-            '${order['id']}/${DateTime.now().millisecondsSinceEpoch}_$safeName';
+            'bucket_photos/${order['id']}/${DateTime.now().millisecondsSinceEpoch}_$safeName';
 
         await supabase.storage
             .from('attachments')
@@ -266,6 +308,11 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       }
 
       await loadAll();
+
+      if (mounted) {
+        setState(() {});
+      }
+
       _showSnack('Photos uploaded successfully');
     } catch (e) {
       _showSnack('Upload failed: $e');
@@ -694,8 +741,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       context: context,
       barrierColor: Colors.black.withOpacity(0.78),
       builder: (_) {
-        final w = MediaQuery.of(context).size.width;
-        final isMobile = w < 650;
+        final isMobile = MediaQuery.of(context).size.width < 650;
 
         return StatefulBuilder(
           builder: (context, refreshModal) {
@@ -821,6 +867,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                                         ),
                                         onTap: () async {
                                           await deletePhoto(p);
+                                          await loadAll();
                                           refreshModal(() {});
                                         },
                                         child: Container(
