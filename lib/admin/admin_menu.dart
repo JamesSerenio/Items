@@ -5,8 +5,9 @@ import 'dashboard.dart';
 import 'add_items.dart';
 import 'product.dart';
 import 'order.dart';
+import 'attachments.dart';
 
-enum AdminSection { dashboard, addItems, product, order }
+enum AdminSection { dashboard, addItems, product, order, attachments }
 
 class AdminMenu extends StatefulWidget {
   const AdminMenu({super.key});
@@ -55,9 +56,7 @@ class _AdminMenuState extends State<AdminMenu>
   Widget _buildBrand({bool mobile = false}) {
     final collapsed = _isCollapsed && !mobile;
 
-    if (collapsed) {
-      return const SizedBox.shrink(); // ✅ wala nang MP kapag collapsed
-    }
+    if (collapsed) return const SizedBox.shrink();
 
     return SizedBox(
       height: 58,
@@ -67,7 +66,7 @@ class _AdminMenuState extends State<AdminMenu>
           final glow = 0.35 + (_brandController.value * 0.35);
 
           return Padding(
-            padding: const EdgeInsets.only(top: 19), // ✅ pababa konti
+            padding: const EdgeInsets.only(top: 19),
             child: RichText(
               text: TextSpan(
                 style: AdminMenuStyles.brandTextStyle,
@@ -113,6 +112,8 @@ class _AdminMenuState extends State<AdminMenu>
         return const ProductPage();
       case AdminSection.order:
         return const OrderPage();
+      case AdminSection.attachments:
+        return const AttachmentsPage();
     }
   }
 
@@ -159,6 +160,17 @@ class _AdminMenuState extends State<AdminMenu>
           isActive: _selectedSection == AdminSection.order,
           onTap: () {
             _selectSection(AdminSection.order);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
+        _SidebarMenuTile(
+          icon: Icons.attach_file_rounded,
+          label: 'Attachments',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.attachments,
+          onTap: () {
+            _selectSection(AdminSection.attachments);
             if (isMobile) Navigator.pop(context);
           },
         ),
