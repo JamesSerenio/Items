@@ -330,7 +330,6 @@ class _ProductPageState extends State<ProductPage> {
                             child: ElevatedButton(
                               onPressed: () async {
                                 if (!formKey.currentState!.validate()) return;
-
                                 Navigator.pop(context);
 
                                 await _updateMaterial(
@@ -501,7 +500,7 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  Widget _buildTable(bool isMobile) {
+  Widget _buildMobileTable() {
     final items = _filteredMaterials;
 
     if (items.isEmpty) {
@@ -510,116 +509,200 @@ class _ProductPageState extends State<ProductPage> {
       );
     }
 
-    if (isMobile) {
-      return Container(
-        width: double.infinity,
-        decoration: ProductStyles.tableOuterDecoration.copyWith(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: DataTable(
-            headingRowHeight: 34,
-            dataRowMinHeight: 48,
-            dataRowMaxHeight: 54,
-            horizontalMargin: 6,
-            columnSpacing: 7,
-            dividerThickness: 0.45,
-            headingRowColor: WidgetStateProperty.all(
-              ProductStyles.tableHeaderColor,
+    return Container(
+      width: double.infinity,
+      decoration: ProductStyles.tableOuterDecoration.copyWith(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Column(
+          children: [
+            Container(
+              height: 34,
+              color: ProductStyles.tableHeaderColor,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: const Row(
+                children: [
+                  Expanded(flex: 18, child: _MobileHeaderText('Supplier')),
+                  Expanded(flex: 22, child: _MobileHeaderText('Material')),
+                  Expanded(flex: 18, child: _MobileHeaderText('Price')),
+                  Expanded(flex: 12, child: _MobileHeaderText('Qty')),
+                  Expanded(flex: 20, child: _MobileHeaderText('Total')),
+                  SizedBox(width: 42, child: _MobileHeaderText('Act')),
+                ],
+              ),
             ),
-            dataRowColor: WidgetStateProperty.resolveWith(
-              (states) => ProductStyles.tableRowColor,
-            ),
-            columns: const [
-              DataColumn(label: _MobileHeaderText('Supplier')),
-              DataColumn(label: _MobileHeaderText('Material')),
-              DataColumn(label: _MobileHeaderText('Price')), // ✅ ADD
-              DataColumn(label: _MobileHeaderText('Qty')),
-              DataColumn(label: _MobileHeaderText('Total')),
-              DataColumn(label: _MobileHeaderText('Act')),
-            ],
-            rows: items.map((item) {
-              return DataRow(
-                cells: [
-                  DataCell(
-                    SizedBox(
-                      width: 52,
-                      child: _MobileCellText(_text(item['supplier_name'])),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 58,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 0.45,
+                  color: ProductStyles.borderColor.withOpacity(0.55),
+                ),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 54),
+                    child: Container(
+                      color: ProductStyles.tableRowColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Row(
                         children: [
-                          _MobileCellText(_text(item['description'])),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ProductStyles.pageSubtitleStyle.copyWith(
-                              fontSize: 6.5,
+                          Expanded(
+                            flex: 18,
+                            child: _MobileCellText(
+                              _text(item['supplier_name']),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 22,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _MobileCellText(_text(item['description'])),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: ProductStyles.pageSubtitleStyle
+                                      .copyWith(fontSize: 6.3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 18,
+                            child: _MiniMoneyText(_money(item['price'])),
+                          ),
+                          Expanded(
+                            flex: 12,
+                            child: _MiniText(_text(item['quantity'])),
+                          ),
+                          Expanded(
+                            flex: 20,
+                            child: _MiniTotalText(_money(item['total'])),
+                          ),
+                          SizedBox(
+                            width: 42,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                _TinyActionButton(
+                                  icon: Icons.edit_rounded,
+                                  color: ProductStyles.primaryColor,
+                                  onTap: () => _openEditDialog(item),
+                                ),
+                                const SizedBox(width: 3),
+                                _TinyActionButton(
+                                  icon: Icons.delete_outline_rounded,
+                                  color: ProductStyles.dangerColor,
+                                  onTap: () => _confirmDelete(item),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        _money(item['price']),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: ProductStyles.tableCellTextStyle.copyWith(
-                          fontSize: 7.8,
-                        ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTable() {
+    final items = _filteredMaterials;
+
+    if (items.isEmpty) {
+      return const Center(
+        child: Text('No materials found', style: ProductStyles.emptyStyle),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: ProductStyles.tableOuterDecoration,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SingleChildScrollView(
+          primary: false,
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            primary: false,
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowHeight: 58,
+              dataRowMinHeight: 60,
+              dataRowMaxHeight: 66,
+              horizontalMargin: 22,
+              columnSpacing: 26,
+              dividerThickness: 0.6,
+              headingRowColor: WidgetStateProperty.all(
+                ProductStyles.tableHeaderColor,
+              ),
+              dataRowColor: WidgetStateProperty.resolveWith(
+                (states) => ProductStyles.tableRowColor,
+              ),
+              columns: const [
+                DataColumn(label: _HeaderText('Supplier')),
+                DataColumn(label: _HeaderText('Description')),
+                DataColumn(label: _HeaderText('Unit')),
+                DataColumn(label: _HeaderText('Unit Value')),
+                DataColumn(label: _HeaderText('Price')),
+                DataColumn(label: _HeaderText('Qty')),
+                DataColumn(label: _HeaderText('Total')),
+                DataColumn(label: _HeaderText('Location')),
+                DataColumn(label: _HeaderText('Action')),
+              ],
+              rows: items.map((item) {
+                return DataRow(
+                  cells: [
+                    DataCell(
+                      SizedBox(
+                        width: 130,
+                        child: _CellText(_text(item['supplier_name'])),
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 20,
-                      child: Text(
-                        _text(item['quantity']),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: ProductStyles.tableCellTextStyle.copyWith(
-                          fontSize: 8,
-                        ),
+                    DataCell(
+                      SizedBox(
+                        width: 180,
+                        child: _CellText(_text(item['description'])),
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 46,
-                      child: Text(
-                        _money(item['total']),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: ProductStyles.tableHighlightTextStyle.copyWith(
-                          fontSize: 7.8,
-                        ),
+                    DataCell(_UnitPill(_text(item['unit']))),
+                    DataCell(_CellText(_text(item['unit_value']))),
+                    DataCell(_CellText(_money(item['price']))),
+                    DataCell(_CellText(_text(item['quantity']))),
+                    DataCell(
+                      _CellText(_money(item['total']), isHighlight: true),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 130,
+                        child: _CellText(_text(item['location'])),
                       ),
                     ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 42,
-                      child: Row(
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _TinyActionButton(
+                          _ActionButton(
                             icon: Icons.edit_rounded,
                             color: ProductStyles.primaryColor,
                             onTap: () => _openEditDialog(item),
                           ),
-                          const SizedBox(width: 3),
-                          _TinyActionButton(
+                          const SizedBox(width: 7),
+                          _ActionButton(
                             icon: Icons.delete_outline_rounded,
                             color: ProductStyles.dangerColor,
                             onTap: () => _confirmDelete(item),
@@ -627,104 +710,18 @@ class _ProductPageState extends State<ProductPage> {
                         ],
                       ),
                     ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          width: double.infinity,
-          decoration: ProductStyles.tableOuterDecoration,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: SingleChildScrollView(
-              primary: false,
-              scrollDirection: Axis.vertical,
-              child: DataTable(
-                headingRowHeight: 58,
-                dataRowMinHeight: 60,
-                dataRowMaxHeight: 66,
-                horizontalMargin: 22,
-                columnSpacing: 26,
-                dividerThickness: 0.6,
-                headingRowColor: WidgetStateProperty.all(
-                  ProductStyles.tableHeaderColor,
-                ),
-                dataRowColor: WidgetStateProperty.resolveWith(
-                  (states) => ProductStyles.tableRowColor,
-                ),
-                columns: const [
-                  DataColumn(label: _HeaderText('Supplier')),
-                  DataColumn(label: _HeaderText('Description')),
-                  DataColumn(label: _HeaderText('Unit')),
-                  DataColumn(label: _HeaderText('Unit Value')),
-                  DataColumn(label: _HeaderText('Price')),
-                  DataColumn(label: _HeaderText('Qty')),
-                  DataColumn(label: _HeaderText('Total')),
-                  DataColumn(label: _HeaderText('Location')),
-                  DataColumn(label: _HeaderText('Action')),
-                ],
-                rows: items.map((item) {
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        SizedBox(
-                          width: 130,
-                          child: _CellText(_text(item['supplier_name'])),
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 180,
-                          child: _CellText(_text(item['description'])),
-                        ),
-                      ),
-                      DataCell(_UnitPill(_text(item['unit']))),
-                      DataCell(_CellText(_text(item['unit_value']))),
-                      DataCell(_CellText(_money(item['price']))),
-                      DataCell(_CellText(_text(item['quantity']))),
-                      DataCell(
-                        _CellText(_money(item['total']), isHighlight: true),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 130,
-                          child: _CellText(_text(item['location'])),
-                        ),
-                      ),
-                      DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ActionButton(
-                              icon: Icons.edit_rounded,
-                              color: ProductStyles.primaryColor,
-                              onTap: () => _openEditDialog(item),
-                            ),
-                            const SizedBox(width: 7),
-                            _ActionButton(
-                              icon: Icons.delete_outline_rounded,
-                              color: ProductStyles.dangerColor,
-                              onTap: () => _confirmDelete(item),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
+                  ],
+                );
+              }).toList(),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
+  }
+
+  Widget _buildTable(bool isMobile) {
+    return isMobile ? _buildMobileTable() : _buildDesktopTable();
   }
 
   @override
@@ -794,7 +791,7 @@ class _MobileHeaderText extends StatelessWidget {
       text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: ProductStyles.tableHeaderTextStyle.copyWith(fontSize: 8.5),
+      style: ProductStyles.tableHeaderTextStyle.copyWith(fontSize: 7.2),
     );
   }
 }
@@ -829,8 +826,65 @@ class _MobileCellText extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: ProductStyles.tableCellTextStyle.copyWith(
-        fontSize: 9,
+        fontSize: 8.1,
         fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _MiniText extends StatelessWidget {
+  final String text;
+
+  const _MiniText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: ProductStyles.tableCellTextStyle.copyWith(
+        fontSize: 7.6,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _MiniMoneyText extends StatelessWidget {
+  final String text;
+
+  const _MiniMoneyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: ProductStyles.tableCellTextStyle.copyWith(
+        fontSize: 7.1,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _MiniTotalText extends StatelessWidget {
+  final String text;
+
+  const _MiniTotalText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: ProductStyles.tableHighlightTextStyle.copyWith(
+        fontSize: 7.1,
+        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -865,16 +919,17 @@ class _TinyActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(6),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(4),
+        width: 18,
+        height: 18,
         decoration: BoxDecoration(
           color: color.withOpacity(0.13),
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withOpacity(0.45)),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.45), width: 0.8),
         ),
-        child: Icon(icon, color: color, size: 11),
+        child: Icon(icon, color: color, size: 10),
       ),
     );
   }
