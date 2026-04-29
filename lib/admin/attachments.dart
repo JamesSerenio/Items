@@ -163,6 +163,19 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       if (storagePath != null && storagePath.trim().isNotEmpty) {
         await supabase.storage.from('attachments').remove([storagePath]);
+      } else {
+        final orderId = photo['order_id']?.toString();
+
+        if (orderId != null && orderId.isNotEmpty) {
+          final files = await supabase.storage
+              .from('attachments')
+              .list(path: orderId);
+
+          if (files.isNotEmpty) {
+            final paths = files.map((f) => '$orderId/${f.name}').toList();
+            await supabase.storage.from('attachments').remove(paths);
+          }
+        }
       }
 
       await supabase.from('order_attachments').delete().eq('id', id);
