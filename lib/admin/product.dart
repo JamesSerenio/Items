@@ -534,6 +534,7 @@ class _ProductPageState extends State<ProductPage> {
             columns: const [
               DataColumn(label: _MobileHeaderText('Supplier')),
               DataColumn(label: _MobileHeaderText('Material')),
+              DataColumn(label: _MobileHeaderText('Price')), // ✅ ADD
               DataColumn(label: _MobileHeaderText('Qty')),
               DataColumn(label: _MobileHeaderText('Total')),
               DataColumn(label: _MobileHeaderText('Act')),
@@ -543,13 +544,13 @@ class _ProductPageState extends State<ProductPage> {
                 cells: [
                   DataCell(
                     SizedBox(
-                      width: 58,
+                      width: 52,
                       child: _MobileCellText(_text(item['supplier_name'])),
                     ),
                   ),
                   DataCell(
                     SizedBox(
-                      width: 68,
+                      width: 58,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,7 +562,7 @@ class _ProductPageState extends State<ProductPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: ProductStyles.pageSubtitleStyle.copyWith(
-                              fontSize: 7,
+                              fontSize: 6.5,
                             ),
                           ),
                         ],
@@ -570,33 +571,46 @@ class _ProductPageState extends State<ProductPage> {
                   ),
                   DataCell(
                     SizedBox(
-                      width: 25,
+                      width: 40,
+                      child: Text(
+                        _money(item['price']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ProductStyles.tableCellTextStyle.copyWith(
+                          fontSize: 7.8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    SizedBox(
+                      width: 20,
                       child: Text(
                         _text(item['quantity']),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: ProductStyles.tableCellTextStyle.copyWith(
-                          fontSize: 9,
+                          fontSize: 8,
                         ),
                       ),
                     ),
                   ),
                   DataCell(
                     SizedBox(
-                      width: 52,
+                      width: 46,
                       child: Text(
                         _money(item['total']),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: ProductStyles.tableHighlightTextStyle.copyWith(
-                          fontSize: 8.7,
+                          fontSize: 7.8,
                         ),
                       ),
                     ),
                   ),
                   DataCell(
                     SizedBox(
-                      width: 45,
+                      width: 42,
                       child: Row(
                         children: [
                           _TinyActionButton(
