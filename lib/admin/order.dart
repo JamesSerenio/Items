@@ -1328,7 +1328,9 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 768;
+    final isTablet = width >= 768 && width < 1100;
 
     return Container(
       decoration: OrderStyles.pageBackground,
@@ -1356,7 +1358,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _buildProducts(isMobile),
+                  : _buildProducts(isMobile || isTablet),
             ),
           ],
         ),
