@@ -1241,7 +1241,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 650;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 650;
+    final isTablet = width >= 650 && width < 1100;
 
     return Container(
       decoration: AttachmentsStyles.panel,
@@ -1261,7 +1263,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             style: AttachmentsStyles.subtitle,
           ),
           const SizedBox(height: 20),
-          if (!isMobile) _header(),
+          if (!isMobile && !isTablet) _header(),
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
@@ -1286,7 +1288,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                 : ListView.builder(
                     itemCount: orders.length,
                     itemBuilder: (_, index) {
-                      return isMobile
+                      return (isMobile || isTablet)
                           ? _mobileOrderCard(orders[index])
                           : _desktopOrderRow(orders[index]);
                     },
