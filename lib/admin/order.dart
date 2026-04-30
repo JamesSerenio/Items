@@ -419,29 +419,9 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
               backgroundColor: Colors.transparent,
               insetPadding: EdgeInsets.all(isMobile ? 12 : 22),
               child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: isMobile ? double.infinity : 680,
-                  maxHeight: MediaQuery.of(context).size.height * 0.84,
-                ),
-                decoration: BoxDecoration(
-                  color: OrderStyles.panelCardColor,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: OrderStyles.plutoGold.withOpacity(0.75),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.60),
-                      blurRadius: 35,
-                      offset: const Offset(0, 18),
-                    ),
-                    BoxShadow(
-                      color: OrderStyles.plutoGold.withOpacity(0.12),
-                      blurRadius: 25,
-                    ),
-                  ],
-                ),
+                width: isMobile ? double.infinity : 680,
+                height: MediaQuery.of(context).size.height * 0.78,
+                decoration: OrderStyles.cartPanelDecoration,
                 padding: EdgeInsets.all(isMobile ? 14 : 18),
                 child: Column(
                   children: [
@@ -475,7 +455,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 14),
 
                     Expanded(
@@ -489,208 +468,151 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           : ListView.separated(
                               itemCount: _cart.length,
                               separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                               itemBuilder: (_, index) {
                                 final item = _cart[index];
 
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeOutCubic,
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        OrderStyles.inputFill,
-                                        OrderStyles.panelCardColor,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: OrderStyles.plutoGold.withOpacity(
-                                        0.42,
-                                      ),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.25),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
+                                return Container(
+                                  padding: EdgeInsets.all(isMobile ? 10 : 14),
+                                  decoration: OrderStyles.cartItemDecoration,
+                                  child: Row(
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 22,
+                                      Container(
+                                        width: isMobile ? 38 : 44,
+                                        height: isMobile ? 38 : 44,
+                                        decoration:
+                                            OrderStyles.statIconDecoration,
+                                        child: const Icon(
+                                          Icons.inventory_2_outlined,
+                                          color: OrderStyles.plutoGold,
+                                          size: 19,
                                         ),
-                                        child: Row(
+                                      ),
+                                      const SizedBox(width: 10),
+
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Container(
-                                              width: 44,
-                                              height: 44,
-                                              decoration: OrderStyles
-                                                  .statIconDecoration,
-                                              child: const Icon(
-                                                Icons.inventory_2_outlined,
-                                                color: OrderStyles.plutoGold,
-                                                size: 20,
-                                              ),
+                                            Text(
+                                              _text(item['item_description']),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: OrderStyles
+                                                  .cartItemNameStyle
+                                                  .copyWith(
+                                                    fontSize: isMobile
+                                                        ? 12
+                                                        : 15,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
                                             ),
-
-                                            const SizedBox(width: 12),
-
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    _text(
-                                                      item['item_description'],
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: OrderStyles
-                                                        .cartItemNameStyle,
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              '${_text(item['supplier_name'])} • ${_text(item['unit'])}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: OrderStyles
+                                                  .cartItemMetaStyle
+                                                  .copyWith(
+                                                    fontSize: isMobile ? 9 : 12,
                                                   ),
-                                                  const SizedBox(height: 5),
-                                                  Text(
-                                                    '${_text(item['unit'])} • ${_money(item['unit_cost'])}',
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: OrderStyles
-                                                        .cartItemMetaStyle,
-                                                  ),
-                                                ],
-                                              ),
                                             ),
-
-                                            const SizedBox(width: 10),
-
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                _QtyButton(
-                                                  icon: Icons.remove_rounded,
-                                                  onTap: () {
-                                                    _decreaseQty(index);
-                                                    refreshModal();
-                                                  },
-                                                ),
-                                                const SizedBox(width: 7),
-
-                                                InkWell(
-                                                  borderRadius:
-                                                      BorderRadius.circular(13),
-                                                  onTap: () async {
-                                                    await _editCartQty(index);
-                                                    refreshModal();
-                                                  },
-                                                  child: Container(
-                                                    width: 48,
-                                                    height: 34,
-                                                    alignment: Alignment.center,
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: [
-                                                          OrderStyles.plutoGold
-                                                              .withOpacity(
-                                                                0.22,
-                                                              ),
-                                                          OrderStyles.megaGreen
-                                                              .withOpacity(
-                                                                0.13,
-                                                              ),
-                                                        ],
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            13,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: OrderStyles
-                                                            .plutoGold
-                                                            .withOpacity(0.65),
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      _text(item['quantity']),
-                                                      style: OrderStyles
-                                                          .qtyTextStyle,
-                                                    ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              _money(item['total_cost']),
+                                              style: OrderStyles.orderTotalStyle
+                                                  .copyWith(
+                                                    fontSize: isMobile
+                                                        ? 12
+                                                        : 15,
                                                   ),
-                                                ),
-
-                                                const SizedBox(width: 7),
-
-                                                _QtyButton(
-                                                  icon: Icons.add_rounded,
-                                                  onTap: () {
-                                                    _increaseQty(index);
-                                                    refreshModal();
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-
-                                            const SizedBox(width: 10),
-
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                SizedBox(
-                                                  width: 80,
-                                                  child: Text(
-                                                    _money(item['total_cost']),
-                                                    textAlign: TextAlign.right,
-                                                    style: OrderStyles
-                                                        .orderTotalStyle,
-                                                  ),
-                                                ),
-
-                                                const SizedBox(width: 8),
-
-                                                InkWell(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        999,
-                                                      ),
-                                                  onTap: () {
-                                                    _removeCartItem(index);
-                                                    refreshModal();
-                                                  },
-                                                  child: Container(
-                                                    width: 28,
-                                                    height: 28,
-                                                    decoration: BoxDecoration(
-                                                      color: OrderStyles
-                                                          .dangerColor
-                                                          .withOpacity(0.10),
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                        color: OrderStyles
-                                                            .dangerColor
-                                                            .withOpacity(0.6),
-                                                      ),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.close_rounded,
-                                                      size: 16,
-                                                      color: OrderStyles
-                                                          .dangerColor,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
                                             ),
                                           ],
                                         ),
+                                      ),
+
+                                      const SizedBox(width: 8),
+
+                                      Column(
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _QtyButton(
+                                                icon: Icons.remove_rounded,
+                                                onTap: () {
+                                                  _decreaseQty(index);
+                                                  refreshModal();
+                                                },
+                                              ),
+                                              const SizedBox(width: 5),
+                                              InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                onTap: () async {
+                                                  await _editCartQty(index);
+                                                  refreshModal();
+                                                },
+                                                child: Container(
+                                                  width: isMobile ? 34 : 46,
+                                                  height: 30,
+                                                  alignment: Alignment.center,
+                                                  decoration: OrderStyles
+                                                      .unitPillDecoration,
+                                                  child: Text(
+                                                    _text(item['quantity']),
+                                                    style: OrderStyles
+                                                        .qtyTextStyle,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              _QtyButton(
+                                                icon: Icons.add_rounded,
+                                                onTap: () {
+                                                  _increaseQty(index);
+                                                  refreshModal();
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 7),
+                                          InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                            onTap: () {
+                                              _removeCartItem(index);
+                                              refreshModal();
+                                            },
+                                            child: Container(
+                                              width: isMobile ? 82 : 95,
+                                              height: 26,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                color: OrderStyles.dangerColor
+                                                    .withOpacity(0.10),
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                                border: Border.all(
+                                                  color: OrderStyles.dangerColor
+                                                      .withOpacity(0.55),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Remove',
+                                                style: TextStyle(
+                                                  color:
+                                                      OrderStyles.dangerColor,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -706,18 +628,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         horizontal: 16,
                         vertical: 15,
                       ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            OrderStyles.plutoGold.withOpacity(0.22),
-                            OrderStyles.megaGreen.withOpacity(0.14),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: OrderStyles.plutoGold.withOpacity(0.65),
-                        ),
-                      ),
+                      decoration: OrderStyles.totalBoxDecoration,
                       child: Row(
                         children: [
                           const Expanded(
@@ -1199,96 +1110,195 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       );
     }
 
+    if (isMobile) {
+      return Container(
+        width: double.infinity,
+        decoration: OrderStyles.tableOuterDecoration.copyWith(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Column(
+            children: [
+              Container(
+                height: 34,
+                color: OrderStyles.tableHeaderColor,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 26, child: _MobileHeaderText('Product')),
+                    Expanded(flex: 22, child: _MobileHeaderText('Supplier')),
+                    Expanded(flex: 16, child: _MobileHeaderText('Price')),
+                    Expanded(flex: 12, child: _MobileHeaderText('Qty')),
+                    SizedBox(width: 32, child: _MobileHeaderText('Add')),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: EdgeInsets.zero,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    thickness: 0.45,
+                    color: OrderStyles.borderColor.withOpacity(0.55),
+                  ),
+                  itemBuilder: (_, index) {
+                    final item = items[index];
+                    final key = GlobalKey();
+                    final stock = _remainingStock(item);
+
+                    return Container(
+                      height: 62,
+                      color: OrderStyles.tableRowColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 26,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _MobileCellText(_text(item['description'])),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: OrderStyles.pageSubtitleStyle.copyWith(
+                                    fontSize: 6.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 22,
+                            child: _MobileCellText(
+                              _text(item['supplier_name']),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 16,
+                            child: _MiniMoneyText(_money(item['price'])),
+                          ),
+                          Expanded(
+                            flex: 12,
+                            child: _MiniText(
+                              stock <= 0 ? 'Out' : stock.toString(),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 32,
+                            key: key,
+                            child: _TinyActionButton(
+                              icon: Icons.add_shopping_cart_rounded,
+                              color: stock <= 0
+                                  ? Colors.grey
+                                  : OrderStyles.primaryColor,
+                              onTap: stock <= 0
+                                  ? () {}
+                                  : () => _addToCart(item, key),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tableWidth = isMobile ? 780.0 : constraints.maxWidth;
-
         return Container(
           width: double.infinity,
           decoration: OrderStyles.tableOuterDecoration,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    headingRowHeight: isMobile ? 48 : 58,
-                    dataRowMinHeight: isMobile ? 54 : 62,
-                    dataRowMaxHeight: isMobile ? 62 : 70,
-                    columnSpacing: isMobile ? 16 : 32,
-                    horizontalMargin: isMobile ? 12 : 24,
-                    dividerThickness: 0.5,
-                    headingRowColor: WidgetStateProperty.all(
-                      OrderStyles.tableHeaderColor,
-                    ),
-                    dataRowColor: WidgetStateProperty.all(
-                      OrderStyles.tableRowColor,
-                    ),
-                    columns: const [
-                      DataColumn(label: _HeaderText('Product')),
-                      DataColumn(label: _HeaderText('Supplier')),
-                      DataColumn(label: _HeaderText('Unit')),
-                      DataColumn(label: _HeaderText('Price')),
-                      DataColumn(label: _HeaderText('Stock')),
-                      DataColumn(label: _HeaderText('Location')),
-                      DataColumn(label: _HeaderText('Order')),
-                    ],
-                    rows: items.map((item) {
-                      final key = GlobalKey();
-                      final stock = _remainingStock(item);
-
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 120 : 160,
-                              child: _CellText(_text(item['description'])),
-                            ),
-                          ),
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 100 : 130,
-                              child: _CellText(_text(item['supplier_name'])),
-                            ),
-                          ),
-                          DataCell(_UnitPill(_text(item['unit']))),
-                          DataCell(
-                            _CellText(_money(item['price']), highlight: true),
-                          ),
-                          DataCell(
-                            _StockBadge(
-                              text: stock <= 0 ? 'Out' : stock.toString(),
-                              isOut: stock <= 0,
-                            ),
-                          ),
-                          DataCell(
-                            SizedBox(
-                              width: isMobile ? 100 : 130,
-                              child: _CellText(_text(item['location'])),
-                            ),
-                          ),
-                          DataCell(
-                            SizedBox(
-                              key: key,
-                              child: ElevatedButton.icon(
-                                onPressed: stock <= 0
-                                    ? null
-                                    : () => _addToCart(item, key),
-                                style: OrderStyles.addCartButtonStyle,
-                                icon: const Icon(
-                                  Icons.add_shopping_cart_rounded,
-                                  size: 17,
-                                ),
-                                label: Text(isMobile ? 'Add' : 'Add to Cart'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowHeight: 58,
+                  dataRowMinHeight: 60,
+                  dataRowMaxHeight: 66,
+                  horizontalMargin: 22,
+                  columnSpacing: 30,
+                  dividerThickness: 0.6,
+                  headingRowColor: WidgetStateProperty.all(
+                    OrderStyles.tableHeaderColor,
                   ),
+                  dataRowColor: WidgetStateProperty.all(
+                    OrderStyles.tableRowColor,
+                  ),
+                  columns: const [
+                    DataColumn(label: _HeaderText('Product')),
+                    DataColumn(label: _HeaderText('Supplier')),
+                    DataColumn(label: _HeaderText('Unit')),
+                    DataColumn(label: _HeaderText('Price')),
+                    DataColumn(label: _HeaderText('Stock')),
+                    DataColumn(label: _HeaderText('Location')),
+                    DataColumn(label: _HeaderText('Order')),
+                  ],
+                  rows: items.map((item) {
+                    final key = GlobalKey();
+                    final stock = _remainingStock(item);
+
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          SizedBox(
+                            width: 160,
+                            child: _CellText(_text(item['description'])),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: 130,
+                            child: _CellText(_text(item['supplier_name'])),
+                          ),
+                        ),
+                        DataCell(_UnitPill(_text(item['unit']))),
+                        DataCell(
+                          _CellText(_money(item['price']), highlight: true),
+                        ),
+                        DataCell(
+                          _StockBadge(
+                            text: stock <= 0 ? 'Out' : stock.toString(),
+                            isOut: stock <= 0,
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: 130,
+                            child: _CellText(_text(item['location'])),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            key: key,
+                            child: ElevatedButton.icon(
+                              onPressed: stock <= 0
+                                  ? null
+                                  : () => _addToCart(item, key),
+                              style: OrderStyles.addCartButtonStyle,
+                              icon: const Icon(
+                                Icons.add_shopping_cart_rounded,
+                                size: 17,
+                              ),
+                              label: const Text('Add to Cart'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
                 ),
               ),
             ),
@@ -1656,6 +1666,109 @@ class _CellText extends StatelessWidget {
       style: highlight
           ? OrderStyles.tableHighlightTextStyle
           : OrderStyles.tableCellTextStyle,
+    );
+  }
+}
+
+class _MobileHeaderText extends StatelessWidget {
+  final String text;
+
+  const _MobileHeaderText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: OrderStyles.tableHeaderTextStyle.copyWith(fontSize: 7.2),
+    );
+  }
+}
+
+class _MobileCellText extends StatelessWidget {
+  final String text;
+
+  const _MobileCellText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: OrderStyles.tableCellTextStyle.copyWith(
+        fontSize: 8.1,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _MiniText extends StatelessWidget {
+  final String text;
+
+  const _MiniText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: OrderStyles.tableCellTextStyle.copyWith(
+        fontSize: 7.6,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+class _MiniMoneyText extends StatelessWidget {
+  final String text;
+
+  const _MiniMoneyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: OrderStyles.tableHighlightTextStyle.copyWith(
+        fontSize: 7.2,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class _TinyActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TinyActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(7),
+      onTap: onTap,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.13),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: color.withOpacity(0.45), width: 0.8),
+        ),
+        child: Icon(icon, color: color, size: 13),
+      ),
     );
   }
 }
