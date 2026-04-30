@@ -473,146 +473,163 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                 final item = _cart[index];
 
                                 return Container(
-                                  padding: EdgeInsets.all(isMobile ? 10 : 14),
+                                  height: isMobile ? 54 : 62,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isMobile ? 8 : 12,
+                                    vertical: isMobile ? 6 : 9,
+                                  ),
                                   decoration: OrderStyles.cartItemDecoration,
                                   child: Row(
                                     children: [
                                       Container(
-                                        width: isMobile ? 38 : 44,
-                                        height: isMobile ? 38 : 44,
+                                        width: isMobile ? 30 : 38,
+                                        height: isMobile ? 30 : 38,
                                         decoration:
                                             OrderStyles.statIconDecoration,
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.inventory_2_outlined,
                                           color: OrderStyles.plutoGold,
-                                          size: 19,
+                                          size: isMobile ? 15 : 18,
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
 
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              _text(item['item_description']),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: OrderStyles
-                                                  .cartItemNameStyle
-                                                  .copyWith(
-                                                    fontSize: isMobile
-                                                        ? 12
-                                                        : 15,
-                                                    fontWeight: FontWeight.w900,
+                                            Expanded(
+                                              flex: 26,
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    _text(
+                                                      item['item_description'],
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: OrderStyles
+                                                        .cartItemNameStyle
+                                                        .copyWith(
+                                                          fontSize: isMobile
+                                                              ? 10
+                                                              : 13,
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                        ),
                                                   ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '${_text(item['supplier_name'])} • ${_text(item['unit'])}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: OrderStyles
+                                                        .cartItemMetaStyle
+                                                        .copyWith(
+                                                          fontSize: isMobile
+                                                              ? 7.5
+                                                              : 10,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            const SizedBox(height: 3),
-                                            Text(
-                                              '${_text(item['supplier_name'])} • ${_text(item['unit'])}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: OrderStyles
-                                                  .cartItemMetaStyle
-                                                  .copyWith(
-                                                    fontSize: isMobile ? 9 : 12,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 3),
-                                            Text(
-                                              _money(item['total_cost']),
-                                              style: OrderStyles.orderTotalStyle
-                                                  .copyWith(
-                                                    fontSize: isMobile
-                                                        ? 12
-                                                        : 15,
-                                                  ),
+
+                                            Expanded(
+                                              flex: 15,
+                                              child: Text(
+                                                _money(item['total_cost']),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                textAlign: TextAlign.right,
+                                                style: OrderStyles
+                                                    .orderTotalStyle
+                                                    .copyWith(
+                                                      fontSize: isMobile
+                                                          ? 10
+                                                          : 13,
+                                                    ),
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
 
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 6),
 
-                                      Column(
-                                        children: [
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              _QtyButton(
-                                                icon: Icons.remove_rounded,
-                                                onTap: () {
-                                                  _decreaseQty(index);
-                                                  refreshModal();
-                                                },
-                                              ),
-                                              const SizedBox(width: 5),
-                                              InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                onTap: () async {
-                                                  await _editCartQty(index);
-                                                  refreshModal();
-                                                },
-                                                child: Container(
-                                                  width: isMobile ? 34 : 46,
-                                                  height: 30,
-                                                  alignment: Alignment.center,
-                                                  decoration: OrderStyles
-                                                      .unitPillDecoration,
-                                                  child: Text(
-                                                    _text(item['quantity']),
-                                                    style: OrderStyles
-                                                        .qtyTextStyle,
-                                                  ),
+                                      _QtyButton(
+                                        icon: Icons.remove_rounded,
+                                        onTap: () {
+                                          _decreaseQty(index);
+                                          refreshModal();
+                                        },
+                                      ),
+                                      const SizedBox(width: 4),
+
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(10),
+                                        onTap: () async {
+                                          await _editCartQty(index);
+                                          refreshModal();
+                                        },
+                                        child: Container(
+                                          width: isMobile ? 28 : 36,
+                                          height: isMobile ? 26 : 30,
+                                          alignment: Alignment.center,
+                                          decoration:
+                                              OrderStyles.unitPillDecoration,
+                                          child: Text(
+                                            _text(item['quantity']),
+                                            style: OrderStyles.qtyTextStyle
+                                                .copyWith(
+                                                  fontSize: isMobile ? 11 : 13,
                                                 ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                              _QtyButton(
-                                                icon: Icons.add_rounded,
-                                                onTap: () {
-                                                  _increaseQty(index);
-                                                  refreshModal();
-                                                },
-                                              ),
-                                            ],
                                           ),
-                                          const SizedBox(height: 7),
-                                          InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                            onTap: () {
-                                              _removeCartItem(index);
-                                              refreshModal();
-                                            },
-                                            child: Container(
-                                              width: isMobile ? 82 : 95,
-                                              height: 26,
-                                              alignment: Alignment.center,
-                                              decoration: BoxDecoration(
-                                                color: OrderStyles.dangerColor
-                                                    .withOpacity(0.10),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                                border: Border.all(
-                                                  color: OrderStyles.dangerColor
-                                                      .withOpacity(0.55),
-                                                ),
-                                              ),
-                                              child: const Text(
-                                                'Remove',
-                                                style: TextStyle(
-                                                  color:
-                                                      OrderStyles.dangerColor,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                              ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 4),
+                                      _QtyButton(
+                                        icon: Icons.add_rounded,
+                                        onTap: () {
+                                          _increaseQty(index);
+                                          refreshModal();
+                                        },
+                                      ),
+
+                                      const SizedBox(width: 5),
+
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                        onTap: () {
+                                          _removeCartItem(index);
+                                          refreshModal();
+                                        },
+                                        child: Container(
+                                          width: isMobile ? 24 : 28,
+                                          height: isMobile ? 24 : 28,
+                                          decoration: BoxDecoration(
+                                            color: OrderStyles.dangerColor
+                                                .withOpacity(0.10),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: OrderStyles.dangerColor
+                                                  .withOpacity(0.55),
                                             ),
                                           ),
-                                        ],
+                                          child: Icon(
+                                            Icons.close_rounded,
+                                            color: OrderStyles.dangerColor,
+                                            size: isMobile ? 13 : 15,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1839,10 +1856,10 @@ class _QtyButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
-        width: 28,
-        height: 28,
+        width: 24,
+        height: 24,
         decoration: OrderStyles.qtyButtonDecoration,
-        child: Icon(icon, size: 18, color: OrderStyles.plutoGold),
+        child: Icon(icon, size: 14, color: OrderStyles.plutoGold),
       ),
     );
   }
