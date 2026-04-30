@@ -562,15 +562,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
                                       const SizedBox(width: 6),
 
-                                      _QtyButton(
-                                        icon: Icons.remove_rounded,
-                                        onTap: () {
-                                          _decreaseQty(index);
-                                          refreshModal();
-                                        },
-                                      ),
-                                      const SizedBox(width: 4),
-
                                       InkWell(
                                         borderRadius: BorderRadius.circular(10),
                                         onTap: () async {
@@ -578,7 +569,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                           refreshModal();
                                         },
                                         child: Container(
-                                          width: isMobile ? 28 : 36,
+                                          width: isMobile ? 34 : 44,
                                           height: isMobile ? 26 : 30,
                                           alignment: Alignment.center,
                                           decoration:
@@ -587,19 +578,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                             _text(item['quantity']),
                                             style: OrderStyles.qtyTextStyle
                                                 .copyWith(
-                                                  fontSize: isMobile ? 11 : 13,
+                                                  fontSize: isMobile ? 12 : 14,
+                                                  fontWeight: FontWeight.w900,
                                                 ),
                                           ),
                                         ),
-                                      ),
-
-                                      const SizedBox(width: 4),
-                                      _QtyButton(
-                                        icon: Icons.add_rounded,
-                                        onTap: () {
-                                          _increaseQty(index);
-                                          refreshModal();
-                                        },
                                       ),
 
                                       const SizedBox(width: 5),
@@ -1231,97 +1214,115 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          width: double.infinity,
-          decoration: OrderStyles.tableOuterDecoration,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: SingleChildScrollView(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowHeight: 58,
-                  dataRowMinHeight: 60,
-                  dataRowMaxHeight: 66,
-                  horizontalMargin: 22,
-                  columnSpacing: 30,
-                  dividerThickness: 0.6,
-                  headingRowColor: WidgetStateProperty.all(
-                    OrderStyles.tableHeaderColor,
-                  ),
-                  dataRowColor: WidgetStateProperty.all(
-                    OrderStyles.tableRowColor,
-                  ),
-                  columns: const [
-                    DataColumn(label: _HeaderText('Product')),
-                    DataColumn(label: _HeaderText('Supplier')),
-                    DataColumn(label: _HeaderText('Unit')),
-                    DataColumn(label: _HeaderText('Price')),
-                    DataColumn(label: _HeaderText('Stock')),
-                    DataColumn(label: _HeaderText('Location')),
-                    DataColumn(label: _HeaderText('Order')),
-                  ],
-                  rows: items.map((item) {
-                    final key = GlobalKey();
-                    final stock = _remainingStock(item);
+    return Container(
+      width: double.infinity,
+      decoration: OrderStyles.tableOuterDecoration,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          children: [
+            Container(
+              height: 58,
+              color: OrderStyles.tableHeaderColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: const Row(
+                children: [
+                  Expanded(flex: 28, child: _HeaderText('Product')),
+                  Expanded(flex: 18, child: _HeaderText('Supplier')),
+                  Expanded(flex: 12, child: _HeaderText('Unit')),
+                  Expanded(flex: 14, child: _HeaderText('Price')),
+                  Expanded(flex: 12, child: _HeaderText('Stock')),
+                  Expanded(flex: 18, child: _HeaderText('Location')),
+                  Expanded(flex: 18, child: _HeaderText('Order')),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 0.6,
+                  color: OrderStyles.borderColor.withOpacity(0.45),
+                ),
+                itemBuilder: (_, index) {
+                  final item = items[index];
+                  final key = GlobalKey();
+                  final stock = _remainingStock(item);
 
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          SizedBox(
-                            width: 160,
-                            child: _CellText(_text(item['description'])),
+                  return Container(
+                    height: 72,
+                    color: OrderStyles.tableRowColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 28,
+                          child: _CellText(_text(item['description'])),
+                        ),
+                        Expanded(
+                          flex: 18,
+                          child: _CellText(_text(item['supplier_name'])),
+                        ),
+                        Expanded(
+                          flex: 12,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _UnitPill(_text(item['unit'])),
                           ),
                         ),
-                        DataCell(
-                          SizedBox(
-                            width: 130,
-                            child: _CellText(_text(item['supplier_name'])),
+                        Expanded(
+                          flex: 14,
+                          child: _CellText(
+                            _money(item['price']),
+                            highlight: true,
                           ),
                         ),
-                        DataCell(_UnitPill(_text(item['unit']))),
-                        DataCell(
-                          _CellText(_money(item['price']), highlight: true),
-                        ),
-                        DataCell(
-                          _StockBadge(
-                            text: stock <= 0 ? 'Out' : stock.toString(),
-                            isOut: stock <= 0,
+                        Expanded(
+                          flex: 12,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _StockBadge(
+                              text: stock <= 0 ? 'Out' : stock.toString(),
+                              isOut: stock <= 0,
+                            ),
                           ),
                         ),
-                        DataCell(
-                          SizedBox(
-                            width: 130,
-                            child: _CellText(_text(item['location'])),
-                          ),
+                        Expanded(
+                          flex: 18,
+                          child: _CellText(_text(item['location'])),
                         ),
-                        DataCell(
-                          SizedBox(
-                            key: key,
-                            child: ElevatedButton.icon(
-                              onPressed: stock <= 0
-                                  ? null
-                                  : () => _addToCart(item, key),
-                              style: OrderStyles.addCartButtonStyle,
-                              icon: const Icon(
-                                Icons.add_shopping_cart_rounded,
-                                size: 17,
+                        Expanded(
+                          flex: 18,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              key: key,
+                              height: 40,
+                              child: ElevatedButton.icon(
+                                onPressed: stock <= 0
+                                    ? null
+                                    : () => _addToCart(item, key),
+                                style: OrderStyles.addCartButtonStyle,
+                                icon: const Icon(
+                                  Icons.add_shopping_cart_rounded,
+                                  size: 17,
+                                ),
+                                label: const Text('Add to Cart'),
                               ),
-                              label: const Text('Add to Cart'),
                             ),
                           ),
                         ),
                       ],
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
