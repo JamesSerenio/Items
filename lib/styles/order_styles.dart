@@ -323,7 +323,7 @@ class OrderStyles {
 
   static InputDecoration get descriptionInputDecoration {
     return InputDecoration(
-      hintText: 'Write description here...',
+      hintText: 'Enter procuring entity...',
       hintStyle: const TextStyle(color: textSecondary),
       filled: true,
       fillColor: inputFill,

@@ -351,7 +351,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Write Order Description',
+                        'Write Procuring Entity',
                         style: OrderStyles.popupTitleStyle,
                       ),
                     ),
@@ -939,7 +939,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                       children: [
                         Expanded(
                           child: Text(
-                            'Description: ${_text(order['description'])}',
+                            'Procuring Entity: ${_text(order['description'])}',
                             style: const TextStyle(
                               color: Colors.black87,
                               fontSize: 14,
