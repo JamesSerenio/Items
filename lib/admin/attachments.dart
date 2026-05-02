@@ -66,7 +66,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       final ordersData = await supabase
           .from('purchase_orders')
-          .select('id, po_no, description, total_amount, created_at')
+          .select('id, po_no, procuring_entity, total_amount, created_at')
           .order('created_at', ascending: false);
 
       final attachmentData = await supabase
@@ -251,7 +251,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           maxLines: 3,
           style: const TextStyle(color: AttachmentsStyles.textPrimary),
           decoration: InputDecoration(
-            hintText: 'Optional description...',
+            hintText: 'Write description...',
             hintStyle: const TextStyle(color: AttachmentsStyles.textSecondary),
             filled: true,
             fillColor: AttachmentsStyles.bgDark,
@@ -403,7 +403,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Procuring Entity: ${_text(order['description'])}',
+                              'Procuring Entity: ${_text(order['procuring_entity'])}',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w700,
@@ -423,7 +423,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Description: ${_text(order['description'])}',
+                                'Procuring Entity: ${_text(order['procuring_entity'])}',
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w700,
@@ -574,7 +574,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               children: [
                 pw.Expanded(
                   child: pw.Text(
-                    'Description: ${_text(order['description'])}',
+                    'Procuring Entity: ${_text(order['procuring_entity'])}',
                     style: pw.TextStyle(
                       font: boldFont,
                       fontSize: 12,
@@ -732,7 +732,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
     await Printing.sharePdf(
       bytes: await pdf.save(),
-      filename: '${_text(order['description'])}_purchase_order.pdf',
+      filename: '${_text(order['procuring_entity'])}_purchase_order.pdf',
     );
   }
 
@@ -768,7 +768,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Uploaded Photos - ${_text(order['description'])}',
+                            'Uploaded Photos - ${_text(order['procuring_entity'])}',
                             style: AttachmentsStyles.title.copyWith(
                               fontSize: isMobile ? 16 : 20,
                             ),
@@ -1049,7 +1049,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         children: [
           Expanded(
             flex: 3,
-            child: Text('Description', style: AttachmentsStyles.header),
+            child: Text('Procuring Entity', style: AttachmentsStyles.header),
           ),
           Expanded(
             flex: 2,
@@ -1093,7 +1093,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _text(order['description']),
+                  _text(order['procuring_entity']),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AttachmentsStyles.cell.copyWith(fontSize: 16),
@@ -1175,7 +1175,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           Expanded(
             flex: 3,
             child: Text(
-              _text(order['description']),
+              _text(order['procuring_entity']),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AttachmentsStyles.cell,
