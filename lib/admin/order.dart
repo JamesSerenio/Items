@@ -61,7 +61,9 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   Future<void> _loadOrders() async {
     final data = await Supabase.instance.client
         .from('purchase_orders')
-        .select('id, po_no, procuring_entity, total_amount, created_at')
+        .select(
+          'id, po_no, description, item_description, total_amount, created_at',
+        )
         .order('created_at', ascending: false);
 
     if (!mounted) return;
@@ -313,7 +315,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       await Supabase.instance.client.rpc(
         'checkout_purchase_order',
-        params: {'p_procuring_entity': description, 'p_items': items},
+        params: {'p_description': description, 'p_items': items},
       );
 
       if (!mounted) return;
@@ -351,7 +353,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Write Procuring Entity',
+                        'Write discription',
                         style: OrderStyles.popupTitleStyle,
                       ),
                     ),
@@ -682,7 +684,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           style: TextStyle(color: OrderStyles.textPrimary),
         ),
         content: Text(
-          'Void ${_text(order['procuring_entity'])}? Stocks will be returned.',
+          'Void ${_text(order['description'])}? Stocks will be returned.',
           style: const TextStyle(color: OrderStyles.textSecondary),
         ),
         actions: [
@@ -794,7 +796,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _text(order['procuring_entity']),
+                                            _text(order['description']),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style:
@@ -939,7 +941,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                       children: [
                         Expanded(
                           child: Text(
-                            'Procuring Entity: ${_text(order['procuring_entity'])}',
+                            'Procuring Entity: ${_text(order['description'])}',
                             style: const TextStyle(
                               color: Colors.black87,
                               fontSize: 14,

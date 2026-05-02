@@ -1243,7 +1243,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             Icon(icon, color: AttachmentsStyles.gold, size: 18),
             if (label.isNotEmpty) ...[
               const SizedBox(width: 6),
-              Flexible(child: Text(label, style: AttachmentsStyles.goldText)),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: AttachmentsStyles.goldText,
+                ),
+              ),
             ],
           ],
         ),
@@ -1272,11 +1278,11 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             child: Text('PDF', style: AttachmentsStyles.header),
           ),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Text('Upload Photos', style: AttachmentsStyles.header),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text('Status', style: AttachmentsStyles.header),
           ),
         ],
@@ -1430,27 +1436,27 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                       onTap: () => uploadPhotos(order),
                     ),
                     const SizedBox(width: 8),
-                    if (delivered) ...[
+                    if (delivered)
                       _iconBtn(
                         icon: Icons.photo_library_outlined,
                         label: 'View Photos',
                         onTap: () => viewPhotos(order),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    _iconBtn(
-                      icon: Icons.edit_note_rounded,
-                      label: 'Details',
-                      onTap: () => openDetails(order),
-                    ),
                   ],
                 ),
               ),
               Expanded(
-                flex: 2,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _photoStatusPill(delivered),
+                flex: 3,
+                child: Row(
+                  children: [
+                    _photoStatusPill(delivered),
+                    const Spacer(),
+                    _iconBtn(
+                      icon: Icons.edit_note_rounded,
+                      label: '',
+                      onTap: () => openDetails(order),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1464,7 +1470,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 650;
-    final isTablet = width >= 650 && width < 900;
+    final isTablet = width >= 650 && width < 1100;
 
     return Container(
       decoration: AttachmentsStyles.panel,
