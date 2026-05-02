@@ -33,22 +33,28 @@ class AddItemsStyles {
 
   static final BoxDecoration formCardDecoration = BoxDecoration(
     borderRadius: BorderRadius.circular(24),
-    color: panelCardColor,
-    border: Border.all(color: plutoGold.withOpacity(0.75), width: 1.15),
+    color: panelCardColor.withOpacity(0.90),
+    border: Border.all(color: plutoGold.withOpacity(0.75), width: 1.1),
+  );
+
+  static final BoxDecoration totalDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(14),
+    color: Colors.white.withOpacity(0.06),
+    border: Border.all(color: plutoGold.withOpacity(0.35)),
   );
 
   static const TextStyle pageTitleStyle = TextStyle(
     color: textPrimary,
-    fontSize: 30,
-    fontWeight: FontWeight.w800,
-    height: 1.1,
+    fontSize: 32,
+    fontWeight: FontWeight.w900,
+    height: 1.0,
   );
 
   static const TextStyle pageTitleMobileStyle = TextStyle(
     color: textPrimary,
-    fontSize: 24,
-    fontWeight: FontWeight.w800,
-    height: 1.1,
+    fontSize: 22,
+    fontWeight: FontWeight.w900,
+    height: 1.0,
   );
 
   static const TextStyle pageSubtitleStyle = TextStyle(
@@ -59,16 +65,16 @@ class AddItemsStyles {
 
   static const TextStyle labelStyle = TextStyle(
     color: textPrimary,
-    fontSize: 14,
-    fontWeight: FontWeight.w700,
+    fontSize: 12,
+    fontWeight: FontWeight.w800,
   );
 
   static ButtonStyle get saveButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: plutoGold,
     foregroundColor: const Color(0xFF07100B),
     elevation: 0,
-    padding: const EdgeInsets.symmetric(vertical: 18),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    padding: EdgeInsets.zero,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
   );
 
   static InputDecoration inputDecoration({
@@ -77,36 +83,37 @@ class AddItemsStyles {
     bool alignLabelTop = false,
   }) {
     return InputDecoration(
+      isDense: true,
       hintText: hintText,
       hintStyle: const TextStyle(
         color: textSecondary,
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: FontWeight.w500,
       ),
-      prefixIcon: alignLabelTop
-          ? Padding(
-              padding: const EdgeInsets.only(left: 14, right: 10, bottom: 54),
-              child: Icon(prefixIcon, color: plutoGold, size: 24),
-            )
-          : Icon(prefixIcon, color: plutoGold, size: 24),
-      prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      prefixIcon: Icon(prefixIcon, color: plutoGold, size: 18),
+      prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 38),
       filled: true,
       fillColor: inputFill,
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: alignLabelTop ? 20 : 18,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1.1),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: plutoGold, width: 1.4),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: plutoGold, width: 1.25),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.2),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1.1),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: plutoGold.withOpacity(0.55), width: 1),
       ),
     );
   }

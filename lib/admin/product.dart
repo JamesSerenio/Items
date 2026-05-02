@@ -35,7 +35,7 @@ class _ProductPageState extends State<ProductPage> {
       final data = await Supabase.instance.client
           .from('materials')
           .select(
-            'id, supplier_name, description, unit, unit_value, price, quantity, total, location, created_at',
+            'id, supplier_name, brand, description, unit, unit_value, price, quantity, total, location, created_at',
           )
           .order('created_at', ascending: false);
 
@@ -59,6 +59,7 @@ class _ProductPageState extends State<ProductPage> {
     return _materials.where((item) {
       return [
         item['supplier_name'],
+        item['brand'],
         item['description'],
         item['unit'],
         item['unit_value'],
@@ -84,6 +85,16 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   String _text(dynamic value) => value?.toString() ?? '-';
+
+  String _cleanText(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    return text;
+  }
+
+  bool _hasBrand(Map<String, dynamic> item) {
+    final brand = _cleanText(item['brand']);
+    return brand.isNotEmpty && brand.toLowerCase() != 'null' && brand != '-';
+  }
 
   String _money(dynamic value) {
     final number = num.tryParse(value?.toString() ?? '0') ?? 0;
@@ -157,6 +168,7 @@ class _ProductPageState extends State<ProductPage> {
   Future<void> _updateMaterial({
     required String id,
     required String supplierName,
+    required String brand,
     required String description,
     required String unit,
     required double unitValue,
@@ -169,6 +181,7 @@ class _ProductPageState extends State<ProductPage> {
           .from('materials')
           .update({
             'supplier_name': supplierName,
+            'brand': brand.trim().isEmpty ? null : brand.trim(),
             'description': description,
             'unit': unit,
             'unit_value': unitValue,
@@ -190,6 +203,9 @@ class _ProductPageState extends State<ProductPage> {
   void _openEditDialog(Map<String, dynamic> item) {
     final supplierController = TextEditingController(
       text: _text(item['supplier_name']),
+    );
+    final brandController = TextEditingController(
+      text: _hasBrand(item) ? _cleanText(item['brand']) : '',
     );
     final descriptionController = TextEditingController(
       text: _text(item['description']),
@@ -253,6 +269,12 @@ class _ProductPageState extends State<ProductPage> {
                         label: 'Name of Supplier',
                         icon: Icons.storefront_outlined,
                         validator: _requiredValidator,
+                      ),
+                      const SizedBox(height: 10),
+                      _EditField(
+                        controller: brandController,
+                        label: 'Brand Optional',
+                        icon: Icons.sell_outlined,
                       ),
                       const SizedBox(height: 10),
                       _EditField(
@@ -335,6 +357,7 @@ class _ProductPageState extends State<ProductPage> {
                                 await _updateMaterial(
                                   id: item['id'].toString(),
                                   supplierName: supplierController.text.trim(),
+                                  brand: brandController.text.trim(),
                                   description: descriptionController.text
                                       .trim(),
                                   unit: unitController.text.trim(),
@@ -477,7 +500,7 @@ class _ProductPageState extends State<ProductPage> {
               decoration: ProductStyles.searchDecoration.copyWith(
                 hintText: isMobile
                     ? 'Search material...'
-                    : 'Search supplier, material, unit, or location...',
+                    : 'Search supplier, brand, material, unit, or location...',
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: isMobile ? 8 : 18,
                   vertical: isMobile ? 7 : 18,
@@ -565,6 +588,20 @@ class _ProductPageState extends State<ProductPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _MobileCellText(_text(item['description'])),
+                                if (_hasBrand(item)) ...[
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    'Brand: ${_cleanText(item['brand'])}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: ProductStyles.pageSubtitleStyle
+                                        .copyWith(
+                                          fontSize: 6.3,
+                                          fontWeight: FontWeight.w800,
+                                          color: ProductStyles.primaryColor,
+                                        ),
+                                  ),
+                                ],
                                 const SizedBox(height: 2),
                                 Text(
                                   '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
@@ -678,7 +715,27 @@ class _ProductPageState extends State<ProductPage> {
                         ),
                         Expanded(
                           flex: 26,
-                          child: _CellText(_text(item['description'])),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _CellText(_text(item['description'])),
+                              if (_hasBrand(item)) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Brand: ${_cleanText(item['brand'])}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: ProductStyles.tableCellTextStyle
+                                      .copyWith(
+                                        fontSize: 11,
+                                        color: ProductStyles.primaryColor,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                         Expanded(
                           flex: 11,
@@ -744,15 +801,12 @@ class _ProductPageState extends State<ProductPage> {
   Widget _buildTable(bool isMobile) {
     final width = MediaQuery.of(context).size.width;
 
-    // Mobile = original mobile layout
     if (isMobile) return _buildMobileTable();
 
-    // Tablet only: gamitin compact table para walang overflow
     if (width >= 768 && width < 1100) {
       return _buildMobileTable();
     }
 
-    // Desktop = original desktop layout
     return _buildDesktopTable();
   }
 

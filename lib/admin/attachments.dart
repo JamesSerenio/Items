@@ -1322,33 +1322,30 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     required bool compact,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 9 : 14,
-        vertical: compact ? 7 : 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
       decoration: BoxDecoration(
         color: AttachmentsStyles.bgDark.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withOpacity(0.55)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: compact ? 13 : 18),
-          SizedBox(width: compact ? 5 : 7),
+          Icon(icon, color: color, size: 10),
+          const SizedBox(width: 3),
           Text(
             '$value',
             style: TextStyle(
               color: color,
-              fontSize: compact ? 11 : 16,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(width: compact ? 4 : 5),
+          const SizedBox(width: 3),
           Text(
             label,
             style: AttachmentsStyles.small.copyWith(
-              fontSize: compact ? 9 : 12,
+              fontSize: 8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1407,110 +1404,148 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         ? 'All'
         : _collectingLabel(_filterName(selectedFilter));
 
-    return Row(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _summaryCard(
-                  label: 'Processing',
-                  value: processing,
-                  color: AttachmentsStyles.gold,
-                  icon: Icons.pending_actions_rounded,
-                  compact: compact,
-                ),
-                const SizedBox(width: 8),
-                _summaryCard(
-                  label: 'Collecting',
-                  value: collecting,
-                  color: AttachmentsStyles.danger,
-                  icon: Icons.local_shipping_outlined,
-                  compact: compact,
-                ),
-                const SizedBox(width: 8),
-                _summaryCard(
-                  label: 'Collected',
-                  value: collected,
-                  color: Colors.grey,
-                  icon: Icons.verified_rounded,
-                  compact: compact,
-                ),
-              ],
-            ),
-          ),
+    Widget tinyCount({
+      required int value,
+      required Color color,
+      required IconData icon,
+    }) {
+      return Container(
+        height: 31,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: AttachmentsStyles.bgDark.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withOpacity(0.55)),
         ),
-        const SizedBox(width: 10),
-        Container(
-          height: compact ? 38 : 42,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: AttachmentsStyles.filterBox(
-            active: true,
-            color: AttachmentsStyles.green,
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<AttachmentsFilter>(
-              value: selectedFilter,
-              dropdownColor: AttachmentsStyles.bgDark,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: AttachmentsStyles.gold,
-                size: 18,
-              ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 13),
+            const SizedBox(width: 5),
+            Text(
+              '$value',
               style: TextStyle(
-                color: AttachmentsStyles.textPrimary,
-                fontSize: compact ? 10 : 12,
+                color: color,
+                fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
-              selectedItemBuilder: (_) {
-                return AttachmentsFilter.values.map((_) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.filter_list_rounded,
-                        color: AttachmentsStyles.green,
-                        size: 15,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        currentLabel,
-                        style: TextStyle(
-                          color: AttachmentsStyles.green,
-                          fontSize: compact ? 10 : 12,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList();
-              },
-              items: const [
-                DropdownMenuItem(
-                  value: AttachmentsFilter.all,
-                  child: Text('All'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          tinyCount(
+            value: processing,
+            color: AttachmentsStyles.gold,
+            icon: Icons.pending_actions_rounded,
+          ),
+          const SizedBox(width: 7),
+          tinyCount(
+            value: collecting,
+            color: AttachmentsStyles.danger,
+            icon: Icons.local_shipping_outlined,
+          ),
+          const SizedBox(width: 7),
+          tinyCount(
+            value: collected,
+            color: Colors.grey,
+            icon: Icons.verified_rounded,
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<AttachmentsFilter>(
+            color: AttachmentsStyles.bgDark,
+            elevation: 18,
+            offset: const Offset(0, 38),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: BorderSide(
+                color: AttachmentsStyles.green.withOpacity(0.55),
+              ),
+            ),
+            onSelected: (v) => setState(() => selectedFilter = v),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: AttachmentsFilter.all,
+                child: Text(
+                  'All',
+                  style: TextStyle(
+                    color: AttachmentsStyles.textPrimary,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: AttachmentsFilter.processing,
-                  child: Text('Processing'),
+              ),
+              PopupMenuItem(
+                value: AttachmentsFilter.processing,
+                child: Text(
+                  'Processing',
+                  style: TextStyle(
+                    color: AttachmentsStyles.gold,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: AttachmentsFilter.collecting,
-                  child: Text('Collecting'),
+              ),
+              PopupMenuItem(
+                value: AttachmentsFilter.collecting,
+                child: Text(
+                  'Collecting',
+                  style: TextStyle(
+                    color: AttachmentsStyles.danger,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: AttachmentsFilter.collected,
-                  child: Text('Collected'),
+              ),
+              PopupMenuItem(
+                value: AttachmentsFilter.collected,
+                child: Text(
+                  'Collected',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => selectedFilter = v);
-              },
+              ),
+            ],
+            child: Container(
+              height: 31,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: AttachmentsStyles.filterBox(
+                active: true,
+                color: AttachmentsStyles.green,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.tune_rounded,
+                    color: AttachmentsStyles.green,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    currentLabel,
+                    style: const TextStyle(
+                      color: AttachmentsStyles.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AttachmentsStyles.gold,
+                    size: 14,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
