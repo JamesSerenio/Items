@@ -403,7 +403,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Description: ${_text(order['description'])}',
+                              'Procuring Entity: ${_text(order['description'])}',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w700,
