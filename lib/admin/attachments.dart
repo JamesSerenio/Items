@@ -449,7 +449,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                   maxLines: 3,
                   style: const TextStyle(color: AttachmentsStyles.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Description...',
+                    hintText: 'Write Procuring Entity...',
                     hintStyle: const TextStyle(
                       color: AttachmentsStyles.textSecondary,
                     ),
