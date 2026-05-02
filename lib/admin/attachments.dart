@@ -89,7 +89,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       final ordersData = await supabase
           .from('purchase_orders')
           .select(
-            'id, po_no, procuring_entity, description, collecting_status, total_amount, created_at',
+            'id, po_no, description, item_description, collecting_status, total_amount, created_at',
           )
           .order('created_at', ascending: false);
 
@@ -150,7 +150,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   }
 
   bool _hasOrderDetails(Map<String, dynamic> order) {
-    final desc = (order['description'] ?? '').toString().trim();
+    final desc = (order['item_description'] ?? '').toString().trim();
     final status = (order['collecting_status'] ?? '').toString().trim();
     return desc.isNotEmpty || status.isNotEmpty;
   }
@@ -242,7 +242,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _text(order['procuring_entity']),
+          _text(order['description']),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: mobile
@@ -412,7 +412,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   Future<void> openDetails(Map<String, dynamic> order) async {
     final descController = TextEditingController(
-      text: order['description'] ?? '',
+      text: order['item_description'] ?? '',
     );
 
     String status =
@@ -493,7 +493,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               await supabase
                   .from('purchase_orders')
                   .update({
-                    'description': descController.text.trim(),
+                    'item_description': descController.text.trim(),
                     'collecting_status': status,
                   })
                   .eq('id', order['id']);
@@ -1267,7 +1267,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         children: [
           Expanded(
             flex: 3,
-            child: Text('Procuring Entity', style: AttachmentsStyles.header),
+            child: Text('Description', style: AttachmentsStyles.header),
           ),
           Expanded(
             flex: 2,
