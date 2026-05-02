@@ -55,6 +55,28 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         .subscribe();
   }
 
+  Future<List<Map<String, dynamic>>> _loadAttachmentsSafeNoOrder() async {
+    final data = await supabase
+        .from('order_attachments')
+        .select(
+          'id, order_id, image_url, file_name, description, storage_path, created_at',
+        );
+
+    final list = List<Map<String, dynamic>>.from(data);
+
+    list.sort((a, b) {
+      final ad =
+          DateTime.tryParse(a['created_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bd =
+          DateTime.tryParse(b['created_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return bd.compareTo(ad);
+    });
+
+    return list;
+  }
+
   Future<void> loadAll() async {
     try {
       if (mounted) {
@@ -66,21 +88,18 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       final ordersData = await supabase
           .from('purchase_orders')
-          .select('id, po_no, procuring_entity, total_amount, created_at')
-          .order('created_at', ascending: false);
-
-      final attachmentData = await supabase
-          .from('order_attachments')
           .select(
-            'id, order_id, image_url, file_name, description, storage_path, created_at',
+            'id, po_no, procuring_entity, description, collecting_status, total_amount, created_at',
           )
           .order('created_at', ascending: false);
+
+      final attachmentData = await _loadAttachmentsSafeNoOrder();
 
       if (!mounted) return;
 
       setState(() {
         orders = List<Map<String, dynamic>>.from(ordersData);
-        attachments = List<Map<String, dynamic>>.from(attachmentData);
+        attachments = attachmentData;
         loading = false;
       });
     } catch (e) {
@@ -130,6 +149,126 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
+  bool _hasOrderDetails(Map<String, dynamic> order) {
+    final desc = (order['description'] ?? '').toString().trim();
+    final status = (order['collecting_status'] ?? '').toString().trim();
+    return desc.isNotEmpty || status.isNotEmpty;
+  }
+
+  Color _collectingColor(String? status) {
+    switch (status) {
+      case 'collecting':
+        return AttachmentsStyles.danger;
+      case 'collected':
+        return Colors.grey;
+      case 'processing':
+        return AttachmentsStyles.gold;
+      default:
+        return AttachmentsStyles.gold;
+    }
+  }
+
+  String _collectingLabel(String? status) {
+    switch (status) {
+      case 'collecting':
+        return 'Collecting';
+      case 'collected':
+        return 'Collected';
+      case 'processing':
+        return 'Processing';
+      default:
+        return 'Processing';
+    }
+  }
+
+  BoxDecoration _orderCardDecoration(Map<String, dynamic> order) {
+    final hasDetails = _hasOrderDetails(order);
+    final status = order['collecting_status']?.toString();
+    final color = hasDetails
+        ? _collectingColor(status)
+        : AttachmentsStyles.gold;
+
+    return BoxDecoration(
+      color: status == 'collected'
+          ? AttachmentsStyles.card.withOpacity(0.45)
+          : AttachmentsStyles.card,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: hasDetails ? color.withOpacity(0.75) : color.withOpacity(0.35),
+        width: hasDetails ? 1.5 : 1,
+      ),
+    );
+  }
+
+  Widget _photoStatusPill(bool delivered) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: delivered
+          ? AttachmentsStyles.statusDone
+          : AttachmentsStyles.statusPending,
+      child: Text(
+        delivered ? 'Delivered' : 'Pending',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: delivered ? AttachmentsStyles.green : AttachmentsStyles.gold,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+
+  Widget _collectingStatusText(Map<String, dynamic> order) {
+    final status = (order['collecting_status'] ?? '').toString().trim();
+    if (status.isEmpty) return const SizedBox.shrink();
+
+    final color = _collectingColor(status);
+
+    return Text(
+      _collectingLabel(status).toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AttachmentsStyles.small.copyWith(
+        color: color,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+
+  Widget _orderTitleDetails(Map<String, dynamic> order, {bool mobile = false}) {
+    final desc = (order['description'] ?? '').toString().trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _text(order['procuring_entity']),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: mobile
+              ? AttachmentsStyles.cell.copyWith(fontSize: 16)
+              : AttachmentsStyles.cell,
+        ),
+        if (desc.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text(
+            desc,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AttachmentsStyles.small,
+          ),
+        ],
+        if ((order['collecting_status'] ?? '')
+            .toString()
+            .trim()
+            .isNotEmpty) ...[
+          const SizedBox(height: 3),
+          _collectingStatusText(order),
+        ],
+      ],
+    );
+  }
+
   String? _storagePathFromUrl(String url) {
     if (url.contains('/object/public/attachments/')) {
       return Uri.decodeFull(
@@ -149,7 +288,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   Future<void> _deleteStorageFile(Map<String, dynamic> photo) async {
     final imageUrl = _text(photo['image_url']);
     final orderId = photo['order_id']?.toString();
-
     final savedPath = photo['storage_path']?.toString().trim();
 
     final paths = <String>{};
@@ -272,6 +410,105 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
+  Future<void> openDetails(Map<String, dynamic> order) async {
+    final descController = TextEditingController(
+      text: order['description'] ?? '',
+    );
+
+    String status =
+        order['collecting_status']?.toString().trim().isNotEmpty == true
+        ? order['collecting_status'].toString()
+        : 'processing';
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AttachmentsStyles.bg,
+        title: const Text(
+          'Add Details',
+          style: TextStyle(color: AttachmentsStyles.textPrimary),
+        ),
+        content: StatefulBuilder(
+          builder: (context, setModalState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  style: const TextStyle(color: AttachmentsStyles.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Description...',
+                    hintStyle: const TextStyle(
+                      color: AttachmentsStyles.textSecondary,
+                    ),
+                    filled: true,
+                    fillColor: AttachmentsStyles.bgDark,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: status,
+                  dropdownColor: AttachmentsStyles.bg,
+                  style: const TextStyle(color: AttachmentsStyles.textPrimary),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AttachmentsStyles.bgDark,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'processing',
+                      child: Text('Processing'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'collecting',
+                      child: Text('Collecting'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'collected',
+                      child: Text('Collected'),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setModalState(() => status = v);
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await supabase
+                  .from('purchase_orders')
+                  .update({
+                    'description': descController.text.trim(),
+                    'collecting_status': status,
+                  })
+                  .eq('id', order['id']);
+
+              if (!mounted) return;
+              Navigator.pop(context);
+              await loadAll();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> uploadPhotos(Map<String, dynamic> order) async {
     final desc = await _askDescription();
     if (desc == null) return;
@@ -309,10 +546,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       await loadAll();
 
-      if (mounted) {
-        setState(() {});
-      }
-
+      if (mounted) setState(() {});
       _showSnack('Photos uploaded successfully');
     } catch (e) {
       _showSnack('Upload failed: $e');
@@ -783,9 +1017,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 6),
-
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -796,9 +1028,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Expanded(
                       child: photos.isEmpty
                           ? const Center(
@@ -993,24 +1223,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
-  Widget _statusPill(bool finished) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: finished
-          ? AttachmentsStyles.statusDone
-          : AttachmentsStyles.statusPending,
-      child: Text(
-        finished ? 'Finish' : 'Processing',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: finished ? AttachmentsStyles.green : AttachmentsStyles.gold,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-
   Widget _iconBtn({
     required IconData icon,
     required String label,
@@ -1074,167 +1286,176 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   Widget _mobileOrderCard(Map<String, dynamic> order) {
     final photos = _photosFor(order['id']);
-    final finished = photos.isNotEmpty;
+    final delivered = photos.isNotEmpty;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: AttachmentsStyles.cardStyle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.description_outlined,
-                color: AttachmentsStyles.gold,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _text(order['procuring_entity']),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AttachmentsStyles.cell.copyWith(fontSize: 16),
+    return Opacity(
+      opacity: order['collecting_status'] == 'collected' ? 0.62 : 1,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: _orderCardDecoration(order),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.description_outlined,
+                  color: AttachmentsStyles.gold,
+                  size: 20,
                 ),
-              ),
-              _statusPill(finished),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time_rounded,
-                color: AttachmentsStyles.textSecondary,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  _formatDate(order['created_at']),
-                  style: AttachmentsStyles.small,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _iconBtn(
-                icon: Icons.picture_as_pdf_outlined,
-                label: 'View PDF',
-                expand: true,
-                onTap: () => viewPdf(order),
-              ),
-              const SizedBox(width: 8),
-              _iconBtn(
-                icon: Icons.download_rounded,
-                label: 'Download',
-                expand: true,
-                onTap: () => downloadPdf(order),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _iconBtn(
-                icon: Icons.cloud_upload_outlined,
-                label: 'Upload',
-                expand: true,
-                onTap: () => uploadPhotos(order),
-              ),
-              if (finished) ...[
                 const SizedBox(width: 8),
-                _iconBtn(
-                  icon: Icons.photo_library_outlined,
-                  label: 'Photos',
-                  expand: true,
-                  onTap: () => viewPhotos(order),
+                Expanded(child: _orderTitleDetails(order, mobile: true)),
+                _photoStatusPill(delivered),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  color: AttachmentsStyles.textSecondary,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _formatDate(order['created_at']),
+                    style: AttachmentsStyles.small,
+                  ),
                 ),
               ],
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _iconBtn(
+                  icon: Icons.picture_as_pdf_outlined,
+                  label: 'View PDF',
+                  expand: true,
+                  onTap: () => viewPdf(order),
+                ),
+                const SizedBox(width: 8),
+                _iconBtn(
+                  icon: Icons.download_rounded,
+                  label: 'Download',
+                  expand: true,
+                  onTap: () => downloadPdf(order),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _iconBtn(
+                  icon: Icons.cloud_upload_outlined,
+                  label: 'Upload',
+                  expand: true,
+                  onTap: () => uploadPhotos(order),
+                ),
+                const SizedBox(width: 8),
+                _iconBtn(
+                  icon: Icons.edit_note_rounded,
+                  label: 'Details',
+                  expand: true,
+                  onTap: () => openDetails(order),
+                ),
+                if (delivered) ...[
+                  const SizedBox(width: 8),
+                  _iconBtn(
+                    icon: Icons.photo_library_outlined,
+                    label: 'Photos',
+                    expand: true,
+                    onTap: () => viewPhotos(order),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _desktopOrderRow(Map<String, dynamic> order) {
     final photos = _photosFor(order['id']);
-    final finished = photos.isNotEmpty;
+    final delivered = photos.isNotEmpty;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: AttachmentsStyles.cardStyle,
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              _text(order['procuring_entity']),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AttachmentsStyles.cell,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              _formatDate(order['created_at']),
-              style: AttachmentsStyles.small,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _iconBtn(
-                  icon: Icons.picture_as_pdf_outlined,
-                  label: 'View',
-                  onTap: () => viewPdf(order),
+    return Opacity(
+      opacity: order['collecting_status'] == 'collected' ? 0.62 : 1,
+      child: Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: _orderCardDecoration(order),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 86),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(flex: 3, child: _orderTitleDetails(order)),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  _formatDate(order['created_at']),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AttachmentsStyles.small,
                 ),
-                _iconBtn(
-                  icon: Icons.download_rounded,
-                  label: '',
-                  onTap: () => downloadPdf(order),
+              ),
+              Expanded(
+                flex: 2,
+                child: Row(
+                  children: [
+                    _iconBtn(
+                      icon: Icons.picture_as_pdf_outlined,
+                      label: 'View',
+                      onTap: () => viewPdf(order),
+                    ),
+                    const SizedBox(width: 8),
+                    _iconBtn(
+                      icon: Icons.download_rounded,
+                      label: '',
+                      onTap: () => downloadPdf(order),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _iconBtn(
-                  icon: Icons.cloud_upload_outlined,
-                  label: 'Upload',
-                  onTap: () => uploadPhotos(order),
+              ),
+              Expanded(
+                flex: 4,
+                child: Row(
+                  children: [
+                    _iconBtn(
+                      icon: Icons.cloud_upload_outlined,
+                      label: 'Upload',
+                      onTap: () => uploadPhotos(order),
+                    ),
+                    const SizedBox(width: 8),
+                    if (delivered) ...[
+                      _iconBtn(
+                        icon: Icons.photo_library_outlined,
+                        label: 'View Photos',
+                        onTap: () => viewPhotos(order),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    _iconBtn(
+                      icon: Icons.edit_note_rounded,
+                      label: 'Details',
+                      onTap: () => openDetails(order),
+                    ),
+                  ],
                 ),
-                if (finished)
-                  _iconBtn(
-                    icon: Icons.photo_library_outlined,
-                    label: 'View Photos',
-                    onTap: () => viewPhotos(order),
-                  ),
-              ],
-            ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _photoStatusPill(delivered),
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: _statusPill(finished),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1243,7 +1464,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 650;
-    final isTablet = width >= 650 && width < 1100;
+    final isTablet = width >= 650 && width < 900;
 
     return Container(
       decoration: AttachmentsStyles.panel,
