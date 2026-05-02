@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../styles/attachments_styles.dart';
 
+enum AttachmentsFilter { all, processing, collecting, collected }
+
 class AttachmentsPage extends StatefulWidget {
   const AttachmentsPage({super.key});
 
@@ -19,6 +21,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   bool loading = true;
   String? loadError;
+
+  AttachmentsFilter selectedFilter = AttachmentsFilter.all;
 
   List<Map<String, dynamic>> orders = [];
   List<Map<String, dynamic>> attachments = [];
@@ -40,6 +44,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     super.dispose();
   }
 
+  String _filterName(AttachmentsFilter filter) {
+    return filter.toString().split('.').last;
+  }
+
   void listenAttachmentsRealtime() {
     attachmentsChannel = supabase.channel('public:order_attachments');
 
@@ -48,9 +56,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'order_attachments',
-          callback: (payload) async {
-            await loadAll();
-          },
+          callback: (_) async => loadAll(),
         )
         .subscribe();
   }
@@ -114,6 +120,31 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     }
   }
 
+  List<Map<String, dynamic>> get filteredOrders {
+    if (selectedFilter == AttachmentsFilter.all) return orders;
+
+    final statusName = _filterName(selectedFilter);
+
+    return orders.where((o) {
+      final status = (o['collecting_status'] ?? 'processing')
+          .toString()
+          .trim()
+          .toLowerCase();
+
+      return status == statusName;
+    }).toList();
+  }
+
+  int _countStatus(String status) {
+    return orders.where((o) {
+      return (o['collecting_status'] ?? 'processing')
+              .toString()
+              .trim()
+              .toLowerCase() ==
+          status;
+    }).length;
+  }
+
   List<Map<String, dynamic>> _photosFor(dynamic orderId) {
     return attachments
         .where((a) => a['order_id']?.toString() == orderId?.toString())
@@ -149,14 +180,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
-  bool _hasOrderDetails(Map<String, dynamic> order) {
-    final desc = (order['item_description'] ?? '').toString().trim();
+  String _statusOf(Map<String, dynamic> order) {
     final status = (order['collecting_status'] ?? '').toString().trim();
-    return desc.isNotEmpty || status.isNotEmpty;
+    return status.isEmpty ? 'processing' : status.toLowerCase();
   }
 
   Color _collectingColor(String? status) {
-    switch (status) {
+    switch ((status ?? 'processing').toLowerCase()) {
       case 'collecting':
         return AttachmentsStyles.danger;
       case 'collected':
@@ -169,7 +199,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   }
 
   String _collectingLabel(String? status) {
-    switch (status) {
+    switch ((status ?? 'processing').toLowerCase()) {
       case 'collecting':
         return 'Collecting';
       case 'collected':
@@ -182,20 +212,33 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   }
 
   BoxDecoration _orderCardDecoration(Map<String, dynamic> order) {
-    final hasDetails = _hasOrderDetails(order);
-    final status = order['collecting_status']?.toString();
-    final color = hasDetails
-        ? _collectingColor(status)
-        : AttachmentsStyles.gold;
+    final status = _statusOf(order);
+    final color = _collectingColor(status);
 
     return BoxDecoration(
       color: status == 'collected'
           ? AttachmentsStyles.card.withOpacity(0.45)
           : AttachmentsStyles.card,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: hasDetails ? color.withOpacity(0.75) : color.withOpacity(0.35),
-        width: hasDetails ? 1.5 : 1,
+      border: Border.all(color: color.withOpacity(0.75), width: 1.45),
+    );
+  }
+
+  Widget _statusSmallPill(String status) {
+    final color = _collectingColor(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: AttachmentsStyles.statusBox(color),
+      child: Text(
+        _collectingLabel(status).toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -214,23 +257,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           fontSize: 12,
           fontWeight: FontWeight.w900,
         ),
-      ),
-    );
-  }
-
-  Widget _collectingStatusText(Map<String, dynamic> order) {
-    final status = (order['collecting_status'] ?? '').toString().trim();
-    if (status.isEmpty) return const SizedBox.shrink();
-
-    final color = _collectingColor(status);
-
-    return Text(
-      _collectingLabel(status).toUpperCase(),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: AttachmentsStyles.small.copyWith(
-        color: color,
-        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -267,13 +293,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             style: AttachmentsStyles.small,
           ),
         ],
-        if ((order['collecting_status'] ?? '')
-            .toString()
-            .trim()
-            .isNotEmpty) ...[
-          const SizedBox(height: 3),
-          _collectingStatusText(order),
-        ],
+        const SizedBox(height: 5),
+        _statusSmallPill(_statusOf(order)),
       ],
     );
   }
@@ -301,9 +322,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
     final paths = <String>{};
 
-    if (savedPath != null && savedPath.isNotEmpty) {
-      paths.add(savedPath);
-    }
+    if (savedPath != null && savedPath.isNotEmpty) paths.add(savedPath);
 
     final pathFromUrl = _storagePathFromUrl(imageUrl);
     if (pathFromUrl != null && pathFromUrl.trim().isNotEmpty) {
@@ -420,16 +439,15 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   }
 
   Future<void> openDetails(Map<String, dynamic> order) async {
+    final photos = _photosFor(order['id']);
+
     final descController = TextEditingController(
-      text: _photosFor(order['id']).isNotEmpty
-          ? (_photosFor(order['id']).first['procuring_entity'] ?? '')
+      text: photos.isNotEmpty
+          ? (photos.first['procuring_entity'] ?? '').toString()
           : '',
     );
 
-    String status =
-        order['collecting_status']?.toString().trim().isNotEmpty == true
-        ? order['collecting_status'].toString()
-        : 'processing';
+    String status = _statusOf(order);
 
     await showDialog(
       context: context,
@@ -506,10 +524,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                   .update({'collecting_status': status})
                   .eq('id', order['id']);
 
-              await supabase
-                  .from('order_attachments')
-                  .update({'procuring_entity': descController.text.trim()})
-                  .eq('order_id', order['id']);
+              if (photos.isNotEmpty) {
+                await supabase
+                    .from('order_attachments')
+                    .update({'procuring_entity': descController.text.trim()})
+                    .eq('order_id', order['id']);
+              }
+
               if (!mounted) return;
               Navigator.pop(context);
               await loadAll();
@@ -534,6 +555,17 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     if (result == null || result.files.isEmpty) return;
 
     try {
+      final oldPhotos = _photosFor(order['id']);
+
+      String currentProcuringEntity = '';
+      for (final p in oldPhotos) {
+        final v = (p['procuring_entity'] ?? '').toString().trim();
+        if (v.isNotEmpty) {
+          currentProcuringEntity = v;
+          break;
+        }
+      }
+
       for (final file in result.files) {
         if (file.bytes == null) continue;
 
@@ -552,6 +584,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           'image_url': url,
           'file_name': file.name,
           'description': desc,
+          'procuring_entity': currentProcuringEntity,
           'storage_path': fileName,
         });
       }
@@ -649,7 +682,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Procuring Entity: ${_text(order['procuring_entity'])}',
+                              'Description: ${_text(order['description'])}',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w700,
@@ -669,7 +702,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Procuring Entity: ${_text(order['procuring_entity'])}',
+                                'Description: ${_text(order['description'])}',
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w700,
@@ -820,7 +853,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               children: [
                 pw.Expanded(
                   child: pw.Text(
-                    'Procuring Entity: ${_text(order['procuring_entity'])}',
+                    'Description: ${_text(order['description'])}',
                     style: pw.TextStyle(
                       font: boldFont,
                       fontSize: 12,
@@ -978,7 +1011,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
     await Printing.sharePdf(
       bytes: await pdf.save(),
-      filename: '${_text(order['procuring_entity'])}_purchase_order.pdf',
+      filename: '${_text(order['description'])}_purchase_order.pdf',
     );
   }
 
@@ -1014,7 +1047,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Uploaded Photos - ${_text(order['procuring_entity'])}',
+                            'Uploaded Photos - ${_text(order['description'])}',
                             style: AttachmentsStyles.title.copyWith(
                               fontSize: isMobile ? 16 : 20,
                             ),
@@ -1240,20 +1273,25 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     required String label,
     required VoidCallback onTap,
     bool expand = false,
+    bool iconOnly = false,
   }) {
     final child = InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        width: expand ? double.infinity : null,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        width: iconOnly ? 46 : (expand ? double.infinity : null),
+        height: iconOnly ? 42 : null,
+        padding: EdgeInsets.symmetric(
+          horizontal: iconOnly ? 0 : 12,
+          vertical: 10,
+        ),
         decoration: AttachmentsStyles.outlineBtn,
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: AttachmentsStyles.gold, size: 18),
-            if (label.isNotEmpty) ...[
+            if (label.isNotEmpty && !iconOnly) ...[
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -1269,6 +1307,206 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
 
     return expand ? Expanded(child: child) : child;
+  }
+
+  Widget _summaryCard({
+    required String label,
+    required int value,
+    required Color color,
+    required IconData icon,
+    required bool compact,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 9 : 14,
+        vertical: compact ? 7 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: AttachmentsStyles.bgDark.withOpacity(0.72),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: compact ? 13 : 18),
+          SizedBox(width: compact ? 5 : 7),
+          Text(
+            '$value',
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 11 : 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(width: compact ? 4 : 5),
+          Text(
+            label,
+            style: AttachmentsStyles.small.copyWith(
+              fontSize: compact ? 9 : 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required AttachmentsFilter value,
+    required Color color,
+    required IconData icon,
+    required bool compact,
+  }) {
+    final active = selectedFilter == value;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => setState(() => selectedFilter = value),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 15,
+          vertical: compact ? 7 : 10,
+        ),
+        decoration: AttachmentsStyles.filterBox(active: active, color: color),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: active ? color : AttachmentsStyles.gold,
+              size: compact ? 13 : 16,
+            ),
+            SizedBox(width: compact ? 5 : 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? color : AttachmentsStyles.textSecondary,
+                fontSize: compact ? 10 : 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _topStatsAndFilters(bool compact) {
+    final processing = _countStatus('processing');
+    final collecting = _countStatus('collecting');
+    final collected = _countStatus('collected');
+
+    final currentLabel = selectedFilter == AttachmentsFilter.all
+        ? 'All'
+        : _collectingLabel(_filterName(selectedFilter));
+
+    return Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _summaryCard(
+                  label: 'Processing',
+                  value: processing,
+                  color: AttachmentsStyles.gold,
+                  icon: Icons.pending_actions_rounded,
+                  compact: compact,
+                ),
+                const SizedBox(width: 8),
+                _summaryCard(
+                  label: 'Collecting',
+                  value: collecting,
+                  color: AttachmentsStyles.danger,
+                  icon: Icons.local_shipping_outlined,
+                  compact: compact,
+                ),
+                const SizedBox(width: 8),
+                _summaryCard(
+                  label: 'Collected',
+                  value: collected,
+                  color: Colors.grey,
+                  icon: Icons.verified_rounded,
+                  compact: compact,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          height: compact ? 38 : 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: AttachmentsStyles.filterBox(
+            active: true,
+            color: AttachmentsStyles.green,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<AttachmentsFilter>(
+              value: selectedFilter,
+              dropdownColor: AttachmentsStyles.bgDark,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AttachmentsStyles.gold,
+                size: 18,
+              ),
+              style: TextStyle(
+                color: AttachmentsStyles.textPrimary,
+                fontSize: compact ? 10 : 12,
+                fontWeight: FontWeight.w900,
+              ),
+              selectedItemBuilder: (_) {
+                return AttachmentsFilter.values.map((_) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.filter_list_rounded,
+                        color: AttachmentsStyles.green,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        currentLabel,
+                        style: TextStyle(
+                          color: AttachmentsStyles.green,
+                          fontSize: compact ? 10 : 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList();
+              },
+              items: const [
+                DropdownMenuItem(
+                  value: AttachmentsFilter.all,
+                  child: Text('All'),
+                ),
+                DropdownMenuItem(
+                  value: AttachmentsFilter.processing,
+                  child: Text('Processing'),
+                ),
+                DropdownMenuItem(
+                  value: AttachmentsFilter.collecting,
+                  child: Text('Collecting'),
+                ),
+                DropdownMenuItem(
+                  value: AttachmentsFilter.collected,
+                  child: Text('Collected'),
+                ),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => selectedFilter = v);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _header() {
@@ -1307,89 +1545,104 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final delivered = photos.isNotEmpty;
 
     return Opacity(
-      opacity: order['collecting_status'] == 'collected' ? 0.62 : 1,
+      opacity: _statusOf(order) == 'collected' ? 0.62 : 1,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: _orderCardDecoration(order),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final oneLine = constraints.maxWidth >= 520;
+            final btnWidth = oneLine
+                ? (constraints.maxWidth - 48) / 5
+                : constraints.maxWidth;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.description_outlined,
-                  color: AttachmentsStyles.gold,
-                  size: 20,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.description_outlined,
+                      color: AttachmentsStyles.gold,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: _orderTitleDetails(order, mobile: true)),
+                    const SizedBox(width: 8),
+                    _photoStatusPill(delivered),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(child: _orderTitleDetails(order, mobile: true)),
-                _photoStatusPill(delivered),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      color: AttachmentsStyles.textSecondary,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _formatDate(order['created_at']),
+                        style: AttachmentsStyles.small,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    SizedBox(
+                      width: btnWidth,
+                      child: _iconBtn(
+                        icon: Icons.picture_as_pdf_outlined,
+                        label: oneLine ? 'PDF' : 'View PDF',
+                        onTap: () => viewPdf(order),
+                      ),
+                    ),
+                    SizedBox(
+                      width: btnWidth,
+                      child: _iconBtn(
+                        icon: Icons.download_rounded,
+                        label: oneLine ? 'Save' : 'Download',
+                        onTap: () => downloadPdf(order),
+                      ),
+                    ),
+                    SizedBox(
+                      width: btnWidth,
+                      child: _iconBtn(
+                        icon: Icons.cloud_upload_outlined,
+                        label: 'Upload',
+                        onTap: () => uploadPhotos(order),
+                      ),
+                    ),
+                    SizedBox(
+                      width: btnWidth,
+                      child: _iconBtn(
+                        icon: Icons.edit_note_rounded,
+                        label: oneLine ? '' : 'Details',
+                        iconOnly: oneLine,
+                        onTap: () => openDetails(order),
+                      ),
+                    ),
+                    if (delivered)
+                      SizedBox(
+                        width: btnWidth,
+                        child: _iconBtn(
+                          icon: Icons.photo_library_outlined,
+                          label: oneLine ? 'Photos' : 'Photos',
+                          onTap: () => viewPhotos(order),
+                        ),
+                      ),
+                  ],
+                ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.access_time_rounded,
-                  color: AttachmentsStyles.textSecondary,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _formatDate(order['created_at']),
-                    style: AttachmentsStyles.small,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _iconBtn(
-                  icon: Icons.picture_as_pdf_outlined,
-                  label: 'View PDF',
-                  expand: true,
-                  onTap: () => viewPdf(order),
-                ),
-                const SizedBox(width: 8),
-                _iconBtn(
-                  icon: Icons.download_rounded,
-                  label: 'Download',
-                  expand: true,
-                  onTap: () => downloadPdf(order),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _iconBtn(
-                  icon: Icons.cloud_upload_outlined,
-                  label: 'Upload',
-                  expand: true,
-                  onTap: () => uploadPhotos(order),
-                ),
-                const SizedBox(width: 8),
-                _iconBtn(
-                  icon: Icons.edit_note_rounded,
-                  label: 'Details',
-                  expand: true,
-                  onTap: () => openDetails(order),
-                ),
-                if (delivered) ...[
-                  const SizedBox(width: 8),
-                  _iconBtn(
-                    icon: Icons.photo_library_outlined,
-                    label: 'Photos',
-                    expand: true,
-                    onTap: () => viewPhotos(order),
-                  ),
-                ],
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -1400,7 +1653,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final delivered = photos.isNotEmpty;
 
     return Opacity(
-      opacity: order['collecting_status'] == 'collected' ? 0.62 : 1,
+      opacity: _statusOf(order) == 'collected' ? 0.62 : 1,
       child: Container(
         margin: const EdgeInsets.only(top: 12),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -1483,6 +1736,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 650;
     final isTablet = width >= 650 && width < 1100;
+    final compact = isMobile || isTablet;
+    final visibleOrders = filteredOrders;
 
     return Container(
       decoration: AttachmentsStyles.panel,
@@ -1501,7 +1756,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             'Manage order PDFs, uploaded photos, descriptions, and status.',
             style: AttachmentsStyles.subtitle,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          _topStatsAndFilters(compact),
+          const SizedBox(height: 16),
           if (!isMobile && !isTablet) _header(),
           Expanded(
             child: loading
@@ -1517,7 +1774,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                       ),
                     ),
                   )
-                : orders.isEmpty
+                : visibleOrders.isEmpty
                 ? const Center(
                     child: Text(
                       'No orders found',
@@ -1525,11 +1782,11 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     ),
                   )
                 : ListView.builder(
-                    itemCount: orders.length,
+                    itemCount: visibleOrders.length,
                     itemBuilder: (_, index) {
                       return (isMobile || isTablet)
-                          ? _mobileOrderCard(orders[index])
-                          : _desktopOrderRow(orders[index]);
+                          ? _mobileOrderCard(visibleOrders[index])
+                          : _desktopOrderRow(visibleOrders[index]);
                     },
                   ),
           ),
