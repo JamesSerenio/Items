@@ -1274,30 +1274,35 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     required VoidCallback onTap,
     bool expand = false,
     bool iconOnly = false,
+    double? height,
+    double? iconSize,
+    double? fontSize,
+    EdgeInsets? padding,
   }) {
     final child = InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
-        width: iconOnly ? 46 : (expand ? double.infinity : null),
-        height: iconOnly ? 42 : null,
-        padding: EdgeInsets.symmetric(
-          horizontal: iconOnly ? 0 : 12,
-          vertical: 10,
-        ),
+        width: iconOnly ? 38 : (expand ? double.infinity : null),
+        height: iconOnly ? (height ?? 34) : height,
+        padding:
+            padding ??
+            EdgeInsets.symmetric(horizontal: iconOnly ? 0 : 8, vertical: 7),
         decoration: AttachmentsStyles.outlineBtn,
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AttachmentsStyles.gold, size: 18),
+            Icon(icon, color: AttachmentsStyles.gold, size: iconSize ?? 15),
             if (label.isNotEmpty && !iconOnly) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: AttachmentsStyles.goldText,
+                  style: AttachmentsStyles.goldText.copyWith(
+                    fontSize: fontSize ?? 11,
+                  ),
                 ),
               ),
             ],
@@ -1548,14 +1553,11 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       opacity: _statusOf(order) == 'collected' ? 0.62 : 1,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: _orderCardDecoration(order),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final oneLine = constraints.maxWidth >= 520;
-            final btnWidth = oneLine
-                ? (constraints.maxWidth - 48) / 5
-                : constraints.maxWidth;
+            final gap = constraints.maxWidth >= 520 ? 8.0 : 6.0;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1566,7 +1568,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     const Icon(
                       Icons.description_outlined,
                       color: AttachmentsStyles.gold,
-                      size: 20,
+                      size: 18,
                     ),
                     const SizedBox(width: 8),
                     Expanded(child: _orderTitleDetails(order, mobile: true)),
@@ -1574,70 +1576,80 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _photoStatusPill(delivered),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 7),
                 Row(
                   children: [
                     const Icon(
                       Icons.access_time_rounded,
                       color: AttachmentsStyles.textSecondary,
-                      size: 16,
+                      size: 14,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         _formatDate(order['created_at']),
-                        style: AttachmentsStyles.small,
+                        style: AttachmentsStyles.small.copyWith(fontSize: 11),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    SizedBox(
-                      width: btnWidth,
+                    Expanded(
                       child: _iconBtn(
                         icon: Icons.picture_as_pdf_outlined,
-                        label: oneLine ? 'PDF' : 'View PDF',
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
                         onTap: () => viewPdf(order),
                       ),
                     ),
-                    SizedBox(
-                      width: btnWidth,
+                    SizedBox(width: gap),
+                    Expanded(
                       child: _iconBtn(
                         icon: Icons.download_rounded,
-                        label: oneLine ? 'Save' : 'Download',
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
                         onTap: () => downloadPdf(order),
                       ),
                     ),
-                    SizedBox(
-                      width: btnWidth,
+                    SizedBox(width: gap),
+                    Expanded(
                       child: _iconBtn(
                         icon: Icons.cloud_upload_outlined,
-                        label: 'Upload',
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
                         onTap: () => uploadPhotos(order),
                       ),
                     ),
-                    SizedBox(
-                      width: btnWidth,
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: _iconBtn(
+                        icon: Icons.photo_library_outlined,
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
+                        onTap: delivered ? () => viewPhotos(order) : () {},
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
                       child: _iconBtn(
                         icon: Icons.edit_note_rounded,
-                        label: oneLine ? '' : 'Details',
-                        iconOnly: oneLine,
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
                         onTap: () => openDetails(order),
                       ),
                     ),
-                    if (delivered)
-                      SizedBox(
-                        width: btnWidth,
-                        child: _iconBtn(
-                          icon: Icons.photo_library_outlined,
-                          label: oneLine ? 'Photos' : 'Photos',
-                          onTap: () => viewPhotos(order),
-                        ),
-                      ),
                   ],
                 ),
               ],
