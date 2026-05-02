@@ -59,7 +59,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final data = await supabase
         .from('order_attachments')
         .select(
-          'id, order_id, image_url, file_name, description, storage_path, created_at',
+          'id, order_id, image_url, file_name, description, procuring_entity, storage_path, created_at',
         );
 
     final list = List<Map<String, dynamic>>.from(data);
@@ -236,7 +236,16 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
   }
 
   Widget _orderTitleDetails(Map<String, dynamic> order, {bool mobile = false}) {
-    final desc = (order['description'] ?? '').toString().trim();
+    final photos = _photosFor(order['id']);
+
+    String procuringEntity = '';
+    for (final p in photos) {
+      final v = (p['procuring_entity'] ?? '').toString().trim();
+      if (v.isNotEmpty) {
+        procuringEntity = v;
+        break;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,10 +258,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               ? AttachmentsStyles.cell.copyWith(fontSize: 16)
               : AttachmentsStyles.cell,
         ),
-        if (desc.isNotEmpty) ...[
+        if (procuringEntity.isNotEmpty) ...[
           const SizedBox(height: 3),
           Text(
-            desc,
+            procuringEntity,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AttachmentsStyles.small,
@@ -412,7 +421,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   Future<void> openDetails(Map<String, dynamic> order) async {
     final descController = TextEditingController(
-      text: order['item_description'] ?? '',
+      text: _photosFor(order['id']).isNotEmpty
+          ? (_photosFor(order['id']).first['procuring_entity'] ?? '')
+          : '',
     );
 
     String status =
@@ -425,7 +436,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       builder: (_) => AlertDialog(
         backgroundColor: AttachmentsStyles.bg,
         title: const Text(
-          'Add Details',
+          'Write Procuring Entity',
           style: TextStyle(color: AttachmentsStyles.textPrimary),
         ),
         content: StatefulBuilder(
@@ -492,12 +503,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             onPressed: () async {
               await supabase
                   .from('purchase_orders')
-                  .update({
-                    'item_description': descController.text.trim(),
-                    'collecting_status': status,
-                  })
+                  .update({'collecting_status': status})
                   .eq('id', order['id']);
 
+              await supabase
+                  .from('order_attachments')
+                  .update({'procuring_entity': descController.text.trim()})
+                  .eq('order_id', order['id']);
               if (!mounted) return;
               Navigator.pop(context);
               await loadAll();
