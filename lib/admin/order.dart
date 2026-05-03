@@ -727,38 +727,98 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   Future<void> _requestVoidOrder(Map<String, dynamic> order) async {
-    final confirm = await showDialog<bool>(
+    String selectedReason = 'Checkout Error';
+
+    final result = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: OrderStyles.panelCardColor,
-        title: const Text(
-          'Request Void?',
-          style: TextStyle(color: OrderStyles.textPrimary),
-        ),
-        content: Text(
-          'Request approval to void ${_text(order['description'])}?',
-          style: const TextStyle(color: OrderStyles.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Request',
-              style: TextStyle(color: OrderStyles.plutoGold),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: OrderStyles.panelCardColor,
+            title: const Text(
+              'Request Void',
+              style: TextStyle(color: OrderStyles.textPrimary),
             ),
-          ),
-        ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Select reason before sending request.',
+                  style: TextStyle(color: OrderStyles.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedReason,
+                  dropdownColor: OrderStyles.panelCardColor,
+                  style: const TextStyle(color: OrderStyles.textPrimary),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: OrderStyles.inputFill,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Checkout Error',
+                      child: Text('Checkout Error'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Incorrect Item Delivered',
+                      child: Text('Incorrect Item Delivered'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Data Entry Error',
+                      child: Text('Data Entry Error'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Incomplete Order',
+                      child: Text('Incomplete Order'),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) {
+                      setModalState(() => selectedReason = v);
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, selectedReason),
+                child: const Text(
+                  'Send',
+                  style: TextStyle(color: OrderStyles.plutoGold),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
 
-    if (confirm != true) return;
+    if (result == null || result.trim().isEmpty) return;
 
     try {
       final user = Supabase.instance.client.auth.currentUser;
+
+      final existing = await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .select('id')
+          .eq('purchase_order_id', order['id'])
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existing != null) {
+        if (!mounted) return;
+        _showSnack('Already has pending request');
+        return;
+      }
 
       await Supabase.instance.client
           .from('purchase_order_void_requests')
@@ -766,7 +826,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
             'purchase_order_id': order['id'],
             'requested_by': user?.id,
             'status': 'pending',
-            'reason': 'Coder requested void',
+            'reason': result,
           });
 
       await _loadAll();
@@ -819,7 +879,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       await _loadAll();
 
       if (!mounted) return;
-
       Navigator.pop(context);
       _showSnack('Order voided and stocks returned');
     } catch (e) {
@@ -956,6 +1015,17 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                         Text(
                                           _text(order['po_no']),
                                           style: OrderStyles.cartItemMetaStyle,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Reason: ${_text(request['reason'])}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: OrderStyles.cartItemMetaStyle
+                                              .copyWith(
+                                                color: OrderStyles.plutoGold,
+                                                fontWeight: FontWeight.w900,
+                                              ),
                                         ),
                                       ],
                                     ),
