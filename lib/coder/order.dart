@@ -62,12 +62,22 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     final data = await Supabase.instance.client
         .from('purchase_orders')
         .select(
-          'id, po_no, description, item_description, total_amount, created_at',
+          'id, po_no, description, item_description, total_amount, collecting_status, created_at',
         )
         .order('created_at', ascending: false);
 
     if (!mounted) return;
-    _orders = List<Map<String, dynamic>>.from(data);
+
+    final list = List<Map<String, dynamic>>.from(data);
+
+    _orders = list.where((order) {
+      final status = (order['collecting_status'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+
+      return status != 'collected' && status != 'delivered';
+    }).toList();
   }
 
   List<Map<String, dynamic>> get _filteredMaterials {
