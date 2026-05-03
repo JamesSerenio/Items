@@ -50,7 +50,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     final data = await Supabase.instance.client
         .from('materials')
         .select(
-          'id, supplier_name, description, unit, unit_value, price, quantity, total, location, created_at',
+          'id, supplier_name, brand, description, unit, unit_value, price, quantity, total, location, created_at',
         )
         .order('created_at', ascending: false);
 
@@ -77,6 +77,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     return _materials.where((item) {
       return [
         item['supplier_name'],
+        item['brand'],
         item['description'],
         item['unit'],
         item['location'],
@@ -176,6 +177,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         _cart.add({
           'material_id': item['id'],
           'supplier_name': item['supplier_name'],
+          'brand': item['brand'],
           'unit': item['unit'],
           'item_description': item['description'],
           'quantity': 1,
@@ -303,8 +305,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
     try {
       final items = _cart.map((item) {
+        final brand = item['brand']?.toString().trim() ?? '';
+
         return {
           'material_id': item['material_id'],
+          'brand': brand.isEmpty ? null : brand,
           'unit': item['unit'],
           'item_description': item['item_description'],
           'quantity': item['quantity'],
@@ -526,7 +531,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
-                                                    '${_text(item['supplier_name'])} • ${_text(item['unit'])}',
+                                                    '${_text(item['supplier_name'])}${(item['brand']?.toString().trim() ?? '').isNotEmpty ? ' • Brand: ${item['brand']}' : ''} • ${_text(item['unit'])}',
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -777,8 +782,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           itemBuilder: (_, index) {
                             final order = _orders[index];
 
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(18),
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
                               onTap: () => _openPurchaseOrder(order),
                               child: Container(
                                 padding: const EdgeInsets.all(13),
@@ -868,152 +873,156 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   Future<void> _openPurchaseOrder(Map<String, dynamic> order) async {
-    final items = await Supabase.instance.client
-        .from('purchase_order_items')
-        .select(
-          'stock_no, unit, item_description, quantity, unit_cost, total_cost, location',
-        )
-        .eq('purchase_order_id', order['id'])
-        .order('stock_no', ascending: true);
+    try {
+      final items = await Supabase.instance.client
+          .from('purchase_order_items')
+          .select(
+            'stock_no, brand, unit, item_description, quantity, unit_cost, total_cost, location',
+          )
+          .eq('purchase_order_id', order['id'])
+          .order('stock_no', ascending: true);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.72),
-      builder: (_) {
-        final screen = MediaQuery.of(context).size;
-        final paperWidth = screen.width < 900 ? screen.width * 0.92 : 794.0;
-        final paperHeight = paperWidth * 1.414;
+      showDialog(
+        context: context,
+        barrierColor: Colors.black.withOpacity(0.72),
+        builder: (_) {
+          final screen = MediaQuery.of(context).size;
+          final paperWidth = screen.width < 900 ? screen.width * 0.92 : 794.0;
+          final paperHeight = paperWidth * 1.414;
 
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(14),
-          child: SingleChildScrollView(
-            child: Center(
-              child: Container(
-                width: paperWidth,
-                height: paperHeight,
-                padding: EdgeInsets.symmetric(
-                  horizontal: paperWidth < 700 ? 22 : 42,
-                  vertical: paperWidth < 700 ? 22 : 34,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.35),
-                      blurRadius: 30,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const SizedBox(width: 42),
-                        const Expanded(
-                          child: Text(
-                            'PURCHASE ORDER',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Procuring Entity: ${_text(order['description'])}',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Text(
-                            'Date: ${DateTime.tryParse(_text(order['created_at']))?.toLocal().toString().split('.').first ?? '-'}',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _PurchaseTable(
-                      items: List<Map<String, dynamic>>.from(items),
-                      text: _text,
-                      money: _money,
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 14,
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(14),
+            child: SingleChildScrollView(
+              child: Center(
+                child: Container(
+                  width: paperWidth,
+                  height: paperHeight,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: paperWidth < 700 ? 22 : 42,
+                    vertical: paperWidth < 700 ? 22 : 34,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.35),
+                        blurRadius: 30,
+                        spreadRadius: 4,
                       ),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Colors.black, width: 2),
-                          bottom: BorderSide(color: Colors.black54),
-                          left: BorderSide(color: Colors.black54),
-                          right: BorderSide(color: Colors.black54),
-                        ),
-                      ),
-                      child: Row(
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
                         children: [
+                          const SizedBox(width: 42),
                           const Expanded(
                             child: Text(
-                              'TOTAL AMOUNT',
+                              'PURCHASE ORDER',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.black,
+                                fontSize: 26,
                                 fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
                               ),
                             ),
                           ),
-                          Text(
-                            _money(order['total_amount']),
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.black87,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox.shrink(),
-                  ],
+                      const SizedBox(height: 18),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Procuring Entity: ${_text(order['description'])}',
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Text(
+                              'Date: ${DateTime.tryParse(_text(order['created_at']))?.toLocal().toString().split('.').first ?? '-'}',
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      _PurchaseTable(
+                        items: List<Map<String, dynamic>>.from(items),
+                        text: _text,
+                        money: _money,
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 14,
+                        ),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Colors.black, width: 2),
+                            bottom: BorderSide(color: Colors.black54),
+                            left: BorderSide(color: Colors.black54),
+                            right: BorderSide(color: Colors.black54),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'TOTAL AMOUNT',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _money(order['total_amount']),
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('PDF view failed: $e');
+    }
   }
 
   Widget _buildTopIcons(bool isMobile) {
@@ -1165,7 +1174,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                 _MobileCellText(_text(item['description'])),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
+                                  '${(item['brand']?.toString().trim() ?? '').isNotEmpty ? 'Brand: ${item['brand']} • ' : ''}${_text(item['unit'])} • UV ${_text(item['unit_value'])}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: OrderStyles.pageSubtitleStyle.copyWith(
@@ -1261,7 +1270,28 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                       children: [
                         Expanded(
                           flex: 28,
-                          child: _CellText(_text(item['description'])),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _CellText(_text(item['description'])),
+                              if ((item['brand']?.toString().trim() ?? '')
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Brand: ${item['brand']}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: OrderStyles.tableCellTextStyle
+                                      .copyWith(
+                                        fontSize: 11,
+                                        color: OrderStyles.primaryColor,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                         Expanded(
                           flex: 18,
@@ -1392,7 +1422,7 @@ class _PurchaseTable extends StatelessWidget {
       children: [
         _PoCell('STOCK NO.', style: style, center: true),
         _PoCell('UNIT', style: style, center: true),
-        _PoCell('ITEM DESCRIPTION', style: style),
+        _PoCell('ITEM DESCRIPTION / BRAND', style: style),
         _PoCell('LOCATION', style: style),
         _PoCell('QTY', style: style, center: true),
         _PoCell('UNIT COST', style: style, right: true),
@@ -1408,7 +1438,10 @@ class _PurchaseTable extends StatelessWidget {
       children: [
         _PoCell(text(i['stock_no']), style: style, center: true),
         _PoCell(text(i['unit']), style: style, center: true),
-        _PoCell(text(i['item_description']), style: style),
+        _PoCell(
+          '${text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+          style: style,
+        ),
         _PoCell(text(i['location']), style: style),
         _PoCell(text(i['quantity']), style: style, center: true),
         _PoCell(money(i['unit_cost']), style: style, right: true),
