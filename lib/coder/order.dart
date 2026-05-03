@@ -685,11 +685,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       builder: (_) => AlertDialog(
         backgroundColor: OrderStyles.panelCardColor,
         title: const Text(
-          'Void Order?',
+          'Request Void?',
           style: TextStyle(color: OrderStyles.textPrimary),
         ),
         content: Text(
-          'Void ${_text(order['description'])}? Stocks will be returned.',
+          'Send void request for ${_text(order['description'])} to admin approval?',
           style: const TextStyle(color: OrderStyles.textSecondary),
         ),
         actions: [
@@ -700,8 +700,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text(
-              'Void',
-              style: TextStyle(color: OrderStyles.dangerColor),
+              'Send Request',
+              style: TextStyle(color: OrderStyles.plutoGold),
             ),
           ),
         ],
@@ -711,19 +711,61 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     if (confirm != true) return;
 
     try {
-      await Supabase.instance.client.rpc(
-        'void_purchase_order',
-        params: {'p_order_id': order['id']},
-      );
+      final user = Supabase.instance.client.auth.currentUser;
+
+      final existing = await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .select('id')
+          .eq('purchase_order_id', order['id'])
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existing != null) {
+        if (!mounted) return;
+        _showSnack('This order already has a pending void request.');
+        return;
+      }
+
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .insert({
+            'purchase_order_id': order['id'],
+            'requested_by': user?.id,
+            'status': 'pending',
+            'reason': 'Coder requested to void this order.',
+          });
 
       await _loadAll();
 
       if (!mounted) return;
 
       Navigator.pop(context);
-      _showSnack('Order voided and stocks returned');
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: OrderStyles.panelCardColor,
+          title: const Text(
+            'Request Sent',
+            style: TextStyle(color: OrderStyles.textPrimary),
+          ),
+          content: const Text(
+            'Your void request has been sent to admin for approval.',
+            style: TextStyle(color: OrderStyles.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: OrderStyles.plutoGold),
+              ),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
-      _showSnack('Void failed: $e');
+      _showSnack('Void request failed: $e');
     }
   }
 
