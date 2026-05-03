@@ -703,40 +703,62 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                 DropdownButtonFormField<String>(
                   value: selectedReason,
                   isExpanded: true,
+                  borderRadius: BorderRadius.circular(
+                    22,
+                  ), // ✅ smooth dropdown popup
                   dropdownColor: OrderStyles.panelCardColor,
                   icon: const Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: OrderStyles.plutoGold,
+                    size: 22,
                   ),
                   style: const TextStyle(
                     color: OrderStyles.textPrimary,
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
                   ),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.report_problem_outlined,
-                      color: OrderStyles.plutoGold,
-                      size: 20,
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: OrderStyles.plutoGold.withOpacity(0.12),
+                      ),
+                      child: const Icon(
+                        Icons.report_problem_rounded,
+                        color: OrderStyles.plutoGold,
+                        size: 18,
+                      ),
                     ),
+
                     filled: true,
-                    fillColor: OrderStyles.inputFill,
+                    fillColor: OrderStyles.inputFill.withOpacity(0.85),
+
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 16,
+                      horizontal: 18,
+                      vertical: 18,
                     ),
+
+                    // ✅ MAS ROUNDED (MAIN LOOK)
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: BorderSide.none,
+                    ),
+
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(22),
                       borderSide: BorderSide(
-                        color: OrderStyles.plutoGold.withOpacity(0.45),
+                        color: OrderStyles.plutoGold.withOpacity(0.35),
                         width: 1.2,
                       ),
                     ),
+
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(22),
                       borderSide: const BorderSide(
                         color: OrderStyles.plutoGold,
-                        width: 1.6,
+                        width: 1.8,
                       ),
                     ),
                   ),
