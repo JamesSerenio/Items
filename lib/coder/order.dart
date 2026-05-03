@@ -680,64 +680,82 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   Future<void> _voidOrder(Map<String, dynamic> order) async {
-    final controller = TextEditingController();
+    String selectedReason = 'Checkout Error';
 
     final result = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: OrderStyles.panelCardColor,
-        title: const Text(
-          'Request Void',
-          style: TextStyle(color: OrderStyles.textPrimary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter reason before sending request.',
-              style: const TextStyle(color: OrderStyles.textSecondary),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: OrderStyles.panelCardColor,
+            title: const Text(
+              'Request Void',
+              style: TextStyle(color: OrderStyles.textPrimary),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              style: const TextStyle(color: OrderStyles.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Type reason...',
-                hintStyle: const TextStyle(color: OrderStyles.textSecondary),
-                filled: true,
-                fillColor: OrderStyles.inputFill,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Select reason before sending request.',
+                  style: TextStyle(color: OrderStyles.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedReason,
+                  dropdownColor: OrderStyles.panelCardColor,
+                  style: const TextStyle(color: OrderStyles.textPrimary),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: OrderStyles.inputFill,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Checkout Error',
+                      child: Text('Checkout Error'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Incorrect Item Delivered',
+                      child: Text('Incorrect Item Delivered'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Data Entry Error',
+                      child: Text('Data Entry Error'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Incomplete Order',
+                      child: Text('Incomplete Order'),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) {
+                      setModalState(() => selectedReason = v);
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, selectedReason),
+                child: const Text(
+                  'Send',
+                  style: TextStyle(color: OrderStyles.plutoGold),
                 ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isEmpty) return;
-              Navigator.pop(context, text);
-            },
-            child: const Text(
-              'Send',
-              style: TextStyle(color: OrderStyles.plutoGold),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
 
-    if (result == null || result.isEmpty) {
-      _showSnack('Reason is required');
-      return;
-    }
+    if (result == null || result.trim().isEmpty) return;
 
     try {
       final user = Supabase.instance.client.auth.currentUser;
@@ -761,14 +779,13 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
             'purchase_order_id': order['id'],
             'requested_by': user?.id,
             'status': 'pending',
-            'reason': result, // ✅ DITO NA GALING USER
+            'reason': result,
           });
 
       await _loadAll();
 
       if (!mounted) return;
-
-      _showSnack('Request sent to admin');
+      _showSnack('Void request sent to admin');
     } catch (e) {
       _showSnack('Failed: $e');
     }
