@@ -15,12 +15,16 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
   final GlobalKey _cartIconKey = GlobalKey();
   final GlobalKey _ordersIconKey = GlobalKey();
+  final GlobalKey _approvalIconKey = GlobalKey();
 
   bool _isLoading = true;
 
   List<Map<String, dynamic>> _materials = [];
   List<Map<String, dynamic>> _orders = [];
+  List<Map<String, dynamic>> _voidRequests = [];
   final List<Map<String, dynamic>> _cart = [];
+
+  String _currentRole = '';
 
   @override
   void initState() {
@@ -38,12 +42,32 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      await Future.wait([_loadMaterials(), _loadOrders()]);
+      await Future.wait([
+        _loadCurrentRole(),
+        _loadMaterials(),
+        _loadOrders(),
+        _loadVoidRequests(),
+      ]);
     } catch (e) {
       _showSnack('Load failed: $e');
     }
 
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadCurrentRole() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final data = await Supabase.instance.client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (!mounted) return;
+
+    _currentRole = (data?['role'] ?? '').toString().trim().toLowerCase();
   }
 
   Future<void> _loadMaterials() async {
@@ -58,12 +82,26 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     _materials = List<Map<String, dynamic>>.from(data);
   }
 
+  Future<void> _loadVoidRequests() async {
+    final data = await Supabase.instance.client
+        .from('purchase_order_void_requests')
+        .select(
+          'id, purchase_order_id, requested_by, status, reason, created_at, purchase_orders(id, po_no, description, total_amount)',
+        )
+        .eq('status', 'pending')
+        .order('created_at', ascending: false);
+
+    if (!mounted) return;
+    _voidRequests = List<Map<String, dynamic>>.from(data);
+  }
+
   Future<void> _loadOrders() async {
     final data = await Supabase.instance.client
         .from('purchase_orders')
         .select(
-          'id, po_no, description, item_description, total_amount, created_at',
+          'id, po_no, description, item_description, total_amount, collecting_status, created_at',
         )
+        .neq('collecting_status', 'collected')
         .order('created_at', ascending: false);
 
     if (!mounted) return;
@@ -680,6 +718,68 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   Future<void> _voidOrder(Map<String, dynamic> order) async {
+    if (_currentRole == 'coder') {
+      await _requestVoidOrder(order);
+      return;
+    }
+
+    await _directVoidOrder(order);
+  }
+
+  Future<void> _requestVoidOrder(Map<String, dynamic> order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: OrderStyles.panelCardColor,
+        title: const Text(
+          'Request Void?',
+          style: TextStyle(color: OrderStyles.textPrimary),
+        ),
+        content: Text(
+          'Request approval to void ${_text(order['description'])}?',
+          style: const TextStyle(color: OrderStyles.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Request',
+              style: TextStyle(color: OrderStyles.plutoGold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .insert({
+            'purchase_order_id': order['id'],
+            'requested_by': user?.id,
+            'status': 'pending',
+            'reason': 'Coder requested void',
+          });
+
+      await _loadAll();
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnack('Void request sent for approval');
+    } catch (e) {
+      _showSnack('Request failed: $e');
+    }
+  }
+
+  Future<void> _directVoidOrder(Map<String, dynamic> order) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -725,6 +825,208 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     } catch (e) {
       _showSnack('Void failed: $e');
     }
+  }
+
+  Future<void> _approveVoidRequest(Map<String, dynamic> request) async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.rpc(
+        'void_purchase_order',
+        params: {'p_order_id': request['purchase_order_id']},
+      );
+
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .update({
+            'status': 'approved',
+            'approved_by': user?.id,
+            'approved_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', request['id']);
+
+      await _loadAll();
+
+      if (!mounted) return;
+      _showSnack('Void request approved');
+    } catch (e) {
+      _showSnack('Approve failed: $e');
+    }
+  }
+
+  Future<void> _declineVoidRequest(Map<String, dynamic> request) async {
+    try {
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .update({'status': 'declined'})
+          .eq('id', request['id']);
+
+      await _loadAll();
+
+      if (!mounted) return;
+      _showSnack('Void request declined');
+    } catch (e) {
+      _showSnack('Decline failed: $e');
+    }
+  }
+
+  Future<void> _openApprovalModal() async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.62),
+      builder: (_) {
+        final isMobile = MediaQuery.of(context).size.width < 768;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.all(isMobile ? 12 : 22),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: isMobile ? double.infinity : 620,
+              maxHeight: MediaQuery.of(context).size.height * 0.82,
+            ),
+            decoration: OrderStyles.cartPanelDecoration,
+            padding: EdgeInsets.all(isMobile ? 14 : 18),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.verified_user_outlined,
+                      color: OrderStyles.plutoGold,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Void Approval',
+                        style: OrderStyles.cartTitleStyle,
+                      ),
+                    ),
+                    _MiniPill(text: '${_voidRequests.length}'),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: OrderStyles.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _voidRequests.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No pending approval',
+                            style: OrderStyles.emptyStyle,
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _voidRequests.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, index) {
+                            final request = _voidRequests[index];
+                            final order = Map<String, dynamic>.from(
+                              request['purchase_orders'] ?? {},
+                            );
+
+                            return Container(
+                              padding: const EdgeInsets.all(13),
+                              decoration: OrderStyles.orderItemDecoration,
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.pending_actions_rounded,
+                                    color: OrderStyles.plutoGold,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _text(order['description']),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: OrderStyles.cartItemNameStyle,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _text(order['po_no']),
+                                          style: OrderStyles.cartItemMetaStyle,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(999),
+                                    onTap: () async {
+                                      await _approveVoidRequest(request);
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 34,
+                                      height: 34,
+                                      decoration: BoxDecoration(
+                                        color: OrderStyles.primaryColor
+                                            .withOpacity(0.13),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: OrderStyles.primaryColor
+                                              .withOpacity(0.55),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.check_rounded,
+                                        color: OrderStyles.primaryColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(999),
+                                    onTap: () async {
+                                      await _declineVoidRequest(request);
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 34,
+                                      height: 34,
+                                      decoration: BoxDecoration(
+                                        color: OrderStyles.dangerColor
+                                            .withOpacity(0.13),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: OrderStyles.dangerColor
+                                              .withOpacity(0.55),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close_rounded,
+                                        color: OrderStyles.dangerColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _openOrdersModal() async {
@@ -1049,6 +1351,15 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           badge: _orders.length.toString(),
           onTap: _openOrdersModal,
         ),
+        if (_currentRole == 'admin') ...[
+          const SizedBox(width: 10),
+          _TopIconButton(
+            key: _approvalIconKey,
+            icon: Icons.verified_user_outlined,
+            badge: _voidRequests.length.toString(),
+            onTap: _openApprovalModal,
+          ),
+        ],
       ],
     );
   }
