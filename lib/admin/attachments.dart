@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -602,7 +603,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final items = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, unit, item_description, location, quantity, unit_cost, total_cost',
+          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
@@ -740,7 +741,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                               _tableRow([
                                 'STOCK NO.',
                                 'UNIT',
-                                'ITEM DESCRIPTION',
+                                'ITEM DESCRIPTION / BRAND',
                                 'LOCATION',
                                 'QTY',
                                 'UNIT COST',
@@ -750,7 +751,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                                 (i) => _tableRow([
                                   _text(i['stock_no']),
                                   _text(i['unit']),
-                                  _text(i['item_description']),
+                                  '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
                                   _text(i['location']),
                                   _text(i['quantity']),
                                   _money(i['unit_cost']),
@@ -828,6 +829,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final font = await PdfGoogleFonts.notoSansRegular();
     final boldFont = await PdfGoogleFonts.notoSansBold();
 
+    final logoBytes = await rootBundle.load('assets/logo.png');
+    final logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(base: font, bold: boldFont),
     );
@@ -836,182 +840,202 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.symmetric(horizontal: 42, vertical: 34),
-        build: (_) => pw.Column(
-          children: [
-            pw.Text(
-              'PURCHASE ORDER',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(
-                font: boldFont,
-                fontSize: 26,
-                fontWeight: pw.FontWeight.bold,
+        build: (_) {
+          return pw.Stack(
+            children: [
+              pw.Positioned.fill(
+                child: pw.Center(
+                  child: pw.Opacity(
+                    opacity: 0.07,
+                    child: pw.Image(
+                      logoImage,
+                      width: 620,
+                      height: 620,
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            pw.SizedBox(height: 28),
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Expanded(
-                  child: pw.Text(
-                    'Description: ${_text(order['description'])}',
+              pw.Column(
+                children: [
+                  pw.Text(
+                    'PURCHASE ORDER',
+                    textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(
                       font: boldFont,
-                      fontSize: 12,
+                      fontSize: 26,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-                ),
-                pw.SizedBox(width: 20),
-                pw.Text(
-                  'Date: ${_formatDate(order['created_at'])}',
-                  style: pw.TextStyle(
-                    font: boldFont,
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 22),
-            pw.Table(
-              border: pw.TableBorder.all(color: PdfColors.grey700, width: 0.8),
-              columnWidths: const {
-                0: pw.FlexColumnWidth(0.9),
-                1: pw.FlexColumnWidth(0.8),
-                2: pw.FlexColumnWidth(2.0),
-                3: pw.FlexColumnWidth(1.3),
-                4: pw.FlexColumnWidth(0.7),
-                5: pw.FlexColumnWidth(1.2),
-                6: pw.FlexColumnWidth(1.2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(
-                    color: PdfColor.fromInt(0xFFEFEFEF),
-                  ),
-                  children: [
-                    _pdfCell(
-                      'STOCK NO.',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                    _pdfCell(
-                      'UNIT',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                    _pdfCell(
-                      'ITEM DESCRIPTION',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                    _pdfCell(
-                      'LOCATION',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                    _pdfCell('QTY', bold: true, font: font, boldFont: boldFont),
-                    _pdfCell(
-                      'UNIT COST',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                    _pdfCell(
-                      'TOTAL COST',
-                      bold: true,
-                      font: font,
-                      boldFont: boldFont,
-                    ),
-                  ],
-                ),
-                ...items.map(
-                  (i) => pw.TableRow(
+                  pw.SizedBox(height: 28),
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      _pdfCell(
-                        _text(i['stock_no']),
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _text(i['unit']),
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _text(i['item_description']),
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _text(i['location']),
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _text(i['quantity']),
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _money(i['unit_cost']),
-                        right: true,
-                        font: font,
-                        boldFont: boldFont,
-                      ),
-                      _pdfCell(
-                        _money(i['total_cost']),
-                        right: true,
-                        font: font,
-                        boldFont: boldFont,
+                      pw.Spacer(),
+                      pw.Text(
+                        'Date: ${_formatDate(order['created_at'])}',
+                        style: pw.TextStyle(
+                          font: boldFont,
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            pw.Spacer(),
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 13,
-              ),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey700, width: 0.8),
-              ),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(
-                    child: pw.Text(
-                      'TOTAL AMOUNT',
-                      style: pw.TextStyle(
-                        font: boldFont,
-                        fontWeight: pw.FontWeight.bold,
+                  pw.SizedBox(height: 22),
+                  pw.Table(
+                    border: pw.TableBorder.all(
+                      color: PdfColors.grey700,
+                      width: 0.8,
+                    ),
+                    columnWidths: const {
+                      0: pw.FlexColumnWidth(0.9),
+                      1: pw.FlexColumnWidth(0.8),
+                      2: pw.FlexColumnWidth(2.0),
+                      3: pw.FlexColumnWidth(1.3),
+                      4: pw.FlexColumnWidth(0.7),
+                      5: pw.FlexColumnWidth(1.2),
+                      6: pw.FlexColumnWidth(1.2),
+                    },
+                    children: [
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(
+                          color: PdfColor.fromInt(0xFFEFEFEF),
+                        ),
+                        children: [
+                          _pdfCell(
+                            'STOCK NO.',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'UNIT',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'ITEM DESCRIPTION / BRAND',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'LOCATION',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'QTY',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'UNIT COST',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                          _pdfCell(
+                            'TOTAL COST',
+                            bold: true,
+                            font: font,
+                            boldFont: boldFont,
+                          ),
+                        ],
+                      ),
+                      ...items.map(
+                        (i) => pw.TableRow(
+                          children: [
+                            _pdfCell(
+                              _text(i['stock_no']),
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              _text(i['unit']),
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              _text(i['location']),
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              _text(i['quantity']),
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              _money(i['unit_cost']),
+                              right: true,
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                            _pdfCell(
+                              _money(i['total_cost']),
+                              right: true,
+                              font: font,
+                              boldFont: boldFont,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Spacer(),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(
+                        color: PdfColors.grey700,
+                        width: 0.8,
                       ),
                     ),
-                  ),
-                  pw.Text(
-                    _money(order['total_amount']),
-                    style: pw.TextStyle(
-                      font: boldFont,
-                      fontWeight: pw.FontWeight.bold,
+                    child: pw.Row(
+                      children: [
+                        pw.Expanded(
+                          child: pw.Text(
+                            'TOTAL AMOUNT',
+                            style: pw.TextStyle(
+                              font: boldFont,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        pw.Text(
+                          _money(order['total_amount']),
+                          style: pw.TextStyle(
+                            font: boldFont,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
 
     await Printing.sharePdf(
       bytes: await pdf.save(),
-      filename: '${_text(order['description'])}_purchase_order.pdf',
+      filename: '${_text(order['po_no'])}_purchase_order.pdf',
     );
   }
 
