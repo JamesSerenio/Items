@@ -680,27 +680,53 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   Future<void> _voidOrder(Map<String, dynamic> order) async {
-    final confirm = await showDialog<bool>(
+    final controller = TextEditingController();
+
+    final result = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: OrderStyles.panelCardColor,
         title: const Text(
-          'Request Void?',
+          'Request Void',
           style: TextStyle(color: OrderStyles.textPrimary),
         ),
-        content: Text(
-          'Send void request for ${_text(order['description'])} to admin approval?',
-          style: const TextStyle(color: OrderStyles.textSecondary),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter reason before sending request.',
+              style: const TextStyle(color: OrderStyles.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              style: const TextStyle(color: OrderStyles.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Type reason...',
+                hintStyle: const TextStyle(color: OrderStyles.textSecondary),
+                filled: true,
+                fillColor: OrderStyles.inputFill,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Navigator.pop(context, text);
+            },
             child: const Text(
-              'Send Request',
+              'Send',
               style: TextStyle(color: OrderStyles.plutoGold),
             ),
           ),
@@ -708,7 +734,10 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       ),
     );
 
-    if (confirm != true) return;
+    if (result == null || result.isEmpty) {
+      _showSnack('Reason is required');
+      return;
+    }
 
     try {
       final user = Supabase.instance.client.auth.currentUser;
@@ -722,7 +751,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       if (existing != null) {
         if (!mounted) return;
-        _showSnack('This order already has a pending void request.');
+        _showSnack('Already has pending request');
         return;
       }
 
@@ -732,40 +761,16 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
             'purchase_order_id': order['id'],
             'requested_by': user?.id,
             'status': 'pending',
-            'reason': 'Coder requested to void this order.',
+            'reason': result, // ✅ DITO NA GALING USER
           });
 
       await _loadAll();
 
       if (!mounted) return;
 
-      Navigator.pop(context);
-
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          backgroundColor: OrderStyles.panelCardColor,
-          title: const Text(
-            'Request Sent',
-            style: TextStyle(color: OrderStyles.textPrimary),
-          ),
-          content: const Text(
-            'Your void request has been sent to admin for approval.',
-            style: TextStyle(color: OrderStyles.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'OK',
-                style: TextStyle(color: OrderStyles.plutoGold),
-              ),
-            ),
-          ],
-        ),
-      );
+      _showSnack('Request sent to admin');
     } catch (e) {
-      _showSnack('Void request failed: $e');
+      _showSnack('Failed: $e');
     }
   }
 
