@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../pdf/attachments_pdf_service.dart';
 import '../styles/attachments_styles.dart';
 
 class AttachmentsViewService {
@@ -19,6 +21,13 @@ class AttachmentsViewService {
     final ampm = local.hour >= 12 ? 'PM' : 'AM';
 
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$min $ampm';
+  }
+
+  static Future<void> viewPdf({
+    required BuildContext context,
+    required Map<String, dynamic> order,
+  }) async {
+    await AttachmentsPdfService.viewPdf(context: context, order: order);
   }
 
   static void viewPhotos({
@@ -64,16 +73,33 @@ class AttachmentsViewService {
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: AttachmentsStyles.textSecondary,
+                          ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 10),
-
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Date: ${_formatDate(order['created_at'])}',
+                        style: AttachmentsStyles.small.copyWith(
+                          color: AttachmentsStyles.textSecondary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Expanded(
                       child: photos.isEmpty
-                          ? const Center(child: Text('No photos'))
+                          ? const Center(
+                              child: Text(
+                                'No uploaded photos yet',
+                                style: AttachmentsStyles.subtitle,
+                              ),
+                            )
                           : GridView.builder(
                               itemCount: photos.length,
                               gridDelegate:
@@ -81,32 +107,63 @@ class AttachmentsViewService {
                                     crossAxisCount: isMobile ? 3 : 5,
                                     mainAxisSpacing: 10,
                                     crossAxisSpacing: 10,
+                                    childAspectRatio: isMobile ? 0.92 : 1.05,
                                   ),
                               itemBuilder: (_, index) {
                                 final p = photos[index];
 
                                 return Stack(
+                                  clipBehavior: Clip.none,
                                   children: [
                                     InkWell(
                                       onTap: () =>
                                           zoomPhoto(context: context, photo: p),
-                                      child: Image.network(
-                                        _text(p['image_url']),
-                                        fit: BoxFit.cover,
+                                      child: Container(
+                                        decoration: AttachmentsStyles.cardStyle,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          child: Image.network(
+                                            _text(p['image_url']),
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          Icons.close,
-                                          color: Colors.red,
+                                      top: -6,
+                                      right: -6,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
                                         ),
-                                        onPressed: () async {
+                                        onTap: () async {
                                           await onDelete(p);
                                           refreshModal(() {});
                                         },
+                                        child: Container(
+                                          width: isMobile ? 24 : 30,
+                                          height: isMobile ? 24 : 30,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.78,
+                                            ),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AttachmentsStyles.danger
+                                                  .withOpacity(0.9),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.close_rounded,
+                                            color: const Color(0xFFFFB4B4),
+                                            size: isMobile ? 15 : 18,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -130,9 +187,28 @@ class AttachmentsViewService {
   }) {
     showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.90),
       builder: (_) => Dialog(
-        child: InteractiveViewer(
-          child: Image.network(_text(photo['image_url'])),
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.6,
+                maxScale: 5,
+                child: Image.network(_text(photo['image_url'])),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+              ),
+            ),
+          ],
         ),
       ),
     );

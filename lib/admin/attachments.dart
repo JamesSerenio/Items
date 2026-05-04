@@ -1,8 +1,10 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../pdf/attachments_pdf_service.dart';
+import '../services/attachments_details_service.dart';
+import '../services/attachments_upload_service.dart';
+import '../services/attachments_view_photos_service.dart';
 import '../services/attachments_view_service.dart';
 import '../styles/attachments_styles.dart';
 
@@ -396,205 +398,20 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     }
   }
 
-  Future<String?> _askDescription() async {
-    final controller = TextEditingController();
-
-    return showDialog<String>(
+  Future<void> uploadOrderPhotos(Map<String, dynamic> order) async {
+    await AttachmentsUploadService.upload(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AttachmentsStyles.bg,
-        title: const Text(
-          'Photo Description',
-          style: TextStyle(color: AttachmentsStyles.textPrimary),
-        ),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          style: const TextStyle(color: AttachmentsStyles.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Write description...',
-            hintStyle: const TextStyle(color: AttachmentsStyles.textSecondary),
-            filled: true,
-            fillColor: AttachmentsStyles.bgDark,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, ''),
-            child: const Text('Skip'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> openDetails(Map<String, dynamic> order) async {
-    final photos = _photosFor(order['id']);
-
-    final descController = TextEditingController(
-      text: photos.isNotEmpty
-          ? (photos.first['procuring_entity'] ?? '').toString()
-          : '',
+      order: order,
+      oldPhotos: _photosFor(order['id']),
+      onSnack: _showSnack,
+      onDone: loadAll,
     );
 
-    String status = _statusOf(order);
-
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AttachmentsStyles.bg,
-        title: const Text(
-          'Write Procuring Entity',
-          style: TextStyle(color: AttachmentsStyles.textPrimary),
-        ),
-        content: StatefulBuilder(
-          builder: (context, setModalState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: descController,
-                  maxLines: 3,
-                  style: const TextStyle(color: AttachmentsStyles.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Write Procuring Entity...',
-                    hintStyle: const TextStyle(
-                      color: AttachmentsStyles.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AttachmentsStyles.bgDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: status,
-                  dropdownColor: AttachmentsStyles.bg,
-                  style: const TextStyle(color: AttachmentsStyles.textPrimary),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AttachmentsStyles.bgDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'processing',
-                      child: Text('Processing'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'collecting',
-                      child: Text('Collecting'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'collected',
-                      child: Text('Collected'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) setModalState(() => status = v);
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await supabase
-                  .from('purchase_orders')
-                  .update({'collecting_status': status})
-                  .eq('id', order['id']);
-
-              if (photos.isNotEmpty) {
-                await supabase
-                    .from('order_attachments')
-                    .update({'procuring_entity': descController.text.trim()})
-                    .eq('order_id', order['id']);
-              }
-
-              if (!mounted) return;
-              Navigator.pop(context);
-              await loadAll();
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> uploadPhotos(Map<String, dynamic> order) async {
-    final desc = await _askDescription();
-    if (desc == null) return;
-
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-      withData: true,
-    );
-
-    if (result == null || result.files.isEmpty) return;
-
-    try {
-      final oldPhotos = _photosFor(order['id']);
-
-      String currentProcuringEntity = '';
-      for (final p in oldPhotos) {
-        final v = (p['procuring_entity'] ?? '').toString().trim();
-        if (v.isNotEmpty) {
-          currentProcuringEntity = v;
-          break;
-        }
-      }
-
-      for (final file in result.files) {
-        if (file.bytes == null) continue;
-
-        final safeName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-        final fileName =
-            'bucket_photos/${order['id']}/${DateTime.now().millisecondsSinceEpoch}_$safeName';
-
-        await supabase.storage
-            .from('attachments')
-            .uploadBinary(fileName, file.bytes!);
-
-        final url = supabase.storage.from('attachments').getPublicUrl(fileName);
-
-        await supabase.from('order_attachments').insert({
-          'order_id': order['id'],
-          'image_url': url,
-          'file_name': file.name,
-          'description': desc,
-          'procuring_entity': currentProcuringEntity,
-          'storage_path': fileName,
-        });
-      }
-
-      await loadAll();
-
-      if (mounted) setState(() {});
-      _showSnack('Photos uploaded successfully');
-    } catch (e) {
-      _showSnack('Upload failed: $e');
-    }
+    if (mounted) setState(() {});
   }
 
   void openPhotosViewer(Map<String, dynamic> order) {
-    AttachmentsViewService.viewPhotos(
+    AttachmentsViewPhotosService.open(
       context: context,
       order: order,
       photos: _photosFor(order['id']),
@@ -602,6 +419,15 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         await deletePhoto(photo);
         await loadAll();
       },
+    );
+  }
+
+  void openOrderDetails(Map<String, dynamic> order) {
+    AttachmentsDetailsService.openDetails(
+      context: context,
+      order: order,
+      photos: _photosFor(order['id']),
+      onDone: loadAll,
     );
   }
 
@@ -867,7 +693,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => AttachmentsPdfService.viewPdf(
+                        onTap: () => AttachmentsViewService.viewPdf(
                           context: context,
                           order: order,
                         ),
@@ -893,7 +719,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => uploadPhotos(order),
+                        onTap: () => uploadOrderPhotos(order),
                       ),
                     ),
                     SizedBox(width: gap),
@@ -917,7 +743,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => openDetails(order),
+                        onTap: () => openOrderDetails(order),
                       ),
                     ),
                   ],
@@ -962,7 +788,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.picture_as_pdf_outlined,
                       label: 'View',
-                      onTap: () => AttachmentsPdfService.viewPdf(
+                      onTap: () => AttachmentsViewService.viewPdf(
                         context: context,
                         order: order,
                       ),
@@ -984,7 +810,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.cloud_upload_outlined,
                       label: 'Upload',
-                      onTap: () => uploadPhotos(order),
+                      onTap: () => uploadOrderPhotos(order),
                     ),
                     const SizedBox(width: 8),
                     if (delivered)
@@ -1005,7 +831,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.edit_note_rounded,
                       label: '',
-                      onTap: () => openDetails(order),
+                      onTap: () => openOrderDetails(order),
                     ),
                   ],
                 ),
@@ -1022,7 +848,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 650;
     final isTablet = width >= 650 && width < 1100;
-    final compact = isMobile || isTablet;
     final visibleOrders = filteredOrders;
 
     return Container(
@@ -1043,7 +868,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             style: AttachmentsStyles.subtitle,
           ),
           const SizedBox(height: 16),
-          _topStatsAndFilters(compact),
+          _topStatsAndFilters(isMobile || isTablet),
           const SizedBox(height: 16),
           if (!isMobile && !isTablet) _header(),
           Expanded(
