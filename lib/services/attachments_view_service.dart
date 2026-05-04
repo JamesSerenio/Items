@@ -27,7 +27,7 @@ class AttachmentsViewService {
     required BuildContext context,
     required Map<String, dynamic> order,
   }) async {
-    await AttachmentsPdfService.viewPdf(context: context, order: order);
+    await AttachmentsPdfService.downloadPdf(context: context, order: order);
   }
 
   static void viewPhotos({
