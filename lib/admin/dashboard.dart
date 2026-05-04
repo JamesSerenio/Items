@@ -227,7 +227,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           child: Center(
             child: Transform.scale(
-              scale: 0.72, // paliitin mo pa: 0.68 / 0.65
+              scale: 0.740, // paliitin mo pa: 0.68 / 0.65
               child: child!,
             ),
           ),
@@ -261,8 +261,9 @@ class _DashboardPageState extends State<DashboardPage> {
               surface: Color(0xFF081711),
               onSurface: DashboardStyles.textPrimary,
             ),
+            dialogTheme: const DialogThemeData(insetPadding: EdgeInsets.zero),
           ),
-          child: child!,
+          child: Center(child: Transform.scale(scale: 0.740, child: child!)),
         );
       },
     );
@@ -629,30 +630,26 @@ class _DateFilterBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final children = [
-      Expanded(
-        child: _DateButton(
-          label: 'Start Date',
-          value: startDate,
-          icon: Icons.calendar_month_rounded,
-          onTap: onStartTap,
-        ),
+      _DateButton(
+        label: 'Start Date',
+        value: startDate,
+        icon: Icons.calendar_month_rounded,
+        onTap: onStartTap,
       ),
-      SizedBox(width: isMobile ? 6 : 10, height: isMobile ? 6 : 0),
-      Expanded(
-        child: _DateButton(
-          label: 'End Date',
-          value: endDate,
-          icon: Icons.event_available_rounded,
-          onTap: onEndTap,
-        ),
+      SizedBox(width: isMobile ? 4 : 10),
+      _DateButton(
+        label: 'End Date',
+        value: endDate,
+        icon: Icons.event_available_rounded,
+        onTap: onEndTap,
       ),
-      SizedBox(width: isMobile ? 6 : 10, height: isMobile ? 6 : 0),
+      SizedBox(width: isMobile ? 4 : 10),
       InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onClear,
         child: Container(
-          height: isMobile ? 44 : 52,
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16),
+          height: isMobile ? 38 : 52,
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16),
           decoration: BoxDecoration(
             color: DashboardStyles.cardColor,
             borderRadius: BorderRadius.circular(16),
@@ -708,8 +705,8 @@ class _DateButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
-        height: isMobile ? 48 : 52,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14),
+        height: isMobile ? 38 : 52,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 6 : 14),
         decoration: BoxDecoration(
           color: DashboardStyles.cardColor,
           borderRadius: BorderRadius.circular(16),
@@ -719,8 +716,12 @@ class _DateButton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: DashboardStyles.plutoGold, size: 18),
-            const SizedBox(width: 8),
+            Icon(
+              icon,
+              color: DashboardStyles.plutoGold,
+              size: isMobile ? 13 : 18,
+            ),
+            SizedBox(width: isMobile ? 4 : 8),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
