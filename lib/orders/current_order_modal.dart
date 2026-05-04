@@ -22,6 +22,16 @@ class CurrentOrderModal extends StatelessWidget {
     required this.onCheckout,
   });
 
+  num _num(dynamic value) => num.tryParse(value?.toString() ?? '0') ?? 0;
+
+  num get _modalCartTotal {
+    num total = 0;
+    for (final item in cart) {
+      total += _num(item['total_cost']);
+    }
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
@@ -232,7 +242,7 @@ class CurrentOrderModal extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        money(cartTotal),
+                        money(_modalCartTotal),
                         style: OrderStyles.totalValueStyle.copyWith(
                           fontSize: 20,
                         ),
@@ -245,7 +255,7 @@ class CurrentOrderModal extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: onCheckout,
+                    onPressed: cart.isEmpty ? null : onCheckout,
                     style: OrderStyles.checkoutButtonStyle,
                     icon: const Icon(Icons.receipt_long_rounded),
                     label: const Text(
