@@ -741,8 +741,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () =>
-                            AttachmentsPdfService.downloadPdf(order: order),
+                        onTap: () => AttachmentsPdfService.downloadPdf(
+                          context: context,
+                          order: order,
+                        ),
                       ),
                     ),
                     SizedBox(width: gap),
@@ -831,8 +833,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.download_rounded,
                       label: '',
-                      onTap: () =>
-                          AttachmentsPdfService.downloadPdf(order: order),
+                      onTap: () => AttachmentsPdfService.downloadPdf(
+                        context: context,
+                        order: order,
+                      ),
                     ),
                   ],
                 ),
