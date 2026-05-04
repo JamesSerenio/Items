@@ -1,11 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../pdf/attachments_pdf_service.dart';
+import '../services/attachments_view_service.dart';
 import '../styles/attachments_styles.dart';
 
 enum AttachmentsFilter { all, processing, collecting, collected }
@@ -154,11 +152,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   String _text(dynamic v) => v?.toString() ?? '-';
 
-  String _money(dynamic value) {
-    final n = num.tryParse(value?.toString() ?? '0') ?? 0;
-    return '₱${n.toStringAsFixed(2)}';
-  }
-
   String _formatDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '');
     if (d == null) return '-';
@@ -169,6 +162,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         : local.hour == 0
         ? 12
         : local.hour;
+
     final min = local.minute.toString().padLeft(2, '0');
     final ampm = local.hour >= 12 ? 'PM' : 'AM';
 
@@ -599,696 +593,15 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _loadOrderItems(String orderId) async {
-    final items = await supabase
-        .from('purchase_order_items')
-        .select(
-          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost',
-        )
-        .eq('purchase_order_id', orderId)
-        .order('stock_no', ascending: true);
-
-    return List<Map<String, dynamic>>.from(items);
-  }
-
-  TableRow _tableRow(List<String> values, {bool header = false}) {
-    return TableRow(
-      decoration: header ? const BoxDecoration(color: Color(0xFFEFEFEF)) : null,
-      children: values.map((v) {
-        return Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            v,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontWeight: header ? FontWeight.w900 : FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Future<void> viewPdf(Map<String, dynamic> order) async {
-    final items = await _loadOrderItems(order['id']);
-    if (!mounted) return;
-
-    showDialog(
+  void openPhotosViewer(Map<String, dynamic> order) {
+    AttachmentsViewService.viewPhotos(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.72),
-      builder: (_) {
-        final isMobile = MediaQuery.of(context).size.width < 650;
-
-        return Dialog(
-          backgroundColor: Colors.white,
-          insetPadding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 10 : 18,
-            vertical: isMobile ? 14 : 18,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(isMobile ? 20 : 28),
-          ),
-          child: SizedBox(
-            width: isMobile ? double.infinity : 820,
-            height: MediaQuery.of(context).size.height * 0.88,
-            child: Padding(
-              padding: EdgeInsets.all(isMobile ? 16 : 28),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'PURCHASE ORDER',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: isMobile ? 20 : 26,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  isMobile
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Description: ${_text(order['description'])}',
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Date: ${_formatDate(order['created_at'])}',
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Description: ${_text(order['description'])}',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              'Date: ${_formatDate(order['created_at'])}',
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: isMobile ? 720 : 760,
-                          child: Table(
-                            border: TableBorder.all(color: Colors.black54),
-                            columnWidths: const {
-                              0: FlexColumnWidth(0.9),
-                              1: FlexColumnWidth(0.8),
-                              2: FlexColumnWidth(2),
-                              3: FlexColumnWidth(1.3),
-                              4: FlexColumnWidth(0.7),
-                              5: FlexColumnWidth(1.2),
-                              6: FlexColumnWidth(1.2),
-                            },
-                            children: [
-                              _tableRow([
-                                'STOCK NO.',
-                                'UNIT',
-                                'ITEM DESCRIPTION / BRAND',
-                                'LOCATION',
-                                'QTY',
-                                'UNIT COST',
-                                'TOTAL COST',
-                              ], header: true),
-                              ...items.map(
-                                (i) => _tableRow([
-                                  _text(i['stock_no']),
-                                  _text(i['unit']),
-                                  '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
-                                  _text(i['location']),
-                                  _text(i['quantity']),
-                                  _money(i['unit_cost']),
-                                  _money(i['total_cost']),
-                                ]),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black54),
-                    ),
-                    child: Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'TOTAL AMOUNT',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          _money(order['total_amount']),
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+      order: order,
+      photos: _photosFor(order['id']),
+      onDelete: (photo) async {
+        await deletePhoto(photo);
+        await loadAll();
       },
-    );
-  }
-
-  pw.Widget _pdfCell(
-    String text, {
-    bool bold = false,
-    bool right = false,
-    required pw.Font font,
-    required pw.Font boldFont,
-  }) {
-    return pw.Container(
-      height: 34,
-      alignment: right ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-      child: pw.Text(
-        text,
-        maxLines: 2,
-        style: pw.TextStyle(
-          font: bold ? boldFont : font,
-          fontSize: 10,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  Future<void> downloadPdf(Map<String, dynamic> order) async {
-    final items = await _loadOrderItems(order['id']);
-
-    final font = await PdfGoogleFonts.notoSansRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBold();
-
-    final logoBytes = await rootBundle.load('assets/logo.png');
-    final logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
-
-    final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(base: font, bold: boldFont),
-    );
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 42, vertical: 34),
-        build: (_) {
-          return pw.Stack(
-            children: [
-              pw.Positioned.fill(
-                child: pw.Center(
-                  child: pw.Opacity(
-                    opacity: 0.07,
-                    child: pw.Image(
-                      logoImage,
-                      width: 620,
-                      height: 620,
-                      fit: pw.BoxFit.contain,
-                    ),
-                  ),
-                ),
-              ),
-              pw.Column(
-                children: [
-                  pw.Text(
-                    'PURCHASE ORDER',
-                    textAlign: pw.TextAlign.center,
-                    style: pw.TextStyle(
-                      font: boldFont,
-                      fontSize: 26,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.SizedBox(height: 28),
-                  pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Spacer(),
-                      pw.Text(
-                        'Date: ${_formatDate(order['created_at'])}',
-                        style: pw.TextStyle(
-                          font: boldFont,
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 22),
-                  pw.Table(
-                    border: pw.TableBorder.all(
-                      color: PdfColors.grey700,
-                      width: 0.8,
-                    ),
-                    columnWidths: const {
-                      0: pw.FlexColumnWidth(0.9),
-                      1: pw.FlexColumnWidth(0.8),
-                      2: pw.FlexColumnWidth(2.0),
-                      3: pw.FlexColumnWidth(1.3),
-                      4: pw.FlexColumnWidth(0.7),
-                      5: pw.FlexColumnWidth(1.2),
-                      6: pw.FlexColumnWidth(1.2),
-                    },
-                    children: [
-                      pw.TableRow(
-                        decoration: const pw.BoxDecoration(
-                          color: PdfColor.fromInt(0xFFEFEFEF),
-                        ),
-                        children: [
-                          _pdfCell(
-                            'STOCK NO.',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'UNIT',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'ITEM DESCRIPTION / BRAND',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'LOCATION',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'QTY',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'UNIT COST',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                          _pdfCell(
-                            'TOTAL COST',
-                            bold: true,
-                            font: font,
-                            boldFont: boldFont,
-                          ),
-                        ],
-                      ),
-                      ...items.map(
-                        (i) => pw.TableRow(
-                          children: [
-                            _pdfCell(
-                              _text(i['stock_no']),
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              _text(i['unit']),
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              _text(i['location']),
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              _text(i['quantity']),
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              _money(i['unit_cost']),
-                              right: true,
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                            _pdfCell(
-                              _money(i['total_cost']),
-                              right: true,
-                              font: font,
-                              boldFont: boldFont,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.Spacer(),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 13,
-                    ),
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(
-                        color: PdfColors.grey700,
-                        width: 0.8,
-                      ),
-                    ),
-                    child: pw.Row(
-                      children: [
-                        pw.Expanded(
-                          child: pw.Text(
-                            'TOTAL AMOUNT',
-                            style: pw.TextStyle(
-                              font: boldFont,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        pw.Text(
-                          _money(order['total_amount']),
-                          style: pw.TextStyle(
-                            font: boldFont,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: '${_text(order['po_no'])}_purchase_order.pdf',
-    );
-  }
-
-  void viewPhotos(Map<String, dynamic> order) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.78),
-      builder: (_) {
-        final isMobile = MediaQuery.of(context).size.width < 650;
-
-        return StatefulBuilder(
-          builder: (context, refreshModal) {
-            final photos = _photosFor(order['id']);
-
-            return Dialog(
-              backgroundColor: AttachmentsStyles.bg,
-              insetPadding: EdgeInsets.all(isMobile ? 10 : 18),
-              child: Container(
-                width: isMobile ? double.infinity : 900,
-                height: isMobile
-                    ? MediaQuery.of(context).size.height * 0.60
-                    : MediaQuery.of(context).size.height * 0.86,
-                padding: EdgeInsets.all(isMobile ? 14 : 18),
-                decoration: AttachmentsStyles.panel,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.photo_library_outlined,
-                          color: AttachmentsStyles.gold,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Uploaded Photos - ${_text(order['description'])}',
-                            style: AttachmentsStyles.title.copyWith(
-                              fontSize: isMobile ? 16 : 20,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: AttachmentsStyles.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Date: ${_formatDate(order['created_at'])}',
-                        style: AttachmentsStyles.small.copyWith(
-                          color: AttachmentsStyles.textSecondary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: photos.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No uploaded photos yet',
-                                style: AttachmentsStyles.subtitle,
-                              ),
-                            )
-                          : GridView.builder(
-                              itemCount: photos.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isMobile ? 3 : 5,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: isMobile ? 0.92 : 1.05,
-                                  ),
-                              itemBuilder: (_, index) {
-                                final p = photos[index];
-
-                                return Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    InkWell(
-                                      onTap: () => zoomPhoto(p),
-                                      child: Container(
-                                        decoration: AttachmentsStyles.cardStyle,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                                child: Image.network(
-                                                  _text(p['image_url']),
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 5),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                  ),
-                                              child: Text(
-                                                _text(
-                                                      p['description'],
-                                                    ).trim().isEmpty
-                                                    ? 'No description'
-                                                    : _text(p['description']),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AttachmentsStyles.small
-                                                    .copyWith(
-                                                      fontSize: isMobile
-                                                          ? 9
-                                                          : 11,
-                                                      fontWeight:
-                                                          FontWeight.w900,
-                                                      color: AttachmentsStyles
-                                                          .textPrimary,
-                                                    ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                left: 6,
-                                                right: 6,
-                                                bottom: 5,
-                                              ),
-                                              child: Text(
-                                                _formatDate(p['created_at']),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AttachmentsStyles.small
-                                                    .copyWith(
-                                                      fontSize: isMobile
-                                                          ? 8
-                                                          : 10,
-                                                      color: AttachmentsStyles
-                                                          .textSecondary,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: -6,
-                                      right: -6,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                        onTap: () async {
-                                          await deletePhoto(p);
-                                          refreshModal(() {});
-                                        },
-                                        child: Container(
-                                          width: isMobile ? 24 : 30,
-                                          height: isMobile ? 24 : 30,
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.78,
-                                            ),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: AttachmentsStyles.danger
-                                                  .withOpacity(0.9),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.close_rounded,
-                                            color: const Color(0xFFFFB4B4),
-                                            size: isMobile ? 15 : 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void zoomPhoto(Map<String, dynamic> photo) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.90),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(12),
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.6,
-                maxScale: 5,
-                child: Image.network(_text(photo['image_url'])),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              left: 12,
-              right: 60,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_text(photo['description']).trim().isNotEmpty)
-                    Text(
-                      _text(photo['description']),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  Text(
-                    _formatDate(photo['created_at']),
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1336,87 +649,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
 
     return expand ? Expanded(child: child) : child;
-  }
-
-  Widget _summaryCard({
-    required String label,
-    required int value,
-    required Color color,
-    required IconData icon,
-    required bool compact,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
-      decoration: BoxDecoration(
-        color: AttachmentsStyles.bgDark.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.55)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 10),
-          const SizedBox(width: 3),
-          Text(
-            '$value',
-            style: TextStyle(
-              color: color,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: AttachmentsStyles.small.copyWith(
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip({
-    required String label,
-    required AttachmentsFilter value,
-    required Color color,
-    required IconData icon,
-    required bool compact,
-  }) {
-    final active = selectedFilter == value;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () => setState(() => selectedFilter = value),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 10 : 15,
-          vertical: compact ? 7 : 10,
-        ),
-        decoration: AttachmentsStyles.filterBox(active: active, color: color),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: active ? color : AttachmentsStyles.gold,
-              size: compact ? 13 : 16,
-            ),
-            SizedBox(width: compact ? 5 : 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: active ? color : AttachmentsStyles.textSecondary,
-                fontSize: compact ? 10 : 12,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _topStatsAndFilters(bool compact) {
@@ -1492,46 +724,19 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
               ),
             ),
             onSelected: (v) => setState(() => selectedFilter = v),
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: AttachmentsFilter.all,
-                child: Text(
-                  'All',
-                  style: TextStyle(
-                    color: AttachmentsStyles.textPrimary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: AttachmentsFilter.all, child: Text('All')),
               PopupMenuItem(
                 value: AttachmentsFilter.processing,
-                child: Text(
-                  'Processing',
-                  style: TextStyle(
-                    color: AttachmentsStyles.gold,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: Text('Processing'),
               ),
               PopupMenuItem(
                 value: AttachmentsFilter.collecting,
-                child: Text(
-                  'Collecting',
-                  style: TextStyle(
-                    color: AttachmentsStyles.danger,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: Text('Collecting'),
               ),
               PopupMenuItem(
                 value: AttachmentsFilter.collected,
-                child: Text(
-                  'Collected',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: Text('Collected'),
               ),
             ],
             child: Container(
@@ -1662,7 +867,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => viewPdf(order),
+                        onTap: () => AttachmentsPdfService.viewPdf(
+                          context: context,
+                          order: order,
+                        ),
                       ),
                     ),
                     SizedBox(width: gap),
@@ -1673,7 +881,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => downloadPdf(order),
+                        onTap: () =>
+                            AttachmentsPdfService.downloadPdf(order: order),
                       ),
                     ),
                     SizedBox(width: gap),
@@ -1695,7 +904,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: delivered ? () => viewPhotos(order) : () {},
+                        onTap: delivered
+                            ? () => openPhotosViewer(order)
+                            : () {},
                       ),
                     ),
                     SizedBox(width: gap),
@@ -1751,13 +962,17 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.picture_as_pdf_outlined,
                       label: 'View',
-                      onTap: () => viewPdf(order),
+                      onTap: () => AttachmentsPdfService.viewPdf(
+                        context: context,
+                        order: order,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     _iconBtn(
                       icon: Icons.download_rounded,
                       label: '',
-                      onTap: () => downloadPdf(order),
+                      onTap: () =>
+                          AttachmentsPdfService.downloadPdf(order: order),
                     ),
                   ],
                 ),
@@ -1776,7 +991,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                       _iconBtn(
                         icon: Icons.photo_library_outlined,
                         label: 'View Photos',
-                        onTap: () => viewPhotos(order),
+                        onTap: () => openPhotosViewer(order),
                       ),
                   ],
                 ),
