@@ -47,6 +47,7 @@ class AttachmentsDetailsService {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
+            dialogTheme: const DialogThemeData(insetPadding: EdgeInsets.zero),
             colorScheme: const ColorScheme.dark(
               primary: AttachmentsStyles.gold,
               onPrimary: Colors.black,
@@ -54,7 +55,7 @@ class AttachmentsDetailsService {
               onSurface: AttachmentsStyles.textPrimary,
             ),
           ),
-          child: child!,
+          child: Center(child: Transform.scale(scale: 0.72, child: child!)),
         );
       },
     );
@@ -67,6 +68,7 @@ class AttachmentsDetailsService {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
+            dialogTheme: const DialogThemeData(insetPadding: EdgeInsets.zero),
             colorScheme: const ColorScheme.dark(
               primary: AttachmentsStyles.gold,
               onPrimary: Colors.black,
@@ -74,7 +76,7 @@ class AttachmentsDetailsService {
               onSurface: AttachmentsStyles.textPrimary,
             ),
           ),
-          child: child!,
+          child: Center(child: Transform.scale(scale: 0.70, child: child!)),
         );
       },
     );
@@ -123,6 +125,7 @@ class AttachmentsDetailsService {
         content: StatefulBuilder(
           builder: (context, setModalState) {
             Color statusColor;
+
             if (status == 'processing') {
               statusColor = AttachmentsStyles.gold;
             } else if (status == 'collecting') {
@@ -164,7 +167,6 @@ class AttachmentsDetailsService {
                   ),
                 ),
                 const SizedBox(height: 14),
-
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -230,7 +232,6 @@ class AttachmentsDetailsService {
                         },
                       ),
                       const SizedBox(height: 12),
-
                       InkWell(
                         borderRadius: BorderRadius.circular(14),
                         onTap: () async {
