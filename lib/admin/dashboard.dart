@@ -21,6 +21,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   DashboardFilter selectedFilter = DashboardFilter.day;
 
+  DateTime? customStartDate;
+  DateTime? customEndDate;
+
+  String? selectedSupplier;
+
   List<Map<String, dynamic>> orders = [];
   List<Map<String, dynamic>> items = [];
 
@@ -45,20 +50,20 @@ class _DashboardPageState extends State<DashboardPage> {
           .order('created_at', ascending: false);
 
       final itemData = await supabase.from('purchase_order_items').select('''
-        id,
-        purchase_order_id,
-        material_id,
-        item_description,
-        quantity,
-        total_cost,
-        location,
-        materials (
-          supplier_name
-        ),
-        purchase_orders (
-          created_at
-        )
-      ''');
+  id,
+  purchase_order_id,
+  material_id,
+  item_description,
+  quantity,
+  total_cost,
+  location,
+  materials (
+    supplier_name
+  ),
+  purchase_orders (
+    created_at
+  )
+''');
 
       if (!mounted) return;
 
@@ -95,7 +100,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Unknown Supplier';
   }
 
+  String _itemName(Map<String, dynamic> item) {
+    final name = item['item_description']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Unnamed Item';
+  }
+
   DateTime _startDate() {
+    if (customStartDate != null) {
+      return DateTime(
+        customStartDate!.year,
+        customStartDate!.month,
+        customStartDate!.day,
+      );
+    }
+
     final now = DateTime.now();
 
     switch (selectedFilter) {
@@ -112,6 +131,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   DateTime _endDate() {
+    if (customEndDate != null) {
+      return DateTime(
+        customEndDate!.year,
+        customEndDate!.month,
+        customEndDate!.day + 1,
+      );
+    }
+
     final now = DateTime.now();
 
     switch (selectedFilter) {
@@ -141,6 +168,26 @@ class _DashboardPageState extends State<DashboardPage> {
     }).toList();
   }
 
+  List<String> get suppliers {
+    final list = filteredItems.map(_supplier).toSet().toList();
+    list.sort();
+    return list;
+  }
+
+  List<Map<String, dynamic>> get selectedSupplierItems {
+    if (selectedSupplier == null || selectedSupplier!.isEmpty) return [];
+    return filteredItems
+        .where((item) => _supplier(item) == selectedSupplier)
+        .toList();
+  }
+
+  num get selectedSupplierTotal {
+    return selectedSupplierItems.fold<num>(
+      0,
+      (sum, item) => sum + _num(item['total_cost']),
+    );
+  }
+
   int get totalSuppliers {
     return filteredItems
         .map(_supplier)
@@ -159,6 +206,89 @@ class _DashboardPageState extends State<DashboardPage> {
 
   num get totalAmount {
     return filteredItems.fold<num>(0, (sum, i) => sum + _num(i['total_cost']));
+  }
+
+  Future<void> _pickStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: customStartDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: DashboardStyles.plutoGold,
+              onPrimary: Colors.black,
+              surface: Color(0xFF081711),
+              onSurface: DashboardStyles.textPrimary,
+            ),
+            dialogTheme: const DialogThemeData(insetPadding: EdgeInsets.zero),
+          ),
+          child: Center(
+            child: Transform.scale(
+              scale: 0.72, // paliitin mo pa: 0.68 / 0.65
+              child: child!,
+            ),
+          ),
+        );
+      },
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      customStartDate = picked;
+      if (customEndDate != null && customEndDate!.isBefore(picked)) {
+        customEndDate = picked;
+      }
+      selectedSupplier = null;
+    });
+  }
+
+  Future<void> _pickEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: customEndDate ?? customStartDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: DashboardStyles.plutoGold,
+              onPrimary: Colors.black,
+              surface: Color(0xFF081711),
+              onSurface: DashboardStyles.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      customEndDate = picked;
+      if (customStartDate != null && customStartDate!.isAfter(picked)) {
+        customStartDate = picked;
+      }
+      selectedSupplier = null;
+    });
+  }
+
+  void _clearCustomDate() {
+    setState(() {
+      customStartDate = null;
+      customEndDate = null;
+      selectedSupplier = null;
+    });
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Select Date';
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   List<_LinePoint> get lineData {
@@ -286,6 +416,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String get filterLabel {
+    if (customStartDate != null || customEndDate != null) {
+      return '${_formatDate(customStartDate)} to ${_formatDate(customEndDate)}';
+    }
+
     switch (selectedFilter) {
       case DashboardFilter.day:
         return 'Today';
@@ -337,9 +471,25 @@ class _DashboardPageState extends State<DashboardPage> {
                       _Header(
                         isMobile: isMobile,
                         selected: selectedFilter,
+                        hasCustomDate:
+                            customStartDate != null || customEndDate != null,
                         onChanged: (v) {
-                          setState(() => selectedFilter = v);
+                          setState(() {
+                            selectedFilter = v;
+                            customStartDate = null;
+                            customEndDate = null;
+                            selectedSupplier = null;
+                          });
                         },
+                      ),
+                      SizedBox(height: isMobile ? 10 : 18),
+                      _DateFilterBox(
+                        isMobile: isMobile,
+                        startDate: _formatDate(customStartDate),
+                        endDate: _formatDate(customEndDate),
+                        onStartTap: _pickStartDate,
+                        onEndTap: _pickEndDate,
+                        onClear: _clearCustomDate,
                       ),
                       SizedBox(height: isMobile ? 10 : 18),
                       Row(
@@ -371,6 +521,22 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
                         ],
+                      ),
+                      SizedBox(height: isMobile ? 10 : 18),
+                      _SupplierOrderPanel(
+                        isMobile: isMobile,
+                        suppliers: suppliers,
+                        selectedSupplier: selectedSupplier,
+                        selectedItems: selectedSupplierItems,
+                        selectedTotal: selectedSupplierTotal,
+                        money: _money,
+                        itemName: _itemName,
+                        numValue: _num,
+                        onSupplierChanged: (value) {
+                          setState(() {
+                            selectedSupplier = value;
+                          });
+                        },
                       ),
                       SizedBox(height: isMobile ? 10 : 18),
                       if (isMobile) ...[
@@ -443,6 +609,445 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
+class _DateFilterBox extends StatelessWidget {
+  final bool isMobile;
+  final String startDate;
+  final String endDate;
+  final VoidCallback onStartTap;
+  final VoidCallback onEndTap;
+  final VoidCallback onClear;
+
+  const _DateFilterBox({
+    required this.isMobile,
+    required this.startDate,
+    required this.endDate,
+    required this.onStartTap,
+    required this.onEndTap,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final children = [
+      Expanded(
+        child: _DateButton(
+          label: 'Start Date',
+          value: startDate,
+          icon: Icons.calendar_month_rounded,
+          onTap: onStartTap,
+        ),
+      ),
+      SizedBox(width: isMobile ? 6 : 10, height: isMobile ? 6 : 0),
+      Expanded(
+        child: _DateButton(
+          label: 'End Date',
+          value: endDate,
+          icon: Icons.event_available_rounded,
+          onTap: onEndTap,
+        ),
+      ),
+      SizedBox(width: isMobile ? 6 : 10, height: isMobile ? 6 : 0),
+      InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onClear,
+        child: Container(
+          height: isMobile ? 44 : 52,
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16),
+          decoration: BoxDecoration(
+            color: DashboardStyles.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: DashboardStyles.danger.withOpacity(0.55)),
+          ),
+          child: Icon(
+            Icons.close_rounded,
+            color: DashboardStyles.danger,
+            size: isMobile ? 18 : 22,
+          ),
+        ),
+      ),
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 8 : 12),
+      decoration: BoxDecoration(
+        color: DashboardStyles.panelCardColor,
+        borderRadius: BorderRadius.circular(isMobile ? 18 : 24),
+        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.55)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: children[0]),
+          SizedBox(width: isMobile ? 6 : 10),
+          Expanded(child: children[2]),
+          SizedBox(width: isMobile ? 6 : 10),
+          children[4],
+        ],
+      ),
+    );
+  }
+}
+
+class _DateButton extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _DateButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        height: isMobile ? 48 : 52,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14),
+        decoration: BoxDecoration(
+          color: DashboardStyles.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: DashboardStyles.plutoGold.withOpacity(0.45),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: DashboardStyles.plutoGold, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: DashboardStyles.pageSubtitleStyle.copyWith(
+                      fontSize: isMobile ? 8.5 : 10,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DashboardStyles.smallGold.copyWith(
+                      fontSize: isMobile ? 10 : 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SupplierOrderPanel extends StatelessWidget {
+  final bool isMobile;
+  final List<String> suppliers;
+  final String? selectedSupplier;
+  final List<Map<String, dynamic>> selectedItems;
+  final num selectedTotal;
+  final String Function(num) money;
+  final String Function(Map<String, dynamic>) itemName;
+  final num Function(dynamic) numValue;
+  final ValueChanged<String?> onSupplierChanged;
+
+  const _SupplierOrderPanel({
+    required this.isMobile,
+    required this.suppliers,
+    required this.selectedSupplier,
+    required this.selectedItems,
+    required this.selectedTotal,
+    required this.money,
+    required this.itemName,
+    required this.numValue,
+    required this.onSupplierChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      title: 'Supplier Ordered Items',
+      subtitle: 'Tap/select supplier to view ordered items, qty, and total.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: isMobile ? 48 : 56,
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14),
+            decoration: BoxDecoration(
+              color: DashboardStyles.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: DashboardStyles.plutoGold.withOpacity(0.55),
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedSupplier,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF081711),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: DashboardStyles.plutoGold,
+                ),
+                hint: Text(
+                  suppliers.isEmpty ? 'No supplier found' : 'Select Supplier',
+                  style: DashboardStyles.pageSubtitleStyle.copyWith(
+                    fontSize: isMobile ? 11 : 13,
+                  ),
+                ),
+                items: suppliers.map((supplier) {
+                  return DropdownMenuItem<String>(
+                    value: supplier,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.storefront_rounded,
+                          color: DashboardStyles.plutoGold,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            supplier,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: DashboardStyles.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: isMobile ? 12 : 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: onSupplierChanged,
+              ),
+            ),
+          ),
+          SizedBox(height: isMobile ? 10 : 14),
+          if (selectedSupplier == null)
+            const SizedBox(
+              height: 90,
+              child: _EmptyChart(
+                message: 'Please select supplier to view ordered items.',
+              ),
+            )
+          else if (selectedItems.isEmpty)
+            const SizedBox(
+              height: 90,
+              child: _EmptyChart(
+                message: 'No ordered items for this supplier.',
+              ),
+            )
+          else
+            _SupplierItemsTable(
+              isMobile: isMobile,
+              items: selectedItems,
+              selectedTotal: selectedTotal,
+              money: money,
+              itemName: itemName,
+              numValue: numValue,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupplierItemsTable extends StatelessWidget {
+  final bool isMobile;
+  final List<Map<String, dynamic>> items;
+  final num selectedTotal;
+  final String Function(num) money;
+  final String Function(Map<String, dynamic>) itemName;
+  final num Function(dynamic) numValue;
+
+  const _SupplierItemsTable({
+    required this.isMobile,
+    required this.items,
+    required this.selectedTotal,
+    required this.money,
+    required this.itemName,
+    required this.numValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: DashboardStyles.cardColor.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.38)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 8 : 12,
+              vertical: isMobile ? 8 : 10,
+            ),
+            decoration: BoxDecoration(
+              color: DashboardStyles.plutoGold.withOpacity(0.13),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'Item Name',
+                    style: DashboardStyles.smallGold.copyWith(
+                      fontSize: isMobile ? 9 : 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Qty',
+                    textAlign: TextAlign.center,
+                    style: DashboardStyles.smallGold.copyWith(
+                      fontSize: isMobile ? 9 : 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Total',
+                    textAlign: TextAlign.right,
+                    style: DashboardStyles.smallGold.copyWith(
+                      fontSize: isMobile ? 9 : 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: isMobile ? 210 : 260),
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                color: DashboardStyles.plutoGold.withOpacity(0.15),
+              ),
+              itemBuilder: (_, index) {
+                final item = items[index];
+                final qty = numValue(item['quantity']);
+                final total = numValue(item['total_cost']);
+
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 8 : 12,
+                    vertical: isMobile ? 8 : 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: Text(
+                          itemName(item),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: DashboardStyles.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: isMobile ? 10 : 13,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          qty.toStringAsFixed(qty % 1 == 0 ? 0 : 2),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: DashboardStyles.textSecondary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: isMobile ? 10 : 13,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          money(total),
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: DashboardStyles.plutoGold,
+                            fontWeight: FontWeight.w900,
+                            fontSize: isMobile ? 10 : 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 8 : 12,
+              vertical: isMobile ? 10 : 14,
+            ),
+            decoration: BoxDecoration(
+              color: DashboardStyles.megaGreen.withOpacity(0.12),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(16),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: DashboardStyles.plutoGold.withOpacity(0.24),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Total Amount',
+                    style: TextStyle(
+                      color: DashboardStyles.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: isMobile ? 11 : 14,
+                    ),
+                  ),
+                ),
+                Text(
+                  money(selectedTotal),
+                  style: TextStyle(
+                    color: DashboardStyles.plutoGold,
+                    fontWeight: FontWeight.w900,
+                    fontSize: isMobile ? 13 : 17,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatMiniCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -498,11 +1103,13 @@ class _StatMiniCard extends StatelessWidget {
 class _Header extends StatelessWidget {
   final bool isMobile;
   final DashboardFilter selected;
+  final bool hasCustomDate;
   final ValueChanged<DashboardFilter> onChanged;
 
   const _Header({
     required this.isMobile,
     required this.selected,
+    required this.hasCustomDate,
     required this.onChanged,
   });
 
@@ -527,6 +1134,7 @@ class _Header extends StatelessWidget {
           selected: selected,
           onChanged: onChanged,
           isMobile: isMobile,
+          hasCustomDate: hasCustomDate,
         ),
       ],
     );
@@ -537,11 +1145,13 @@ class _FilterPills extends StatelessWidget {
   final DashboardFilter selected;
   final ValueChanged<DashboardFilter> onChanged;
   final bool isMobile;
+  final bool hasCustomDate;
 
   const _FilterPills({
     required this.selected,
     required this.onChanged,
     required this.isMobile,
+    required this.hasCustomDate,
   });
 
   @override
@@ -557,7 +1167,7 @@ class _FilterPills extends StatelessWidget {
       spacing: isMobile ? 6 : 8,
       runSpacing: isMobile ? 6 : 8,
       children: data.entries.map((e) {
-        final active = selected == e.key;
+        final active = !hasCustomDate && selected == e.key;
 
         return InkWell(
           borderRadius: BorderRadius.circular(999),
