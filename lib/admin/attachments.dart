@@ -221,49 +221,52 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
-  Widget _statusSmallPill(Map<String, dynamic> order) {
+  Widget _statusSmallPill(Map<String, dynamic> order, {bool mobile = false}) {
     final status = _statusOf(order);
     final color = _collectingColor(status);
     final statusDate = order['status_datetime'];
 
+    final hasDate =
+        statusDate != null && statusDate.toString().trim().isNotEmpty;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      constraints: BoxConstraints(maxWidth: mobile ? 185 : 260),
+      padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 10, vertical: 6),
       decoration: AttachmentsStyles.statusBox(color),
-      child: Column(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _collectingLabel(status).toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              _collectingLabel(status).toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: mobile ? 10 : 11,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-          if (statusDate != null &&
-              statusDate.toString().trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.access_time_rounded, color: color, size: 11),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    _formatDate(statusDate),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: color.withOpacity(0.95),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+          if (hasDate) ...[
+            SizedBox(width: mobile ? 4 : 6),
+            Icon(
+              Icons.access_time_rounded,
+              color: color,
+              size: mobile ? 10 : 11,
+            ),
+            SizedBox(width: mobile ? 3 : 4),
+            Flexible(
+              child: Text(
+                _formatDate(statusDate),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color.withOpacity(0.95),
+                  fontSize: mobile ? 8.5 : 10,
+                  fontWeight: FontWeight.w800,
                 ),
-              ],
+              ),
             ),
           ],
         ],
