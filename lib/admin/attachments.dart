@@ -96,7 +96,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       final ordersData = await supabase
           .from('purchase_orders')
           .select(
-            'id, po_no, description, item_description, collecting_status, total_amount, created_at',
+            'id, po_no, description, item_description, collecting_status, status_datetime, total_amount, created_at',
           )
           .order('created_at', ascending: false);
 
@@ -221,21 +221,52 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     );
   }
 
-  Widget _statusSmallPill(String status) {
+  Widget _statusSmallPill(Map<String, dynamic> order) {
+    final status = _statusOf(order);
     final color = _collectingColor(status);
+    final statusDate = order['status_datetime'];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: AttachmentsStyles.statusBox(color),
-      child: Text(
-        _collectingLabel(status).toUpperCase(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _collectingLabel(status).toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          if (statusDate != null &&
+              statusDate.toString().trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.access_time_rounded, color: color, size: 11),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    _formatDate(statusDate),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color.withOpacity(0.95),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -291,7 +322,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
           ),
         ],
         const SizedBox(height: 5),
-        _statusSmallPill(_statusOf(order)),
+        _statusSmallPill(order),
       ],
     );
   }
