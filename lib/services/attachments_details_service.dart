@@ -36,8 +36,7 @@ class AttachmentsDetailsService {
     required BuildContext context,
     required DateTime? initial,
   }) async {
-    final now = DateTime.now();
-    final base = initial ?? now;
+    final base = initial ?? DateTime.now();
 
     final pickedDate = await showDatePicker(
       context: context,
@@ -98,6 +97,8 @@ class AttachmentsDetailsService {
     required List<Map<String, dynamic>> photos,
     required Future<void> Function() onDone,
   }) async {
+    final rootContext = context;
+
     final descController = TextEditingController(
       text: photos.isNotEmpty
           ? (photos.first['procuring_entity'] ?? '').toString()
@@ -106,24 +107,14 @@ class AttachmentsDetailsService {
 
     String status = _statusOf(order);
     DateTime? selectedDateTime = _dateOf(order);
+    bool saving = false;
 
     await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AttachmentsStyles.bg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: AttachmentsStyles.gold.withOpacity(0.45)),
-        ),
-        title: const Text(
-          'Write Procuring Entity',
-          style: TextStyle(
-            color: AttachmentsStyles.textPrimary,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        content: StatefulBuilder(
-          builder: (context, setModalState) {
+      context: rootContext,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
             Color statusColor;
 
             if (status == 'processing') {
@@ -134,190 +125,258 @@ class AttachmentsDetailsService {
               statusColor = AttachmentsStyles.green;
             }
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: descController,
-                  maxLines: 3,
-                  style: const TextStyle(color: AttachmentsStyles.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Write Procuring Entity...',
-                    hintStyle: const TextStyle(
-                      color: AttachmentsStyles.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AttachmentsStyles.bgDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: AttachmentsStyles.gold.withOpacity(0.40),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AttachmentsStyles.gold,
-                        width: 1.6,
-                      ),
-                    ),
-                  ),
+            return AlertDialog(
+              backgroundColor: AttachmentsStyles.bg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: AttachmentsStyles.gold.withOpacity(0.45),
                 ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AttachmentsStyles.bgDark,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: statusColor.withOpacity(0.75),
-                      width: 1.2,
+              ),
+              title: const Text(
+                'Write Procuring Entity',
+                style: TextStyle(
+                  color: AttachmentsStyles.textPrimary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: descController,
+                    maxLines: 3,
+                    style: const TextStyle(
+                      color: AttachmentsStyles.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Write Procuring Entity...',
+                      hintStyle: const TextStyle(
+                        color: AttachmentsStyles.textSecondary,
+                      ),
+                      filled: true,
+                      fillColor: AttachmentsStyles.bgDark,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: AttachmentsStyles.gold.withOpacity(0.40),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: AttachmentsStyles.gold,
+                          width: 1.6,
+                        ),
+                      ),
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: status,
-                        dropdownColor: AttachmentsStyles.bg,
-                        style: const TextStyle(
-                          color: AttachmentsStyles.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Status',
-                          labelStyle: TextStyle(
-                            color: statusColor,
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AttachmentsStyles.bgDark,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: statusColor.withOpacity(0.75),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: status,
+                          dropdownColor: AttachmentsStyles.bg,
+                          style: const TextStyle(
+                            color: AttachmentsStyles.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
-                          filled: true,
-                          fillColor: AttachmentsStyles.bg,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: statusColor.withOpacity(0.55),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
+                          decoration: InputDecoration(
+                            labelText: 'Status',
+                            labelStyle: TextStyle(
                               color: statusColor,
-                              width: 1.6,
+                              fontWeight: FontWeight.w800,
                             ),
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'processing',
-                            child: Text('Processing'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'collecting',
-                            child: Text('Collecting'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'collected',
-                            child: Text('Collected'),
-                          ),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) {
-                            setModalState(() => status = v);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () async {
-                          final picked = await _pickDateTime(
-                            context: context,
-                            initial: selectedDateTime,
-                          );
-
-                          if (picked != null) {
-                            setModalState(() {
-                              selectedDateTime = picked;
-                            });
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 15,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AttachmentsStyles.bg,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: statusColor.withOpacity(0.55),
+                            filled: true,
+                            fillColor: AttachmentsStyles.bg,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_month_rounded,
-                                color: statusColor,
-                                size: 19,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: statusColor.withOpacity(0.55),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _formatDateTime(selectedDateTime),
-                                  style: TextStyle(
-                                    color: selectedDateTime == null
-                                        ? AttachmentsStyles.textSecondary
-                                        : AttachmentsStyles.textPrimary,
-                                    fontWeight: FontWeight.w800,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: statusColor,
+                                width: 1.6,
+                              ),
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'processing',
+                              child: Text('Processing'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'collecting',
+                              child: Text('Collecting'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'collected',
+                              child: Text('Collected'),
+                            ),
+                          ],
+                          onChanged: saving
+                              ? null
+                              : (v) {
+                                  if (v != null) {
+                                    setModalState(() => status = v);
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: saving
+                              ? null
+                              : () async {
+                                  final picked = await _pickDateTime(
+                                    context: modalContext,
+                                    initial: selectedDateTime,
+                                  );
+
+                                  if (picked != null) {
+                                    setModalState(() {
+                                      selectedDateTime = picked;
+                                    });
+                                  }
+                                },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 15,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AttachmentsStyles.bg,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: statusColor.withOpacity(0.55),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_month_rounded,
+                                  color: statusColor,
+                                  size: 19,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _formatDateTime(selectedDateTime),
+                                    style: TextStyle(
+                                      color: selectedDateTime == null
+                                          ? AttachmentsStyles.textSecondary
+                                          : AttachmentsStyles.textPrimary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () {
+                          Navigator.of(
+                            dialogContext,
+                            rootNavigator: true,
+                          ).pop();
+                        },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          setModalState(() => saving = true);
+
+                          try {
+                            await supabase
+                                .from('purchase_orders')
+                                .update({
+                                  'collecting_status': status,
+                                  'status_datetime': selectedDateTime
+                                      ?.toIso8601String(),
+                                })
+                                .eq('id', order['id']);
+
+                            await supabase
+                                .from('order_attachments')
+                                .update({
+                                  'procuring_entity': descController.text
+                                      .trim(),
+                                })
+                                .eq('order_id', order['id']);
+
+                            if (Navigator.of(
+                              dialogContext,
+                              rootNavigator: true,
+                            ).canPop()) {
+                              Navigator.of(
+                                dialogContext,
+                                rootNavigator: true,
+                              ).pop();
+                            }
+
+                            await onDone();
+                          } catch (e) {
+                            setModalState(() => saving = false);
+
+                            if (rootContext.mounted) {
+                              ScaffoldMessenger.of(rootContext).showSnackBar(
+                                SnackBar(
+                                  content: Text('Save failed: $e'),
+                                  backgroundColor: AttachmentsStyles.bg,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Text('Save'),
                 ),
               ],
             );
           },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await supabase
-                  .from('purchase_orders')
-                  .update({
-                    'collecting_status': status,
-                    'status_datetime': selectedDateTime?.toIso8601String(),
-                  })
-                  .eq('id', order['id']);
-
-              if (photos.isNotEmpty) {
-                await supabase
-                    .from('order_attachments')
-                    .update({'procuring_entity': descController.text.trim()})
-                    .eq('order_id', order['id']);
-              }
-
-              if (context.mounted) Navigator.pop(context);
-              await onDone();
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+        );
+      },
     );
+
+    descController.dispose();
   }
 }
