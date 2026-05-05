@@ -7,13 +7,13 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../styles/attachments_styles.dart';
-
 class AttachmentsComputation {
   static const Color _blue = Color(0xFF0B2D4D);
   static const Color _gold = Color(0xFFE5C76B);
   static const Color _green = Color(0xFF1FAF7A);
-  static const Color _dark = Color(0xFF07140F);
+  static const Color _cream = Color(0xFFF9F2D7);
+  static const Color _muted = Color(0xFFC6B98F);
+  static const Color _darkCard = Color(0xFF081711);
 
   static num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
 
@@ -54,14 +54,20 @@ class AttachmentsComputation {
     final poController = TextEditingController(
       text: prefs.getString('${key}_po') ?? '',
     );
+
     final gasController = TextEditingController(
       text: prefs.getString('${key}_gas') ?? '',
     );
-    final laborController = TextEditingController(
-      text: prefs.getString('${key}_labor') ?? '',
-    );
-    final deliveryController = TextEditingController(
-      text: prefs.getString('${key}_delivery') ?? '',
+
+    final laborDeliveryController = TextEditingController(
+      text:
+          prefs.getString('${key}_labor_delivery') ??
+          ((prefs.getString('${key}_labor') != null ||
+                  prefs.getString('${key}_delivery') != null)
+              ? (_num(prefs.getString('${key}_labor')) +
+                        _num(prefs.getString('${key}_delivery')))
+                    .toString()
+              : ''),
     );
 
     final materialAmount = _num(order['total_amount']);
@@ -71,33 +77,35 @@ class AttachmentsComputation {
     num poAmount = 0;
     num tax = 0;
     num gas = 0;
-    num labor = 0;
-    num delivery = 0;
+    num laborDelivery = 0;
     num net = 0;
 
     void compute() {
       poAmount = _num(poController.text);
       tax = poAmount * 0.07;
       gas = _num(gasController.text);
-      labor = _num(laborController.text);
-      delivery = _num(deliveryController.text);
-      net = poAmount - tax - materialAmount - gas - labor - delivery;
+      laborDelivery = _num(laborDeliveryController.text);
+      net = poAmount - tax - materialAmount - gas - laborDelivery;
     }
 
     Future<void> saveInputs() async {
       await prefs.setString('${key}_po', poController.text);
       await prefs.setString('${key}_gas', gasController.text);
-      await prefs.setString('${key}_labor', laborController.text);
-      await prefs.setString('${key}_delivery', deliveryController.text);
+      await prefs.setString(
+        '${key}_labor_delivery',
+        laborDeliveryController.text,
+      );
     }
 
     compute();
 
     final result = await showDialog<_ComputationResult>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.78),
+      barrierColor: Colors.black.withOpacity(0.80),
       builder: (_) {
-        final isMobile = MediaQuery.of(context).size.width < 650;
+        final width = MediaQuery.of(context).size.width;
+        final isMobile = width < 650;
+        final dialogWidth = isMobile ? width * 0.94 : 500.0;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -105,19 +113,26 @@ class AttachmentsComputation {
 
             return Dialog(
               backgroundColor: Colors.transparent,
-              insetPadding: EdgeInsets.all(isMobile ? 10 : 22),
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 10 : 18,
+                vertical: isMobile ? 10 : 18,
+              ),
               child: Container(
-                width: isMobile ? double.infinity : 620,
-                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                width: dialogWidth,
+                padding: EdgeInsets.all(isMobile ? 14 : 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDFCF7),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: _gold, width: 1.4),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF07140F), Color(0xFF0B1B13)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: _gold, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.45),
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
+                      color: Colors.black.withOpacity(0.55),
+                      blurRadius: 34,
+                      offset: const Offset(0, 18),
                     ),
                   ],
                 ),
@@ -129,29 +144,29 @@ class AttachmentsComputation {
                         children: [
                           Image.asset(
                             'assets/logo_circle.png',
-                            width: 58,
-                            height: 58,
+                            width: isMobile ? 42 : 50,
+                            height: isMobile ? 42 : 50,
                             fit: BoxFit.contain,
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Computation Reports',
+                                  'Computation Report',
                                   style: TextStyle(
-                                    color: _blue,
-                                    fontSize: 24,
+                                    color: _cream,
+                                    fontSize: 22,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                                SizedBox(height: 3),
+                                SizedBox(height: 2),
                                 Text(
                                   'Purchase Order Net Computation',
                                   style: TextStyle(
-                                    color: Color(0xFF607083),
-                                    fontSize: 12,
+                                    color: _muted,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -160,54 +175,62 @@ class AttachmentsComputation {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded, color: _blue),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: _cream,
+                            ),
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
 
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
+                          horizontal: 12,
+                          vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: _blue.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: _blue.withOpacity(0.15)),
+                          color: _darkCard,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _green.withOpacity(0.45),
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.pending_actions_rounded,
                               color: _green,
-                              size: 20,
+                              size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               status.toUpperCase(),
                               style: const TextStyle(
                                 color: _green,
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             const Spacer(),
-                            Text(
-                              _dateTime(statusDate),
-                              style: const TextStyle(
-                                color: Color(0xFF607083),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                            Flexible(
+                              child: Text(
+                                _dateTime(statusDate),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: _muted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
 
                       _inputField(
                         controller: poController,
@@ -219,7 +242,8 @@ class AttachmentsComputation {
                         },
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
+
                       _readonlyRow(
                         'Tax 7%',
                         _money(tax),
@@ -231,7 +255,7 @@ class AttachmentsComputation {
                         Icons.inventory_2_outlined,
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
 
                       Row(
                         children: [
@@ -249,8 +273,8 @@ class AttachmentsComputation {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _inputField(
-                              controller: laborController,
-                              label: 'Labor',
+                              controller: laborDeliveryController,
+                              label: 'Labor & Delivery',
                               icon: Icons.engineering_outlined,
                               onChanged: (_) async {
                                 await saveInputs();
@@ -261,31 +285,18 @@ class AttachmentsComputation {
                         ],
                       ),
 
-                      const SizedBox(height: 12),
-
-                      _inputField(
-                        controller: deliveryController,
-                        label: 'Delivery',
-                        icon: Icons.local_shipping_outlined,
-                        onChanged: (_) async {
-                          await saveInputs();
-                          refresh();
-                        },
-                      ),
-
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0B2D4D), Color(0xFF123D64)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _gold, width: 1.1),
+                          color: const Color(0xFF081711), // dark same sa cards
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: _green, width: 1.5),
                         ),
                         child: Row(
                           children: [
@@ -293,10 +304,9 @@ class AttachmentsComputation {
                               child: Text(
                                 'TOTAL NET',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
+                                  color: Color(0xFFC6B98F),
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
@@ -304,9 +314,9 @@ class AttachmentsComputation {
                               _money(net),
                               style: TextStyle(
                                 color: net < 0
-                                    ? const Color(0xFFFFB4B4)
-                                    : _gold,
-                                fontSize: 22,
+                                    ? const Color(0xFFFF6B6B)
+                                    : _green,
+                                fontSize: isMobile ? 18 : 21,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -314,7 +324,7 @@ class AttachmentsComputation {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       Row(
                         children: [
@@ -322,15 +332,15 @@ class AttachmentsComputation {
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: _blue,
+                                foregroundColor: _cream,
                                 side: BorderSide(
-                                  color: _blue.withOpacity(0.35),
+                                  color: _gold.withOpacity(0.55),
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
+                                  vertical: 13,
                                 ),
                               ),
                               child: const Text(
@@ -339,7 +349,7 @@ class AttachmentsComputation {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
@@ -356,23 +366,25 @@ class AttachmentsComputation {
                                     tax: tax,
                                     materials: materialAmount,
                                     gas: gas,
-                                    labor: labor,
-                                    delivery: delivery,
+                                    laborDelivery: laborDelivery,
                                     totalNet: net,
                                   ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _blue,
-                                foregroundColor: Colors.white,
+                                backgroundColor: _gold,
+                                foregroundColor: Colors.black,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
+                                  vertical: 13,
                                 ),
                               ),
-                              icon: const Icon(Icons.picture_as_pdf_rounded),
+                              icon: const Icon(
+                                Icons.picture_as_pdf_rounded,
+                                size: 17,
+                              ),
                               label: const Text(
                                 'Download PDF',
                                 style: TextStyle(fontWeight: FontWeight.w900),
@@ -405,23 +417,33 @@ class AttachmentsComputation {
       controller: controller,
       onChanged: onChanged,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: const TextStyle(color: _blue, fontWeight: FontWeight.w900),
+      style: const TextStyle(
+        color: _cream,
+        fontWeight: FontWeight.w900,
+        fontSize: 14,
+      ),
       decoration: InputDecoration(
+        isDense: true,
         labelText: label,
-        prefixIcon: Icon(icon, color: _blue, size: 20),
+        prefixIcon: Icon(icon, color: _gold, size: 18),
         labelStyle: const TextStyle(
-          color: Color(0xFF607083),
+          color: _muted,
           fontWeight: FontWeight.w700,
+          fontSize: 12,
         ),
         filled: true,
-        fillColor: const Color(0xFFF7F8F4),
+        fillColor: _darkCard,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: _blue.withOpacity(0.16)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: _gold.withOpacity(0.25)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: _gold, width: 1.4),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _gold, width: 1.2),
         ),
       ),
     );
@@ -429,29 +451,33 @@ class AttachmentsComputation {
 
   static Widget _readonlyRow(String label, String value, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 9),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8F4),
-        borderRadius: BorderRadius.circular(16),
+        color: _darkCard,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _gold.withOpacity(0.55)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: _gold),
+          Icon(icon, size: 17, color: _gold),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: _blue, fontWeight: FontWeight.w900),
+              style: const TextStyle(
+                color: _cream,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+              ),
             ),
           ),
           Text(
             '- $value',
             style: const TextStyle(
-              color: Color(0xFF5D6670),
+              color: _muted,
               fontWeight: FontWeight.w900,
-              fontSize: 14,
+              fontSize: 13,
             ),
           ),
         ],
@@ -491,14 +517,13 @@ class AttachmentsComputation {
                     opacity: 0.045,
                     child: pw.Image(
                       watermark,
-                      width: 430,
-                      height: 430,
+                      width: 420,
+                      height: 420,
                       fit: pw.BoxFit.contain,
                     ),
                   ),
                 ),
               ),
-
               pw.Container(
                 padding: const pw.EdgeInsets.all(28),
                 decoration: pw.BoxDecoration(
@@ -510,16 +535,15 @@ class AttachmentsComputation {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Row(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Image(logoCircle, width: 62, height: 62),
+                        pw.Image(logoCircle, width: 58, height: 58),
                         pw.SizedBox(width: 14),
                         pw.Expanded(
                           child: pw.Column(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
                               pw.Text(
-                                'Computation Reports',
+                                'Computation Report',
                                 style: pw.TextStyle(
                                   font: bold,
                                   fontSize: 24,
@@ -559,11 +583,9 @@ class AttachmentsComputation {
                         ),
                       ],
                     ),
-
                     pw.SizedBox(height: 18),
                     pw.Container(height: 2, color: gold),
                     pw.SizedBox(height: 8),
-
                     pw.Align(
                       alignment: pw.Alignment.centerRight,
                       child: pw.Text(
@@ -575,26 +597,34 @@ class AttachmentsComputation {
                         ),
                       ),
                     ),
-
                     pw.SizedBox(height: 34),
-
                     _pdfMainRow(
                       'Purchase Order in Municipality',
                       r.poAmount,
                       bold,
                       blue,
                     ),
-                    pw.SizedBox(height: 12),
-                    _pdfMinusRow('Tax 7%', r.tax, regular),
-                    _pdfMinusRow('Materials', r.materials, regular),
-                    _pdfMinusRow('Gas', r.gas, regular),
-                    _pdfMinusRow('Labor', r.labor, regular),
-                    _pdfMinusRow('Delivery', r.delivery, regular),
-
+                    pw.SizedBox(height: 16),
+                    pw.Text(
+                      'Deductions:',
+                      style: pw.TextStyle(
+                        font: bold,
+                        fontSize: 13,
+                        color: blue,
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    _pdfDeductionRow('Tax 7%', r.tax, regular),
+                    _pdfDeductionRow('Materials', r.materials, regular),
+                    _pdfDeductionRow('Gas', r.gas, regular),
+                    _pdfDeductionRow(
+                      'Labor & Delivery',
+                      r.laborDelivery,
+                      regular,
+                    ),
                     pw.SizedBox(height: 18),
                     pw.Container(height: 1.2, color: blue),
                     pw.SizedBox(height: 15),
-
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(
                         horizontal: 16,
@@ -628,9 +658,7 @@ class AttachmentsComputation {
                         ],
                       ),
                     ),
-
                     pw.Spacer(),
-
                     pw.Container(height: 1, color: gold),
                     pw.SizedBox(height: 8),
                     pw.Center(
@@ -680,14 +708,15 @@ class AttachmentsComputation {
     );
   }
 
-  static pw.Widget _pdfMinusRow(String label, num value, pw.Font font) {
+  static pw.Widget _pdfDeductionRow(String label, num value, pw.Font font) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.only(bottom: 9),
       child: pw.Row(
         children: [
+          pw.SizedBox(width: 12),
           pw.Expanded(
             child: pw.Text(
-              'Minus - $label',
+              label,
               style: pw.TextStyle(
                 font: font,
                 fontSize: 12,
@@ -717,8 +746,7 @@ class _ComputationResult {
   final num tax;
   final num materials;
   final num gas;
-  final num labor;
-  final num delivery;
+  final num laborDelivery;
   final num totalNet;
 
   const _ComputationResult({
@@ -729,8 +757,7 @@ class _ComputationResult {
     required this.tax,
     required this.materials,
     required this.gas,
-    required this.labor,
-    required this.delivery,
+    required this.laborDelivery,
     required this.totalNet,
   });
 }
