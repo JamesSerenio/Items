@@ -491,14 +491,29 @@ class AttachmentsPdfService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              pw.Text(
-                'MEGA PLUTO',
+              pw.RichText(
                 textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(
-                  font: boldFont,
-                  fontSize: 34,
-                  color: const PdfColor.fromInt(0xFF1FAF7A),
-                  fontWeight: pw.FontWeight.bold,
+                text: pw.TextSpan(
+                  children: [
+                    pw.TextSpan(
+                      text: 'MEGA ',
+                      style: pw.TextStyle(
+                        font: boldFont,
+                        fontSize: 34,
+                        color: const PdfColor.fromInt(0xFF1FAF7A), // GREEN
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.TextSpan(
+                      text: 'PLUTO',
+                      style: pw.TextStyle(
+                        font: boldFont,
+                        fontSize: 34,
+                        color: const PdfColor.fromInt(0xFFE5C76B), // GOLD
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               pw.SizedBox(height: 4),
@@ -767,7 +782,12 @@ class AttachmentsPdfService {
         children: [
           _infoRow('Received by', 'JAMES M. SERENIO', font, boldFont),
           _infoRow('Designation', 'Authorized Representative', font, boldFont),
-          _infoRow('Name of Firm', 'MEGA PLUTO', font, boldFont),
+          _infoRow(
+            'Name of Firm',
+            'MEGAPLUTO ELECTRICAL SUPPLY & HARDWARE MATERIALS TRADING',
+            font,
+            boldFont,
+          ),
         ],
       ),
     );
