@@ -59,8 +59,9 @@ class AttachmentsComputation {
       text: prefs.getString('${key}_gas') ?? '',
     );
 
-    final laborDeliveryController = TextEditingController(
+    final deliveryHaulingController = TextEditingController(
       text:
+          prefs.getString('${key}_delivery_hauling') ??
           prefs.getString('${key}_labor_delivery') ??
           ((prefs.getString('${key}_labor') != null ||
                   prefs.getString('${key}_delivery') != null)
@@ -77,23 +78,23 @@ class AttachmentsComputation {
     num poAmount = 0;
     num tax = 0;
     num gas = 0;
-    num laborDelivery = 0;
+    num deliveryHauling = 0;
     num net = 0;
 
     void compute() {
       poAmount = _num(poController.text);
       tax = poAmount * 0.07;
       gas = _num(gasController.text);
-      laborDelivery = _num(laborDeliveryController.text);
-      net = poAmount - tax - materialAmount - gas - laborDelivery;
+      deliveryHauling = _num(deliveryHaulingController.text);
+      net = poAmount - tax - materialAmount - gas - deliveryHauling;
     }
 
     Future<void> saveInputs() async {
       await prefs.setString('${key}_po', poController.text);
       await prefs.setString('${key}_gas', gasController.text);
       await prefs.setString(
-        '${key}_labor_delivery',
-        laborDeliveryController.text,
+        '${key}_delivery_hauling',
+        deliveryHaulingController.text,
       );
     }
 
@@ -273,9 +274,9 @@ class AttachmentsComputation {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _inputField(
-                              controller: laborDeliveryController,
-                              label: 'Labor & Delivery',
-                              icon: Icons.engineering_outlined,
+                              controller: deliveryHaulingController,
+                              label: 'Delivery Hauling',
+                              icon: Icons.local_shipping_outlined,
                               onChanged: (_) async {
                                 await saveInputs();
                                 refresh();
@@ -294,7 +295,7 @@ class AttachmentsComputation {
                           vertical: 15,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF081711), // dark same sa cards
+                          color: _darkCard,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: _green, width: 1.5),
                         ),
@@ -304,7 +305,7 @@ class AttachmentsComputation {
                               child: Text(
                                 'TOTAL NET',
                                 style: TextStyle(
-                                  color: Color(0xFFC6B98F),
+                                  color: _muted,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -366,7 +367,7 @@ class AttachmentsComputation {
                                     tax: tax,
                                     materials: materialAmount,
                                     gas: gas,
-                                    laborDelivery: laborDelivery,
+                                    deliveryHauling: deliveryHauling,
                                     totalNet: net,
                                   ),
                                 );
@@ -618,8 +619,8 @@ class AttachmentsComputation {
                     _pdfDeductionRow('Materials', r.materials, regular),
                     _pdfDeductionRow('Gas', r.gas, regular),
                     _pdfDeductionRow(
-                      'Labor & Delivery',
-                      r.laborDelivery,
+                      'Delivery Hauling',
+                      r.deliveryHauling,
                       regular,
                     ),
                     pw.SizedBox(height: 18),
@@ -746,7 +747,7 @@ class _ComputationResult {
   final num tax;
   final num materials;
   final num gas;
-  final num laborDelivery;
+  final num deliveryHauling;
   final num totalNet;
 
   const _ComputationResult({
@@ -757,7 +758,7 @@ class _ComputationResult {
     required this.tax,
     required this.materials,
     required this.gas,
-    required this.laborDelivery,
+    required this.deliveryHauling,
     required this.totalNet,
   });
 }
