@@ -41,12 +41,25 @@ class AttachmentsViewService {
     final data = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, unit, item_description, brand, location, quantity, unit_cost, total_cost',
+          'stock_no, unit, item_description, brand, location, quantity, unit_cost, total_cost, materials(brand)',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
 
     return List<Map<String, dynamic>>.from(data);
+  }
+
+  static String _brandText(Map<String, dynamic> item) {
+    final directBrand = (item['brand'] ?? '').toString().trim();
+    final material = item['materials'];
+
+    String materialBrand = '';
+    if (material is Map) {
+      materialBrand = (material['brand'] ?? '').toString().trim();
+    }
+
+    final brand = directBrand.isNotEmpty ? directBrand : materialBrand;
+    return brand.isEmpty ? '' : ' ($brand)';
   }
 
   static Future<void> viewPdf({
@@ -150,7 +163,7 @@ class AttachmentsViewService {
                                     (i) => _tableRow([
                                       _text(i['stock_no']),
                                       _text(i['unit']),
-                                      '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                                      '${_text(i['item_description'])}${_brandText(i)}',
                                       _text(i['location']),
                                       _text(i['quantity']),
                                       _peso(i['unit_cost']),

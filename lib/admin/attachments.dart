@@ -6,6 +6,7 @@ import '../services/attachments_details_service.dart';
 import '../services/attachments_upload_service.dart';
 import '../services/attachments_view_photos_service.dart';
 import '../services/attachments_view_service.dart';
+import '../services/attachments_computation.dart';
 import '../styles/attachments_styles.dart';
 
 enum AttachmentsFilter { all, processing, collecting, collected }
@@ -774,6 +775,20 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     SizedBox(width: gap),
                     Expanded(
                       child: _iconBtn(
+                        icon: Icons.calculate_outlined,
+                        label: '',
+                        iconOnly: true,
+                        height: 36,
+                        iconSize: 15,
+                        onTap: () => AttachmentsComputation.open(
+                          context: context,
+                          order: order,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: _iconBtn(
                         icon: Icons.edit_note_rounded,
                         label: '',
                         iconOnly: true,
@@ -866,6 +881,15 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                   children: [
                     _photoStatusPill(delivered),
                     const Spacer(),
+                    _iconBtn(
+                      icon: Icons.calculate_outlined,
+                      label: '',
+                      onTap: () => AttachmentsComputation.open(
+                        context: context,
+                        order: order,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     _iconBtn(
                       icon: Icons.edit_note_rounded,
                       label: '',

@@ -84,7 +84,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
 
-  String _money(num value) => '₱${value.toStringAsFixed(2)}';
+  String _money(num value) {
+    final parts = value.toStringAsFixed(2).split('.');
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+    return '₱$whole.${parts[1]}';
+  }
 
   DateTime? _date(dynamic v) {
     final d = DateTime.tryParse(v?.toString() ?? '');
@@ -1797,12 +1804,22 @@ class _DonutPainter extends CustomPainter {
 }
 
 String _formatMoneyStatic(num value) {
-  return '₱${value.toStringAsFixed(2)}';
+  final parts = value.toStringAsFixed(2).split('.');
+  final whole = parts[0].replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (match) => ',',
+  );
+  return '₱$whole.${parts[1]}';
 }
 
 String _formatMoneyShort(num value) {
   if (value >= 1000) return '₱${(value / 1000).toStringAsFixed(1)}k';
-  return '₱${value.toStringAsFixed(0)}';
+
+  final whole = value
+      .toStringAsFixed(0)
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ',');
+
+  return '₱$whole';
 }
 
 class _EmptyChart extends StatelessWidget {

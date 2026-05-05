@@ -47,13 +47,26 @@ class AttachmentsPdfService {
     return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
 
+  static String _brandText(Map<String, dynamic> item) {
+    final directBrand = (item['brand'] ?? '').toString().trim();
+    final material = item['materials'];
+
+    String materialBrand = '';
+    if (material is Map) {
+      materialBrand = (material['brand'] ?? '').toString().trim();
+    }
+
+    final brand = directBrand.isNotEmpty ? directBrand : materialBrand;
+    return brand.isEmpty ? '' : '\nBrand: $brand';
+  }
+
   static Future<List<Map<String, dynamic>>> _loadOrderItems(
     String orderId,
   ) async {
     final items = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost',
+          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost, materials(brand)',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
@@ -180,7 +193,7 @@ class AttachmentsPdfService {
                                     (i) => _flutterRow([
                                       _text(i['stock_no']),
                                       _text(i['unit']),
-                                      '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                                      '${_text(i['item_description'])}${_brandText(i)}',
                                       _text(i['location']),
                                       _text(i['quantity']),
                                       _peso(i['unit_cost']),
@@ -412,7 +425,7 @@ class AttachmentsPdfService {
                     ? '${entry.key + 1}'
                     : _text(i['stock_no']),
                 _text(i['unit']),
-                '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                '${_text(i['item_description'])}${_brandText(i)}',
                 _text(i['location']),
                 _text(i['quantity']),
                 _money(i['unit_cost']),
