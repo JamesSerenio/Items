@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../pdf/attachments_pdf_service.dart';
 import '../styles/attachments_styles.dart';
 
 class AttachmentsViewService {
+  static final supabase = Supabase.instance.client;
+
   static String _text(dynamic v) => v?.toString() ?? '-';
+
+  static num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
+
+  static String _peso(dynamic v) {
+    final n = _num(v);
+    final parts = n.toStringAsFixed(2).split('.');
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+    return '₱$whole.${parts[1]}';
+  }
 
   static String _formatDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '');
@@ -23,11 +37,200 @@ class AttachmentsViewService {
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$min $ampm';
   }
 
+  static Future<List<Map<String, dynamic>>> _loadItems(dynamic orderId) async {
+    final data = await supabase
+        .from('purchase_order_items')
+        .select(
+          'stock_no, unit, item_description, brand, location, quantity, unit_cost, total_cost',
+        )
+        .eq('purchase_order_id', orderId)
+        .order('stock_no', ascending: true);
+
+    return List<Map<String, dynamic>>.from(data);
+  }
+
   static Future<void> viewPdf({
     required BuildContext context,
     required Map<String, dynamic> order,
   }) async {
-    await AttachmentsPdfService.viewPdf(context: context, order: order);
+    final items = await _loadItems(order['id']);
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.72),
+      builder: (_) {
+        final isMobile = MediaQuery.of(context).size.width < 650;
+
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: EdgeInsets.all(isMobile ? 10 : 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: SizedBox(
+            width: isMobile ? double.infinity : 820,
+            height: MediaQuery.of(context).size.height * 0.86,
+            child: Padding(
+              padding: EdgeInsets.all(isMobile ? 16 : 28),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'PURCHASE ORDER',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Procuring Entity: ${_text(order['description'])}',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Date: ${_formatDate(order['created_at'])}',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: 760,
+                          child: Column(
+                            children: [
+                              Table(
+                                border: TableBorder.all(color: Colors.black54),
+                                columnWidths: const {
+                                  0: FlexColumnWidth(0.9),
+                                  1: FlexColumnWidth(0.8),
+                                  2: FlexColumnWidth(2),
+                                  3: FlexColumnWidth(1.3),
+                                  4: FlexColumnWidth(0.7),
+                                  5: FlexColumnWidth(1.2),
+                                  6: FlexColumnWidth(1.2),
+                                },
+                                children: [
+                                  _tableRow([
+                                    'STOCK\nNO.',
+                                    'UNIT',
+                                    'ITEM DESCRIPTION /\nBRAND',
+                                    'LOCATION',
+                                    'QTY',
+                                    'UNIT COST',
+                                    'TOTAL COST',
+                                  ], header: true),
+                                  ...items.map(
+                                    (i) => _tableRow([
+                                      _text(i['stock_no']),
+                                      _text(i['unit']),
+                                      '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                                      _text(i['location']),
+                                      _text(i['quantity']),
+                                      _peso(i['unit_cost']),
+                                      _peso(i['total_cost']),
+                                    ]),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFEFEF),
+                                  border: Border.all(color: Colors.black54),
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(4),
+                                    bottomRight: Radius.circular(4),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'TOTAL AMOUNT',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 28),
+                                    Text(
+                                      _peso(order['total_amount']),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static TableRow _tableRow(List<String> values, {bool header = false}) {
+    return TableRow(
+      decoration: header
+          ? const BoxDecoration(color: Color(0xFFEFEFEF))
+          : const BoxDecoration(color: Colors.white),
+      children: values.map((v) {
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            v,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontWeight: header ? FontWeight.w900 : FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   static void viewPhotos({

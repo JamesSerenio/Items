@@ -9,8 +9,19 @@ class AttachmentsPdfService {
   static final supabase = Supabase.instance.client;
 
   static String _text(dynamic v) => v?.toString() ?? '-';
+
   static num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
-  static String _money(dynamic v) => _num(v).toStringAsFixed(2);
+
+  static String _money(dynamic v) {
+    final n = _num(v);
+    final parts = n.toStringAsFixed(2).split('.');
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+    return '$whole.${parts[1]}';
+  }
+
   static String _peso(dynamic v) => '₱${_money(v)}';
 
   static String _dateLong(dynamic value) {
@@ -42,7 +53,7 @@ class AttachmentsPdfService {
     final items = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, brand, unit, item_description, location, duration, quantity, unit_cost, total_cost',
+          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
@@ -60,8 +71,8 @@ class AttachmentsPdfService {
     final index = list.indexWhere(
       (e) => e['id'].toString() == order['id'].toString(),
     );
-    final number = index < 0 ? 1 : index + 1;
 
+    final number = index < 0 ? 1 : index + 1;
     return number.toString().padLeft(4, '0');
   }
 
@@ -138,38 +149,84 @@ class AttachmentsPdfService {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: SizedBox(
-                          width: 760,
-                          child: Table(
-                            border: TableBorder.all(color: Colors.black54),
-                            columnWidths: const {
-                              0: FlexColumnWidth(0.9),
-                              1: FlexColumnWidth(0.8),
-                              2: FlexColumnWidth(2),
-                              3: FlexColumnWidth(1.3),
-                              4: FlexColumnWidth(0.7),
-                              5: FlexColumnWidth(1.2),
-                              6: FlexColumnWidth(1.2),
-                            },
+                          width: 780,
+                          child: Column(
                             children: [
-                              _flutterRow([
-                                'STOCK\nNO.',
-                                'UNIT',
-                                'ITEM DESCRIPTION /\nBRAND',
-                                'LOCATION',
-                                'QTY',
-                                'UNIT COST',
-                                'TOTAL COST',
-                              ], header: true),
-                              ...items.map(
-                                (i) => _flutterRow([
-                                  _text(i['stock_no']),
-                                  _text(i['unit']),
-                                  '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
-                                  _text(i['location']),
-                                  _text(i['quantity']),
-                                  _peso(i['unit_cost']),
-                                  _peso(i['total_cost']),
-                                ]),
+                              Table(
+                                border: TableBorder.all(
+                                  color: Colors.black54,
+                                  width: 0.8,
+                                ),
+                                columnWidths: const {
+                                  0: FlexColumnWidth(0.9),
+                                  1: FlexColumnWidth(0.8),
+                                  2: FlexColumnWidth(2.2),
+                                  3: FlexColumnWidth(1.3),
+                                  4: FlexColumnWidth(0.7),
+                                  5: FlexColumnWidth(1.2),
+                                  6: FlexColumnWidth(1.2),
+                                },
+                                children: [
+                                  _flutterRow([
+                                    'STOCK\nNO.',
+                                    'UNIT',
+                                    'ITEM DESCRIPTION /\nBRAND',
+                                    'LOCATION',
+                                    'QTY',
+                                    'UNIT COST',
+                                    'TOTAL COST',
+                                  ], header: true),
+                                  ...items.map(
+                                    (i) => _flutterRow([
+                                      _text(i['stock_no']),
+                                      _text(i['unit']),
+                                      '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
+                                      _text(i['location']),
+                                      _text(i['quantity']),
+                                      _peso(i['unit_cost']),
+                                      _peso(i['total_cost']),
+                                    ]),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFEFEF),
+                                  border: Border.all(
+                                    color: Colors.black54,
+                                    width: 0.8,
+                                  ),
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(6),
+                                    bottomRight: Radius.circular(6),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'TOTAL AMOUNT',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 28),
+                                    Text(
+                                      _peso(order['total_amount']),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -188,7 +245,9 @@ class AttachmentsPdfService {
 
   static TableRow _flutterRow(List<String> values, {bool header = false}) {
     return TableRow(
-      decoration: header ? const BoxDecoration(color: Color(0xFFEFEFEF)) : null,
+      decoration: header
+          ? const BoxDecoration(color: Color(0xFFEFEFEF))
+          : const BoxDecoration(color: Colors.white),
       children: values.map((v) {
         return Padding(
           padding: const EdgeInsets.all(8),
@@ -333,11 +392,11 @@ class AttachmentsPdfService {
             margin: const pw.EdgeInsets.fromLTRB(32, 24, 32, 34),
             buildBackground: (_) => pw.Center(
               child: pw.Opacity(
-                opacity: 0.045,
+                opacity: 0.035,
                 child: pw.Image(
                   watermarkLogo,
-                  width: 420,
-                  height: 420,
+                  width: 920,
+                  height: 920,
                   fit: pw.BoxFit.contain,
                 ),
               ),
@@ -348,124 +407,45 @@ class AttachmentsPdfService {
               final i = entry.value;
 
               return [
-                '${entry.key + 1}',
+                _text(i['stock_no']).trim().isEmpty ||
+                        _text(i['stock_no']) == '-'
+                    ? '${entry.key + 1}'
+                    : _text(i['stock_no']),
+                _text(i['unit']),
                 '${_text(i['item_description'])}${(i['brand']?.toString().trim() ?? '').isNotEmpty ? '\nBrand: ${i['brand']}' : ''}',
-                '${_text(i['quantity'])} ${_text(i['unit'])}',
+                _text(i['location']),
+                _text(i['quantity']),
                 _money(i['unit_cost']),
-                (i['duration']?.toString().trim().isNotEmpty ?? false)
-                    ? _text(i['duration'])
-                    : '-',
                 _money(i['total_cost']),
               ];
             }).toList();
 
             return [
               _companyHeader(logoCircle, font, boldFont),
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: 10),
               pw.Container(
-                height: 2.2,
+                height: 2.5,
                 color: const PdfColor.fromInt(0xFFE5C76B),
               ),
-              pw.SizedBox(height: 20),
-              pw.Center(
-                child: pw.Text(
-                  'PURCHASE ORDER',
-                  style: pw.TextStyle(
-                    font: boldFont,
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(height: 24),
-              _labelValueRow('PURCHASE ORDER NO.', poNo, font, boldFont),
-              _labelValueRow(
-                'DATE',
-                _dateLong(order['created_at']),
-                font,
-                boldFont,
-              ),
               pw.SizedBox(height: 18),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed, thickness: 1.2),
-              pw.SizedBox(height: 20),
-              pw.Center(
-                child: pw.Text(
-                  'PROCURING ENTITY INFORMATION',
-                  style: pw.TextStyle(
-                    font: boldFont,
-                    fontSize: 17,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
+              _sectionTitle('PURCHASE ORDER', boldFont),
               pw.SizedBox(height: 16),
-              _infoRow('Procuring Entity Name', info.entity, font, boldFont),
-              _infoRow(
-                'Procuring Entity Address',
-                info.address,
-                font,
-                boldFont,
+              _poInfoBox(
+                poNo: poNo,
+                date: _dateLong(order['created_at']),
+                font: font,
+                boldFont: boldFont,
               ),
-              _infoRow('Contact Person', info.contact, font, boldFont),
-              pw.SizedBox(height: 28),
-              pw.Center(
-                child: pw.Text(
-                  'ORDER DETAILS',
-                  style: pw.TextStyle(
-                    font: boldFont,
-                    fontSize: 17,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
+              pw.SizedBox(height: 14),
+              _sectionTitle('PROCURING ENTITY INFORMATION', boldFont),
               pw.SizedBox(height: 12),
-              pw.TableHelper.fromTextArray(
-                border: pw.TableBorder.all(
-                  color: const PdfColor.fromInt(0xFFB8CE8A),
-                  width: 0.8,
-                ),
-                headerDecoration: const pw.BoxDecoration(
-                  color: PdfColor.fromInt(0xFFA5BF67),
-                ),
-                headerStyle: pw.TextStyle(
-                  font: boldFont,
-                  color: PdfColors.white,
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-                cellStyle: pw.TextStyle(
-                  font: font,
-                  fontSize: 9.3,
-                  color: PdfColors.black,
-                ),
-                cellPadding: const pw.EdgeInsets.all(7),
-                headers: const [
-                  'ITEM\nNO.',
-                  'DESCRIPTION OF\nGOODS/SERVICES',
-                  'QUANTITY',
-                  'UNIT\nPRICE',
-                  'DURATION',
-                  'TOTAL',
-                ],
-                data: rows,
-                columnWidths: const {
-                  0: pw.FlexColumnWidth(0.7),
-                  1: pw.FlexColumnWidth(2.8),
-                  2: pw.FlexColumnWidth(1.1),
-                  3: pw.FlexColumnWidth(1.1),
-                  4: pw.FlexColumnWidth(1.2),
-                  5: pw.FlexColumnWidth(1.3),
-                },
-                cellAlignments: {
-                  0: pw.Alignment.center,
-                  2: pw.Alignment.center,
-                  3: pw.Alignment.centerRight,
-                  4: pw.Alignment.center,
-                  5: pw.Alignment.centerRight,
-                },
-              ),
+              _procuringBox(info, font, boldFont),
+              pw.SizedBox(height: 18),
+              _sectionTitle('ORDER DETAILS', boldFont),
+              pw.SizedBox(height: 10),
+              _orderTable(rows, font, boldFont),
               _grandTotal(order['total_amount'], boldFont),
-              pw.SizedBox(height: 36),
+              pw.SizedBox(height: 24),
               _receivedSection(font, boldFont),
             ];
           },
@@ -500,44 +480,171 @@ class AttachmentsPdfService {
     pw.Font font,
     pw.Font boldFont,
   ) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.center,
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
+    return pw.Stack(
       children: [
-        pw.Image(logo, width: 76, height: 76),
-        pw.SizedBox(width: 18),
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.center,
-          children: [
-            pw.Text(
-              'MEGA PLUTO',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(
-                font: boldFont,
-                fontSize: 27,
-                color: const PdfColor.fromInt(0xFF1FAF7A),
-                fontWeight: pw.FontWeight.bold,
+        pw.Positioned(
+          left: 22,
+          top: 2,
+          child: pw.Image(logo, width: 78, height: 78),
+        ),
+        pw.Center(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Text(
+                'MEGA PLUTO',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  font: boldFont,
+                  fontSize: 34,
+                  color: const PdfColor.fromInt(0xFF1FAF7A),
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
-            ),
-            pw.SizedBox(height: 3),
-            pw.Text(
-              'Zone 1 - Sambulawan, Agusan, Cagayan de Oro City,',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(font: font, fontSize: 10.5),
-            ),
-            pw.Text(
-              'Misamis Oriental, 9000',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(font: font, fontSize: 10.5),
-            ),
-            pw.Text(
-              '09177727893',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(font: font, fontSize: 10.5),
-            ),
-          ],
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Zone 1 - Sambulawan, Agusan, Cagayan de Oro City,',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(font: font, fontSize: 10.5),
+              ),
+              pw.Text(
+                'Misamis Oriental, 9000',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(font: font, fontSize: 10.5),
+              ),
+              pw.Text(
+                '09177727893',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(font: boldFont, fontSize: 10.5),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  static pw.Widget _sectionTitle(String title, pw.Font boldFont) {
+    return pw.Center(
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(
+          font: boldFont,
+          fontSize: 16,
+          fontWeight: pw.FontWeight.bold,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  static pw.Widget _poInfoBox({
+    required String poNo,
+    required String date,
+    required pw.Font font,
+    required pw.Font boldFont,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFF9FBF5),
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(
+          color: const PdfColor.fromInt(0xFFD8E7B7),
+          width: 0.8,
+        ),
+      ),
+      child: pw.Column(
+        children: [
+          _labelValueRow(
+            'PURCHASE ORDER NO.',
+            poNo,
+            font,
+            boldFont,
+            isPo: true,
+          ),
+          pw.SizedBox(height: 4),
+          _labelValueRow('DATE', date, font, boldFont),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _procuringBox(
+    _ExtraInfo info,
+    pw.Font font,
+    pw.Font boldFont,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(
+          color: const PdfColor.fromInt(0xFFE5C76B),
+          width: 0.75,
+        ),
+      ),
+      child: pw.Column(
+        children: [
+          _infoRow('Procuring Entity Name', info.entity, font, boldFont),
+          _infoRow('Procuring Entity Address', info.address, font, boldFont),
+          _infoRow('Contact Person', info.contact, font, boldFont),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _orderTable(
+    List<List<String>> rows,
+    pw.Font font,
+    pw.Font boldFont,
+  ) {
+    return pw.TableHelper.fromTextArray(
+      border: pw.TableBorder.all(
+        color: const PdfColor.fromInt(0xFFB8CE8A),
+        width: 0.7,
+      ),
+      headerDecoration: const pw.BoxDecoration(
+        color: PdfColor.fromInt(0xFF1FAF7A),
+      ),
+      oddRowDecoration: const pw.BoxDecoration(
+        color: PdfColor.fromInt(0xFFF8FBF5),
+      ),
+      headerStyle: pw.TextStyle(
+        font: boldFont,
+        color: PdfColors.white,
+        fontSize: 8.5,
+        fontWeight: pw.FontWeight.bold,
+      ),
+      cellStyle: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.black),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+      headers: const [
+        'STOCK\nNO.',
+        'UNIT',
+        'ITEM DESCRIPTION /\nBRAND',
+        'LOCATION',
+        'QTY',
+        'UNIT COST',
+        'TOTAL COST',
+      ],
+      data: rows,
+      columnWidths: const {
+        0: pw.FlexColumnWidth(0.75),
+        1: pw.FlexColumnWidth(0.85),
+        2: pw.FlexColumnWidth(2.35),
+        3: pw.FlexColumnWidth(1.25),
+        4: pw.FlexColumnWidth(0.65),
+        5: pw.FlexColumnWidth(1.15),
+        6: pw.FlexColumnWidth(1.2),
+      },
+      cellAlignments: {
+        0: pw.Alignment.center,
+        1: pw.Alignment.center,
+        4: pw.Alignment.center,
+        5: pw.Alignment.centerRight,
+        6: pw.Alignment.centerRight,
+      },
     );
   }
 
@@ -545,34 +652,27 @@ class AttachmentsPdfService {
     String label,
     String value,
     pw.Font font,
-    pw.Font boldFont,
-  ) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(left: 28, bottom: 4),
-      child: pw.Row(
-        children: [
-          pw.SizedBox(
-            width: 155,
-            child: pw.Text(
-              label,
-              style: pw.TextStyle(font: font, fontSize: 12),
-            ),
+    pw.Font boldFont, {
+    bool isPo = false,
+  }) {
+    return pw.Row(
+      children: [
+        pw.SizedBox(
+          width: 165,
+          child: pw.Text(label, style: pw.TextStyle(font: font, fontSize: 11)),
+        ),
+        pw.Text(':', style: pw.TextStyle(font: boldFont, fontSize: 11)),
+        pw.SizedBox(width: 22),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            font: boldFont,
+            fontSize: 11.5,
+            color: isPo ? const PdfColor.fromInt(0xFFD42922) : PdfColors.black,
+            fontWeight: pw.FontWeight.bold,
           ),
-          pw.Text(':', style: pw.TextStyle(font: boldFont, fontSize: 12)),
-          pw.SizedBox(width: 26),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              font: boldFont,
-              fontSize: 12.5,
-              color: label.contains('NO')
-                  ? const PdfColor.fromInt(0xFFD42922)
-                  : PdfColors.black,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -583,25 +683,25 @@ class AttachmentsPdfService {
     pw.Font boldFont,
   ) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(left: 30, right: 20, bottom: 7),
+      padding: const pw.EdgeInsets.only(bottom: 7),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 160,
+            width: 165,
             child: pw.Text(
               label,
-              style: pw.TextStyle(font: font, fontSize: 11.2),
+              style: pw.TextStyle(font: font, fontSize: 10.7),
             ),
           ),
-          pw.Text(':', style: pw.TextStyle(font: font, fontSize: 11.2)),
-          pw.SizedBox(width: 22),
+          pw.Text(':', style: pw.TextStyle(font: font, fontSize: 10.7)),
+          pw.SizedBox(width: 20),
           pw.Expanded(
             child: pw.Text(
               value.isEmpty ? '-' : value,
               style: pw.TextStyle(
                 font: boldFont,
-                fontSize: 11.2,
+                fontSize: 10.7,
                 fontWeight: pw.FontWeight.bold,
                 decoration: pw.TextDecoration.underline,
               ),
@@ -614,32 +714,36 @@ class AttachmentsPdfService {
 
   static pw.Widget _grandTotal(dynamic amount, pw.Font boldFont) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      height: 42,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 13),
       decoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFF8FBF5),
         border: pw.Border.all(
           color: const PdfColor.fromInt(0xFFB8CE8A),
-          width: 0.8,
+          width: 0.7,
+        ),
+        borderRadius: const pw.BorderRadius.only(
+          bottomLeft: pw.Radius.circular(8),
+          bottomRight: pw.Radius.circular(8),
         ),
       ),
       child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.end,
         children: [
-          pw.Expanded(
-            child: pw.Text(
-              'GRAND TOTAL',
-              textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(
-                font: boldFont,
-                fontSize: 13,
-                fontWeight: pw.FontWeight.bold,
-              ),
+          pw.Text(
+            'GRAND TOTAL',
+            style: pw.TextStyle(
+              font: boldFont,
+              fontSize: 12.5,
+              fontWeight: pw.FontWeight.bold,
             ),
           ),
-          pw.SizedBox(width: 18),
+          pw.SizedBox(width: 28),
           pw.Text(
             _peso(amount),
             style: pw.TextStyle(
               font: boldFont,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: pw.FontWeight.bold,
             ),
           ),
@@ -649,8 +753,16 @@ class AttachmentsPdfService {
   }
 
   static pw.Widget _receivedSection(pw.Font font, pw.Font boldFont) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(left: 30),
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFF9FBF5),
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(
+          color: const PdfColor.fromInt(0xFFD8E7B7),
+          width: 0.8,
+        ),
+      ),
       child: pw.Column(
         children: [
           _infoRow('Received by', 'JAMES M. SERENIO', font, boldFont),
