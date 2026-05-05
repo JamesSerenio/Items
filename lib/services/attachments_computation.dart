@@ -652,9 +652,9 @@ class AttachmentsComputation {
       ),
     );
 
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'Computation_Report.pdf',
+    await Printing.layoutPdf(
+      name: 'Computation_Report.pdf',
+      onLayout: (PdfPageFormat format) async => pdf.save(),
     );
   }
 
