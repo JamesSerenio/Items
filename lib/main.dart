@@ -8,7 +8,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://wctpicqxbiywnyzgbbig.supabase.co',
-    anonKey: 'sb_publishable_pKhVxJ0qExhHCAkJ6JhbCw_NGaDeeHr',
+    anonKey: 'sb_publishable_nyU95eSsOvVsrKpju8r42w_-dX68gfV',
   );
 
   runApp(const MyApp());
