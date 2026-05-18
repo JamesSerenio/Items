@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../admin/admin_menu.dart';
@@ -226,11 +227,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (!mounted) return;
 
       if (role == 'admin') {
+        TextInput.finishAutofillContext();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AdminMenu()),
         );
       } else if (role == 'coder') {
+        TextInput.finishAutofillContext();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CoderMenu()),
@@ -408,148 +411,162 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               isMobile ? 26 : 30,
                             ),
                             decoration: LoginStyles.cardDecoration,
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: FadeTransition(
-                                      opacity: _titleFade,
+                            child: AutofillGroup(
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Center(
+                                      child: FadeTransition(
+                                        opacity: _titleFade,
+                                        child: SlideTransition(
+                                          position: _titleSlide,
+                                          child: _buildLogoHeader(isMobile),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    FadeTransition(
+                                      opacity: _emailLabelFade,
                                       child: SlideTransition(
-                                        position: _titleSlide,
-                                        child: _buildLogoHeader(isMobile),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  FadeTransition(
-                                    opacity: _emailLabelFade,
-                                    child: SlideTransition(
-                                      position: _emailLabelSlide,
-                                      child: const Text(
-                                        'Email',
-                                        style: LoginStyles.labelStyle,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 9),
-                                  FadeTransition(
-                                    opacity: _emailFieldFade,
-                                    child: SlideTransition(
-                                      position: _emailFieldSlide,
-                                      child: TextFormField(
-                                        controller: _emailController,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        style: LoginStyles.inputTextStyle,
-                                        validator: _validateEmail,
-                                        decoration: LoginStyles.inputDecoration(
-                                          hintText: 'Enter your email',
-                                          prefixIcon:
-                                              Icons.mail_outline_rounded,
+                                        position: _emailLabelSlide,
+                                        child: const Text(
+                                          'Email',
+                                          style: LoginStyles.labelStyle,
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 17),
-                                  FadeTransition(
-                                    opacity: _passwordLabelFade,
-                                    child: SlideTransition(
-                                      position: _passwordLabelSlide,
-                                      child: const Text(
-                                        'Password',
-                                        style: LoginStyles.labelStyle,
+                                    const SizedBox(height: 9),
+                                    FadeTransition(
+                                      opacity: _emailFieldFade,
+                                      child: SlideTransition(
+                                        position: _emailFieldSlide,
+                                        child: TextFormField(
+                                          controller: _emailController,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          autofillHints: const [
+                                            AutofillHints.email,
+                                          ],
+                                          textInputAction: TextInputAction.next,
+                                          style: LoginStyles.inputTextStyle,
+                                          validator: _validateEmail,
+                                          decoration:
+                                              LoginStyles.inputDecoration(
+                                                hintText: 'Enter your email',
+                                                prefixIcon:
+                                                    Icons.mail_outline_rounded,
+                                              ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 9),
-                                  FadeTransition(
-                                    opacity: _passwordFieldFade,
-                                    child: SlideTransition(
-                                      position: _passwordFieldSlide,
-                                      child: TextFormField(
-                                        controller: _passwordController,
-                                        obscureText: _obscurePassword,
-                                        style: LoginStyles.inputTextStyle,
-                                        validator: _validatePassword,
-                                        decoration:
-                                            LoginStyles.inputDecoration(
-                                              hintText: 'Enter your password',
-                                              prefixIcon:
-                                                  Icons.lock_outline_rounded,
-                                            ).copyWith(
-                                              suffixIcon: IconButton(
-                                                icon: Icon(
-                                                  _obscurePassword
-                                                      ? Icons
-                                                            .visibility_off_outlined
-                                                      : Icons
-                                                            .visibility_outlined,
-                                                  color:
-                                                      LoginStyles.textSecondary,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _obscurePassword =
-                                                        !_obscurePassword;
-                                                  });
-                                                },
-                                              ),
-                                            ),
+                                    const SizedBox(height: 17),
+                                    FadeTransition(
+                                      opacity: _passwordLabelFade,
+                                      child: SlideTransition(
+                                        position: _passwordLabelSlide,
+                                        child: const Text(
+                                          'Password',
+                                          style: LoginStyles.labelStyle,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 27),
-                                  FadeTransition(
-                                    opacity: _buttonFade,
-                                    child: SlideTransition(
-                                      position: _buttonSlide,
-                                      child: SizedBox(
-                                        width: double.infinity,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: LoginStyles.primaryColor
-                                                    .withOpacity(0.30),
-                                                blurRadius: 26,
-                                                offset: const Offset(0, 9),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ElevatedButton(
-                                            onPressed: _isLoading
-                                                ? null
-                                                : _handleLogin,
-                                            style: LoginStyles.loginButtonStyle,
-                                            child: _isLoading
-                                                ? const SizedBox(
-                                                    height: 22,
-                                                    width: 22,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2.5,
-                                                          color: Color(
-                                                            0xFF07100B,
-                                                          ),
-                                                        ),
-                                                  )
-                                                : const Text(
-                                                    'Login',
-                                                    style: LoginStyles
-                                                        .buttonTextStyle,
+                                    const SizedBox(height: 9),
+                                    FadeTransition(
+                                      opacity: _passwordFieldFade,
+                                      child: SlideTransition(
+                                        position: _passwordFieldSlide,
+                                        child: TextFormField(
+                                          controller: _passwordController,
+                                          obscureText: _obscurePassword,
+                                          autofillHints: const [
+                                            AutofillHints.password,
+                                          ],
+                                          textInputAction: TextInputAction.done,
+                                          onFieldSubmitted: (_) =>
+                                              _handleLogin(),
+                                          style: LoginStyles.inputTextStyle,
+                                          validator: _validatePassword,
+                                          decoration:
+                                              LoginStyles.inputDecoration(
+                                                hintText: 'Enter your password',
+                                                prefixIcon:
+                                                    Icons.lock_outline_rounded,
+                                              ).copyWith(
+                                                suffixIcon: IconButton(
+                                                  icon: Icon(
+                                                    _obscurePassword
+                                                        ? Icons
+                                                              .visibility_off_outlined
+                                                        : Icons
+                                                              .visibility_outlined,
+                                                    color: LoginStyles
+                                                        .textSecondary,
                                                   ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _obscurePassword =
+                                                          !_obscurePassword;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 27),
+                                    FadeTransition(
+                                      opacity: _buttonFade,
+                                      child: SlideTransition(
+                                        position: _buttonSlide,
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: LoginStyles
+                                                      .primaryColor
+                                                      .withOpacity(0.30),
+                                                  blurRadius: 26,
+                                                  offset: const Offset(0, 9),
+                                                ),
+                                              ],
+                                            ),
+                                            child: ElevatedButton(
+                                              onPressed: _isLoading
+                                                  ? null
+                                                  : _handleLogin,
+                                              style:
+                                                  LoginStyles.loginButtonStyle,
+                                              child: _isLoading
+                                                  ? const SizedBox(
+                                                      height: 22,
+                                                      width: 22,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2.5,
+                                                            color: Color(
+                                                              0xFF07100B,
+                                                            ),
+                                                          ),
+                                                    )
+                                                  : const Text(
+                                                      'Login',
+                                                      style: LoginStyles
+                                                          .buttonTextStyle,
+                                                    ),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
