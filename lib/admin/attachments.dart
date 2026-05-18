@@ -586,18 +586,33 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             ),
             onSelected: (v) => setState(() => selectedFilter = v),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: AttachmentsFilter.all, child: Text('All')),
+              PopupMenuItem(
+                value: AttachmentsFilter.all,
+                child: Text(
+                  'All',
+                  style: TextStyle(color: AttachmentsStyles.textPrimary),
+                ),
+              ),
               PopupMenuItem(
                 value: AttachmentsFilter.processing,
-                child: Text('Processing'),
+                child: Text(
+                  'Processing',
+                  style: TextStyle(color: AttachmentsStyles.textPrimary),
+                ),
               ),
               PopupMenuItem(
                 value: AttachmentsFilter.collecting,
-                child: Text('Collecting'),
+                child: Text(
+                  'Collecting',
+                  style: TextStyle(color: AttachmentsStyles.textPrimary),
+                ),
               ),
               PopupMenuItem(
                 value: AttachmentsFilter.collected,
-                child: Text('Collected'),
+                child: Text(
+                  'Collected',
+                  style: TextStyle(color: AttachmentsStyles.textPrimary),
+                ),
               ),
             ],
             child: Container(
