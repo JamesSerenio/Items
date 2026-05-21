@@ -878,8 +878,10 @@ class AttachmentsPdfService {
       ),
       child: pw.Column(
         children: [
-          _infoRow('Received by', 'JAMES M. SERENIO', font, boldFont),
+          _infoRow('Received by', 'Joli Mae D. Cleopas', font, boldFont),
+
           _infoRow('Designation', 'Authorized Representative', font, boldFont),
+
           _infoRow(
             'Name of Firm',
             'MEGAPLUTO ELECTRICAL SUPPLY & HARDWARE MATERIALS TRADING',
