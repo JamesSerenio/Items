@@ -1270,7 +1270,7 @@ class _PurchaseTable extends StatelessWidget {
           style: style,
         ),
         _PoCell(text(i['location']), style: style),
-        _PoCell(text(i['supplier']), style: style),
+        _PoCell(_supplierText(i), style: style),
         _PoCell(text(i['quantity']), style: style, center: true),
         _PoCell(money(i['unit_cost']), style: style, right: true),
         _PoCell(money(i['total_cost']), style: style, right: true),
