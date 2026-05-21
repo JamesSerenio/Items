@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../orders/current_order_modal.dart';
 import '../orders/orders_modal.dart';
+import '../orders/void_approval_modal.dart';
 import '../styles/order_styles.dart';
 
 class OrderPage extends StatefulWidget {
@@ -17,12 +18,16 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
   final GlobalKey _cartIconKey = GlobalKey();
   final GlobalKey _ordersIconKey = GlobalKey();
+  final GlobalKey _approvalIconKey = GlobalKey();
 
   bool _isLoading = true;
 
   List<Map<String, dynamic>> _materials = [];
   List<Map<String, dynamic>> _orders = [];
+  List<Map<String, dynamic>> _voidRequests = [];
   final List<Map<String, dynamic>> _cart = [];
+
+  String _currentRole = '';
 
   @override
   void initState() {
@@ -40,12 +45,30 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      await Future.wait([_loadMaterials(), _loadOrders()]);
+      await Future.wait([
+        _loadCurrentRole(),
+        _loadMaterials(),
+        _loadOrders(),
+        _loadVoidRequests(),
+      ]);
     } catch (e) {
       _showSnack('Load failed: $e');
     }
 
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadCurrentRole() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final data = await Supabase.instance.client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    _currentRole = (data?['role'] ?? '').toString().trim().toLowerCase();
   }
 
   Future<void> _loadMaterials() async {
@@ -56,30 +79,31 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         )
         .order('created_at', ascending: false);
 
-    if (!mounted) return;
     _materials = List<Map<String, dynamic>>.from(data);
+  }
+
+  Future<void> _loadVoidRequests() async {
+    final data = await Supabase.instance.client
+        .from('purchase_order_void_requests')
+        .select(
+          'id, purchase_order_id, requested_by, status, reason, created_at, purchase_orders(id, po_no, project_title, total_amount)',
+        )
+        .eq('status', 'pending')
+        .order('created_at', ascending: false);
+
+    _voidRequests = List<Map<String, dynamic>>.from(data);
   }
 
   Future<void> _loadOrders() async {
     final data = await Supabase.instance.client
         .from('purchase_orders')
         .select(
-          'id, po_no, description, item_description, total_amount, collecting_status, created_at',
+          'id, po_no, project_title, item_description, total_amount, collecting_status, created_at',
         )
+        .neq('collecting_status', 'collected')
         .order('created_at', ascending: false);
 
-    if (!mounted) return;
-
-    final list = List<Map<String, dynamic>>.from(data);
-
-    _orders = list.where((order) {
-      final status = (order['collecting_status'] ?? '')
-          .toString()
-          .trim()
-          .toLowerCase();
-
-      return status != 'collected' && status != 'delivered';
-    }).toList();
+    _orders = List<Map<String, dynamic>>.from(data);
   }
 
   List<Map<String, dynamic>> get _filteredMaterials {
@@ -158,11 +182,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   void _addToCart(Map<String, dynamic> item, GlobalKey buttonKey) {
-    final available = item['availability'] == 'available';
+    final available = item['availability'] != 'not_available';
     final price = _num(item['price']);
 
     if (!available) {
-      _showSnack('Item is not available');
+      _showSnack('This item is not available');
       return;
     }
 
@@ -178,6 +202,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           'material_id': item['id'],
           'supplier_name': item['supplier_name'],
           'supplier': item['supplier_name'],
+          'brand': item['brand'],
           'unit': item['unit'],
           'item_description': item['description'],
           'quantity': 1,
@@ -280,7 +305,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       await Supabase.instance.client.rpc(
         'checkout_purchase_order',
-        params: {'p_description': description, 'p_items': items},
+        params: {'p_project_title': description, 'p_items': items},
       );
 
       if (!mounted) return;
@@ -290,7 +315,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       if (!mounted) return;
       Navigator.pop(context);
-      _showSnack('Purchase order created');
+      _showSnack('Project order created');
     } catch (e) {
       _showSnack('Checkout failed: $e');
     }
@@ -318,7 +343,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Write description',
+                        'Project Title',
                         style: OrderStyles.popupTitleStyle,
                       ),
                     ),
@@ -348,7 +373,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           final text = controller.text.trim();
                           Navigator.pop(
                             context,
-                            text.isEmpty ? 'Purchase Order' : text,
+                            text.isEmpty ? 'Project Title' : text,
                           );
                         },
                         style: OrderStyles.checkoutButtonStyle,
@@ -398,7 +423,39 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _openApprovalModal() async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.62),
+      builder: (_) => VoidApprovalModal(
+        voidRequests: _voidRequests,
+        text: _text,
+        onApprove: (request) async {
+          await _approveVoidRequest(request);
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
+        onDecline: (request) async {
+          await _declineVoidRequest(request);
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+
   Future<void> _voidOrder(Map<String, dynamic> order) async {
+    if (_currentRole == 'coder') {
+      await _requestVoidOrder(order);
+      return;
+    }
+
+    await _directVoidOrder(order);
+  }
+
+  Future<void> _requestVoidOrder(Map<String, dynamic> order) async {
     String selectedReason = 'Checkout Error';
 
     final result = await showDialog<String>(
@@ -421,56 +478,13 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: selectedReason,
-                  isExpanded: true,
-                  borderRadius: BorderRadius.circular(22),
                   dropdownColor: OrderStyles.panelCardColor,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: OrderStyles.plutoGold,
-                    size: 22,
-                  ),
-                  style: const TextStyle(
-                    color: OrderStyles.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.3,
-                  ),
+                  style: const TextStyle(color: OrderStyles.textPrimary),
                   decoration: InputDecoration(
-                    prefixIcon: Container(
-                      margin: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: OrderStyles.plutoGold.withOpacity(0.12),
-                      ),
-                      child: const Icon(
-                        Icons.report_problem_rounded,
-                        color: OrderStyles.plutoGold,
-                        size: 18,
-                      ),
-                    ),
                     filled: true,
-                    fillColor: OrderStyles.inputFill.withOpacity(0.85),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 18,
-                    ),
+                    fillColor: OrderStyles.inputFill,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(22),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(22),
-                      borderSide: BorderSide(
-                        color: OrderStyles.plutoGold.withOpacity(0.35),
-                        width: 1.2,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(22),
-                      borderSide: const BorderSide(
-                        color: OrderStyles.plutoGold,
-                        width: 1.8,
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   items: const [
@@ -547,9 +561,100 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       await _loadAll();
 
       if (!mounted) return;
-      _showSnack('Void request sent to admin');
+      Navigator.pop(context);
+      _showSnack('Void request sent for approval');
     } catch (e) {
-      _showSnack('Failed: $e');
+      _showSnack('Request failed: $e');
+    }
+  }
+
+  Future<void> _directVoidOrder(Map<String, dynamic> order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: OrderStyles.panelCardColor,
+        title: const Text(
+          'Void Order?',
+          style: TextStyle(color: OrderStyles.textPrimary),
+        ),
+        content: Text(
+          'Void ${_text(order['project_title'])}? Stocks will be returned.',
+          style: const TextStyle(color: OrderStyles.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Void',
+              style: TextStyle(color: OrderStyles.dangerColor),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await Supabase.instance.client.rpc(
+        'void_purchase_order',
+        params: {'p_order_id': order['id']},
+      );
+
+      await _loadAll();
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnack('Order voided and stocks returned');
+    } catch (e) {
+      _showSnack('Void failed: $e');
+    }
+  }
+
+  Future<void> _approveVoidRequest(Map<String, dynamic> request) async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.rpc(
+        'void_purchase_order',
+        params: {'p_order_id': request['purchase_order_id']},
+      );
+
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .update({
+            'status': 'approved',
+            'approved_by': user?.id,
+            'approved_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', request['id']);
+
+      await _loadAll();
+
+      if (!mounted) return;
+      _showSnack('Void request approved');
+    } catch (e) {
+      _showSnack('Approve failed: $e');
+    }
+  }
+
+  Future<void> _declineVoidRequest(Map<String, dynamic> request) async {
+    try {
+      await Supabase.instance.client
+          .from('purchase_order_void_requests')
+          .update({'status': 'declined'})
+          .eq('id', request['id']);
+
+      await _loadAll();
+
+      if (!mounted) return;
+      _showSnack('Void request declined');
+    } catch (e) {
+      _showSnack('Decline failed: $e');
     }
   }
 
@@ -628,7 +733,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         children: [
                           Expanded(
                             child: Text(
-                              'Procuring Entity: ${_text(order['description'])}',
+                              'Project Title: ${_text(order['project_title'])}',
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
@@ -730,6 +835,15 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           badge: _orders.length.toString(),
           onTap: _openOrdersModal,
         ),
+        if (_currentRole == 'admin') ...[
+          const SizedBox(width: 10),
+          _TopIconButton(
+            key: _approvalIconKey,
+            icon: Icons.verified_user_outlined,
+            badge: _voidRequests.length.toString(),
+            onTap: _openApprovalModal,
+          ),
+        ],
       ],
     );
   }
@@ -838,7 +952,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   itemBuilder: (_, index) {
                     final item = items[index];
                     final key = GlobalKey();
-                    final available = item['availability'] == 'available';
+                    final available = item['availability'] != 'not_available';
 
                     return Container(
                       height: 62,
@@ -875,7 +989,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                             flex: 16,
                             child: _MiniMoneyText(_money(item['price'])),
                           ),
-
                           Expanded(
                             flex: 18,
                             child: _MiniText(
@@ -889,13 +1002,10 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                               icon: Icons.add_shopping_cart_rounded,
                               color: available
                                   ? OrderStyles.primaryColor
-                                  : Colors.red,
-
+                                  : Colors.grey,
                               onTap: available
                                   ? () => _addToCart(item, key)
-                                  : () {
-                                      _showSnack('Item is not available');
-                                    },
+                                  : () {},
                             ),
                           ),
                         ],
@@ -927,7 +1037,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   Expanded(flex: 18, child: _HeaderText('Supplier')),
                   Expanded(flex: 12, child: _HeaderText('Unit')),
                   Expanded(flex: 14, child: _HeaderText('Price')),
-                  Expanded(flex: 12, child: _HeaderText('Status')),
+                  Expanded(flex: 14, child: _HeaderText('Status')),
                   Expanded(flex: 18, child: _HeaderText('Location')),
                   Expanded(flex: 18, child: _HeaderText('Order')),
                 ],
@@ -997,7 +1107,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           ),
                         ),
                         Expanded(
-                          flex: 12,
+                          flex: 14,
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: _StockBadge(
@@ -1022,10 +1132,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                                     ? () => _addToCart(item, key)
                                     : null,
                                 style: OrderStyles.addCartButtonStyle,
-                                icon: Icon(
-                                  available
-                                      ? Icons.add_shopping_cart_rounded
-                                      : Icons.block_rounded,
+                                icon: const Icon(
+                                  Icons.add_shopping_cart_rounded,
                                   size: 17,
                                 ),
                                 label: Text(
