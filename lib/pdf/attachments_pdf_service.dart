@@ -310,6 +310,10 @@ class AttachmentsPdfService {
       text: (order['contact_person'] ?? '').toString().trim(),
     );
 
+    final contactNumberController = TextEditingController(
+      text: (order['contact_number'] ?? '').toString().trim(),
+    );
+
     return showDialog<_ExtraInfo>(
       context: context,
       barrierDismissible: false,
@@ -346,6 +350,13 @@ class AttachmentsPdfService {
                 controller: contactController,
                 label: 'Contact Person',
               ),
+
+              const SizedBox(height: 12),
+
+              _InfoInput(
+                controller: contactNumberController,
+                label: 'Optional Contact Number',
+              ),
             ],
           ),
         ),
@@ -362,6 +373,7 @@ class AttachmentsPdfService {
                   entity: entityController.text.trim(),
                   address: addressController.text.trim(),
                   contact: contactController.text.trim(),
+                  contactNumber: contactNumberController.text.trim(),
                 ),
               );
             },
@@ -394,6 +406,7 @@ class AttachmentsPdfService {
             'procuring_entity': info.entity,
             'area_to_delivery': info.address,
             'contact_person': info.contact,
+            'contact_number': info.contactNumber,
           })
           .eq('id', order['id']);
 
@@ -634,6 +647,9 @@ class AttachmentsPdfService {
           _infoRow('Procuring Entity Name', info.entity, font, boldFont),
           _infoRow('Area to Delivery', info.address, font, boldFont),
           _infoRow('Contact Person', info.contact, font, boldFont),
+
+          if (info.contactNumber.trim().isNotEmpty)
+            _infoRow('Contact Number', info.contactNumber, font, boldFont),
         ],
       ),
     );
@@ -829,11 +845,13 @@ class _ExtraInfo {
   final String entity;
   final String address;
   final String contact;
+  final String contactNumber;
 
   const _ExtraInfo({
     required this.entity,
     required this.address,
     required this.contact,
+    required this.contactNumber,
   });
 }
 
