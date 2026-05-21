@@ -60,13 +60,25 @@ class AttachmentsPdfService {
     return brand.isEmpty ? '' : '\nBrand: $brand';
   }
 
+  static String _supplierText(Map<String, dynamic> item) {
+    final directSupplier = (item['supplier'] ?? '').toString().trim();
+    final material = item['materials'];
+
+    String materialSupplier = '';
+    if (material is Map) {
+      materialSupplier = (material['supplier_name'] ?? '').toString().trim();
+    }
+
+    return directSupplier.isNotEmpty ? directSupplier : materialSupplier;
+  }
+
   static Future<List<Map<String, dynamic>>> _loadOrderItems(
     String orderId,
   ) async {
     final items = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, brand, supplier, unit, item_description, location, quantity, unit_cost, total_cost, materials(brand)',
+          'stock_no, brand, supplier, unit, item_description, location, quantity, unit_cost, total_cost, materials(brand, supplier_name)',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);

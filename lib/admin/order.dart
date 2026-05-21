@@ -682,7 +682,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       final items = await Supabase.instance.client
           .from('purchase_order_items')
           .select(
-            'stock_no, brand, supplier, unit, item_description, quantity, unit_cost, total_cost, location',
+            'stock_no, brand, supplier, unit, item_description, quantity, unit_cost, total_cost, location, materials(supplier_name)',
           )
           .eq('purchase_order_id', order['id'])
           .order('stock_no', ascending: true);
@@ -1217,6 +1217,18 @@ class _PurchaseTable extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final String Function(dynamic value) text;
   final String Function(dynamic value) money;
+
+  String _supplierText(Map<String, dynamic> item) {
+    final directSupplier = (item['supplier'] ?? '').toString().trim();
+    final material = item['materials'];
+
+    String materialSupplier = '';
+    if (material is Map) {
+      materialSupplier = (material['supplier_name'] ?? '').toString().trim();
+    }
+
+    return directSupplier.isNotEmpty ? directSupplier : materialSupplier;
+  }
 
   const _PurchaseTable({
     required this.items,
