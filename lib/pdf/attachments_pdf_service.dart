@@ -304,7 +304,7 @@ class AttachmentsPdfService {
           .trim(),
     );
     final addressController = TextEditingController(
-      text: (order['procuring_address'] ?? '').toString().trim(),
+      text: (order['area_to_delivery'] ?? '').toString().trim(),
     );
     final contactController = TextEditingController(
       text: (order['contact_person'] ?? '').toString().trim(),
@@ -338,7 +338,7 @@ class AttachmentsPdfService {
               const SizedBox(height: 12),
               _InfoInput(
                 controller: addressController,
-                label: 'Procuring Entity Address',
+                label: 'Area to Delivery',
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
@@ -392,7 +392,7 @@ class AttachmentsPdfService {
           .from('purchase_orders')
           .update({
             'procuring_entity': info.entity,
-            'procuring_address': info.address,
+            'area_to_delivery': info.address,
             'contact_person': info.contact,
           })
           .eq('id', order['id']);
@@ -632,7 +632,7 @@ class AttachmentsPdfService {
       child: pw.Column(
         children: [
           _infoRow('Procuring Entity Name', info.entity, font, boldFont),
-          _infoRow('Procuring Entity Address', info.address, font, boldFont),
+          _infoRow('Area to Delivery', info.address, font, boldFont),
           _infoRow('Contact Person', info.contact, font, boldFont),
         ],
       ),
