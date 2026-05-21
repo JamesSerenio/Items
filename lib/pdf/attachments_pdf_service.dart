@@ -152,7 +152,7 @@ class AttachmentsPdfService {
                     children: [
                       Expanded(
                         child: Text(
-                          'Procuring Entity: ${_text(order['description'])}',
+                          'Project Title: ${_text(order['project_title'])}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w700,
@@ -299,9 +299,7 @@ class AttachmentsPdfService {
     required Map<String, dynamic> order,
   }) {
     final entityController = TextEditingController(
-      text: (order['procuring_entity'] ?? order['description'] ?? '')
-          .toString()
-          .trim(),
+      text: (order['procuring_entity'] ?? '').toString().trim(),
     );
     final addressController = TextEditingController(
       text: (order['area_to_delivery'] ?? '').toString().trim(),
@@ -475,6 +473,12 @@ class AttachmentsPdfService {
               _poInfoBox(
                 poNo: poNo,
                 date: _dateLong(order['created_at']),
+                font: font,
+                boldFont: boldFont,
+              ),
+              pw.SizedBox(height: 10),
+              _projectTitleBox(
+                title: _text(order['project_title']),
                 font: font,
                 boldFont: boldFont,
               ),
@@ -652,6 +656,26 @@ class AttachmentsPdfService {
             _infoRow('Contact Number', info.contactNumber, font, boldFont),
         ],
       ),
+    );
+  }
+
+  static pw.Widget _projectTitleBox({
+    required String title,
+    required pw.Font font,
+    required pw.Font boldFont,
+  }) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFF9FBF5),
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(
+          color: const PdfColor.fromInt(0xFFD8E7B7),
+          width: 0.8,
+        ),
+      ),
+      child: _infoRow('Project Title', title, font, boldFont),
     );
   }
 
