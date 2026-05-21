@@ -576,7 +576,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       final items = await Supabase.instance.client
           .from('purchase_order_items')
           .select(
-            'stock_no, brand, unit, item_description, quantity, unit_cost, total_cost, location',
+            'stock_no, brand, supplier, unit, item_description, quantity, unit_cost, total_cost, location',
           )
           .eq('purchase_order_id', order['id'])
           .order('stock_no', ascending: true);
@@ -1123,6 +1123,7 @@ class _PurchaseTable extends StatelessWidget {
         _PoCell('UNIT', style: style, center: true),
         _PoCell('ITEM DESCRIPTION / BRAND', style: style),
         _PoCell('LOCATION', style: style),
+        _PoCell('SUPPLIER', style: style),
         _PoCell('QTY', style: style, center: true),
         _PoCell('UNIT COST', style: style, right: true),
         _PoCell('TOTAL COST', style: style, right: true),
@@ -1142,6 +1143,7 @@ class _PurchaseTable extends StatelessWidget {
           style: style,
         ),
         _PoCell(text(i['location']), style: style),
+        _PoCell(text(i['supplier']), style: style),
         _PoCell(text(i['quantity']), style: style, center: true),
         _PoCell(money(i['unit_cost']), style: style, right: true),
         _PoCell(money(i['total_cost']), style: style, right: true),
@@ -1157,10 +1159,11 @@ class _PurchaseTable extends StatelessWidget {
         0: FlexColumnWidth(0.9),
         1: FlexColumnWidth(0.8),
         2: FlexColumnWidth(2.1),
-        3: FlexColumnWidth(1.5),
-        4: FlexColumnWidth(0.7),
-        5: FlexColumnWidth(1.2),
-        6: FlexColumnWidth(1.3),
+        3: FlexColumnWidth(1.3),
+        4: FlexColumnWidth(1.3),
+        5: FlexColumnWidth(0.7),
+        6: FlexColumnWidth(1.2),
+        7: FlexColumnWidth(1.3),
       },
       children: [_header(), ...items.map(_row)],
     );
