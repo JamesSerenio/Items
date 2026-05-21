@@ -66,7 +66,7 @@ class AttachmentsPdfService {
     final items = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, brand, unit, item_description, location, quantity, unit_cost, total_cost, materials(brand)',
+          'stock_no, brand, supplier, unit, item_description, location, quantity, unit_cost, total_cost, materials(brand)',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
@@ -171,13 +171,14 @@ class AttachmentsPdfService {
                                   width: 0.8,
                                 ),
                                 columnWidths: const {
-                                  0: FlexColumnWidth(0.9),
-                                  1: FlexColumnWidth(0.8),
-                                  2: FlexColumnWidth(2.2),
-                                  3: FlexColumnWidth(1.3),
-                                  4: FlexColumnWidth(0.7),
-                                  5: FlexColumnWidth(1.2),
-                                  6: FlexColumnWidth(1.2),
+                                  0: FlexColumnWidth(0.8),
+                                  1: FlexColumnWidth(0.75),
+                                  2: FlexColumnWidth(2.0),
+                                  3: FlexColumnWidth(1.1),
+                                  4: FlexColumnWidth(1.1),
+                                  5: FlexColumnWidth(0.65),
+                                  6: FlexColumnWidth(1.1),
+                                  7: FlexColumnWidth(1.1),
                                 },
                                 children: [
                                   _flutterRow([
@@ -185,6 +186,7 @@ class AttachmentsPdfService {
                                     'UNIT',
                                     'ITEM DESCRIPTION /\nBRAND',
                                     'LOCATION',
+                                    'SUPPLIER',
                                     'QTY',
                                     'UNIT COST',
                                     'TOTAL COST',
@@ -195,6 +197,7 @@ class AttachmentsPdfService {
                                       _text(i['unit']),
                                       '${_text(i['item_description'])}${_brandText(i)}',
                                       _text(i['location']),
+                                      _text(i['supplier']),
                                       _text(i['quantity']),
                                       _peso(i['unit_cost']),
                                       _peso(i['total_cost']),
@@ -427,6 +430,7 @@ class AttachmentsPdfService {
                 _text(i['unit']),
                 '${_text(i['item_description'])}${_brandText(i)}',
                 _text(i['location']),
+                _text(i['supplier']),
                 _text(i['quantity']),
                 _money(i['unit_cost']),
                 _money(i['total_cost']),
@@ -652,19 +656,21 @@ class AttachmentsPdfService {
         'UNIT',
         'ITEM DESCRIPTION /\nBRAND',
         'LOCATION',
+        'SUPPLIER',
         'QTY',
         'UNIT COST',
         'TOTAL COST',
       ],
       data: rows,
       columnWidths: const {
-        0: pw.FlexColumnWidth(0.75),
-        1: pw.FlexColumnWidth(0.85),
-        2: pw.FlexColumnWidth(2.35),
-        3: pw.FlexColumnWidth(1.25),
-        4: pw.FlexColumnWidth(0.65),
-        5: pw.FlexColumnWidth(1.15),
-        6: pw.FlexColumnWidth(1.2),
+        0: pw.FlexColumnWidth(0.65),
+        1: pw.FlexColumnWidth(0.75),
+        2: pw.FlexColumnWidth(2.0),
+        3: pw.FlexColumnWidth(1.05),
+        4: pw.FlexColumnWidth(1.05),
+        5: pw.FlexColumnWidth(0.6),
+        6: pw.FlexColumnWidth(1.05),
+        7: pw.FlexColumnWidth(1.1),
       },
       cellAlignments: {
         0: pw.Alignment.center,
