@@ -157,7 +157,7 @@ class _ProductPageState extends State<ProductPage> {
     required String unit,
     required double unitValue,
     required double price,
-    required double quantity,
+    required String availability,
     required String location,
   }) async {
     try {
@@ -170,7 +170,7 @@ class _ProductPageState extends State<ProductPage> {
             'unit': unit,
             'unit_value': unitValue,
             'price': price,
-            'quantity': quantity,
+            'availability': availability,
             'location': location,
           })
           .eq('id', id);
@@ -199,9 +199,7 @@ class _ProductPageState extends State<ProductPage> {
       text: _text(item['unit_value']),
     );
     final priceController = TextEditingController(text: _text(item['price']));
-    final quantityController = TextEditingController(
-      text: _text(item['quantity']),
-    );
+    String availability = (item['availability'] ?? 'available').toString();
     final locationController = TextEditingController(
       text: _text(item['location']),
     );
@@ -304,12 +302,40 @@ class _ProductPageState extends State<ProductPage> {
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _EditField(
-                              controller: quantityController,
-                              label: 'Quantity',
-                              icon: Icons.format_list_numbered_outlined,
-                              keyboardType: TextInputType.number,
-                              validator: _numberValidator,
+                            child: DropdownButtonFormField<String>(
+                              value: availability,
+                              dropdownColor: ProductStyles.panelCardColor,
+                              style: const TextStyle(
+                                color: ProductStyles.textPrimary,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Availability',
+                                labelStyle: const TextStyle(
+                                  color: ProductStyles.textSecondary,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.check_circle_outline,
+                                  color: ProductStyles.textSecondary,
+                                ),
+                                filled: true,
+                                fillColor: ProductStyles.inputFill,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'available',
+                                  child: Text('Available'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'not_available',
+                                  child: Text('Not Available'),
+                                ),
+                              ],
+                              onChanged: (v) {
+                                availability = v ?? 'available';
+                              },
                             ),
                           ),
                         ],
@@ -351,9 +377,7 @@ class _ProductPageState extends State<ProductPage> {
                                   price: double.parse(
                                     priceController.text.trim(),
                                   ),
-                                  quantity: double.parse(
-                                    quantityController.text.trim(),
-                                  ),
+                                  availability: availability,
                                   location: locationController.text.trim(),
                                 );
                               },
