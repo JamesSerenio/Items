@@ -41,7 +41,7 @@ class AttachmentsViewService {
     final data = await supabase
         .from('purchase_order_items')
         .select(
-          'stock_no, unit, item_description, brand, location, quantity, unit_cost, total_cost, materials(brand)',
+          'stock_no, brand, unit, item_description, location, supplier, quantity, unit_cost, total_cost, materials(brand)',
         )
         .eq('purchase_order_id', orderId)
         .order('stock_no', ascending: true);
@@ -144,10 +144,11 @@ class AttachmentsViewService {
                                   0: FlexColumnWidth(0.9),
                                   1: FlexColumnWidth(0.8),
                                   2: FlexColumnWidth(2),
-                                  3: FlexColumnWidth(1.3),
-                                  4: FlexColumnWidth(0.7),
-                                  5: FlexColumnWidth(1.2),
+                                  3: FlexColumnWidth(1.2),
+                                  4: FlexColumnWidth(1.2),
+                                  5: FlexColumnWidth(0.7),
                                   6: FlexColumnWidth(1.2),
+                                  7: FlexColumnWidth(1.2),
                                 },
                                 children: [
                                   _tableRow([
@@ -155,6 +156,7 @@ class AttachmentsViewService {
                                     'UNIT',
                                     'ITEM DESCRIPTION /\nBRAND',
                                     'LOCATION',
+                                    'SUPPLIER',
                                     'QTY',
                                     'UNIT COST',
                                     'TOTAL COST',
@@ -165,6 +167,7 @@ class AttachmentsViewService {
                                       _text(i['unit']),
                                       '${_text(i['item_description'])}${_brandText(i)}',
                                       _text(i['location']),
+                                      _text(i['supplier']),
                                       _text(i['quantity']),
                                       _peso(i['unit_cost']),
                                       _peso(i['total_cost']),
