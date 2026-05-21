@@ -88,7 +88,7 @@ class OrdersModal extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        text(order['description']),
+                                        text(order['project_title']),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: OrderStyles.cartItemNameStyle,
