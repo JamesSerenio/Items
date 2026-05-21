@@ -926,9 +926,15 @@ class _InfoInput extends StatelessWidget {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      textAlignVertical: TextAlignVertical.top,
       style: const TextStyle(color: Color(0xFFF9F2D7)),
       decoration: InputDecoration(
         labelText: label,
+        alignLabelWithHint: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         labelStyle: const TextStyle(color: Color(0xFFE5C76B)),
         filled: true,
         fillColor: const Color(0xFF07140F),
