@@ -52,7 +52,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     final data = await Supabase.instance.client
         .from('materials')
         .select(
-          'id, supplier_name, brand, description, unit, unit_value, price, quantity, total, location, created_at',
+          'id, supplier_name, brand, description, unit, unit_value, price, location, availability, created_at',
         )
         .order('created_at', ascending: false);
 
@@ -122,18 +122,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     return '₱${n.toStringAsFixed(2)}';
   }
 
-  int _cartQtyForMaterial(dynamic materialId) {
-    final index = _cart.indexWhere((e) => e['material_id'] == materialId);
-    if (index < 0) return 0;
-    return _num(_cart[index]['quantity']).toInt();
-  }
-
-  num _remainingStock(Map<String, dynamic> item) {
-    final original = _num(item['quantity']);
-    final used = _cartQtyForMaterial(item['id']);
-    return original - used;
-  }
-
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -170,11 +158,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   }
 
   void _addToCart(Map<String, dynamic> item, GlobalKey buttonKey) {
-    final remaining = _remainingStock(item);
+    final available = item['availability'] == 'available';
     final price = _num(item['price']);
 
-    if (remaining <= 0) {
-      _showSnack('No more stock available');
+    if (!available) {
+      _showSnack('Item is not available');
       return;
     }
 
@@ -195,7 +183,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           'quantity': 1,
           'unit_cost': price,
           'total_cost': price,
-          'available_qty': _num(item['quantity']),
           'location': item['location'],
         });
       }
@@ -253,16 +240,10 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
     if (result == null) return;
 
-    final stock = _num(item['available_qty']);
     final price = _num(item['unit_cost']);
 
     if (result <= 0) {
       _showSnack('Quantity must be greater than 0');
-      return;
-    }
-
-    if (result > stock) {
-      _showSnack('Only ${stock.toString()} stock available');
       return;
     }
 
@@ -840,7 +821,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     Expanded(flex: 26, child: _MobileHeaderText('Product')),
                     Expanded(flex: 22, child: _MobileHeaderText('Supplier')),
                     Expanded(flex: 16, child: _MobileHeaderText('Price')),
-                    Expanded(flex: 12, child: _MobileHeaderText('Qty')),
+                    Expanded(flex: 18, child: _MobileHeaderText('Status')),
                     SizedBox(width: 32, child: _MobileHeaderText('Add')),
                   ],
                 ),
@@ -857,7 +838,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   itemBuilder: (_, index) {
                     final item = items[index];
                     final key = GlobalKey();
-                    final stock = _remainingStock(item);
+                    final available = item['availability'] == 'available';
 
                     return Container(
                       height: 62,
@@ -894,10 +875,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                             flex: 16,
                             child: _MiniMoneyText(_money(item['price'])),
                           ),
+
                           Expanded(
-                            flex: 12,
+                            flex: 18,
                             child: _MiniText(
-                              stock <= 0 ? 'Out' : stock.toString(),
+                              available ? 'Available' : 'Not Available',
                             ),
                           ),
                           SizedBox(
@@ -905,12 +887,15 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                             key: key,
                             child: _TinyActionButton(
                               icon: Icons.add_shopping_cart_rounded,
-                              color: stock <= 0
-                                  ? Colors.grey
-                                  : OrderStyles.primaryColor,
-                              onTap: stock <= 0
-                                  ? () {}
-                                  : () => _addToCart(item, key),
+                              color: available
+                                  ? OrderStyles.primaryColor
+                                  : Colors.red,
+
+                              onTap: available
+                                  ? () => _addToCart(item, key)
+                                  : () {
+                                      _showSnack('Item is not available');
+                                    },
                             ),
                           ),
                         ],
@@ -942,7 +927,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   Expanded(flex: 18, child: _HeaderText('Supplier')),
                   Expanded(flex: 12, child: _HeaderText('Unit')),
                   Expanded(flex: 14, child: _HeaderText('Price')),
-                  Expanded(flex: 12, child: _HeaderText('Stock')),
+                  Expanded(flex: 12, child: _HeaderText('Status')),
                   Expanded(flex: 18, child: _HeaderText('Location')),
                   Expanded(flex: 18, child: _HeaderText('Order')),
                 ],
@@ -960,7 +945,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                 itemBuilder: (_, index) {
                   final item = items[index];
                   final key = GlobalKey();
-                  final stock = _remainingStock(item);
+                  final available = item['availability'] != 'not_available';
 
                   return Container(
                     height: 72,
@@ -1016,8 +1001,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: _StockBadge(
-                              text: stock <= 0 ? 'Out' : stock.toString(),
-                              isOut: stock <= 0,
+                              text: available ? 'Available' : 'Not Available',
+                              isOut: !available,
                             ),
                           ),
                         ),
@@ -1033,15 +1018,19 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                               key: key,
                               height: 40,
                               child: ElevatedButton.icon(
-                                onPressed: stock <= 0
-                                    ? null
-                                    : () => _addToCart(item, key),
+                                onPressed: available
+                                    ? () => _addToCart(item, key)
+                                    : null,
                                 style: OrderStyles.addCartButtonStyle,
-                                icon: const Icon(
-                                  Icons.add_shopping_cart_rounded,
+                                icon: Icon(
+                                  available
+                                      ? Icons.add_shopping_cart_rounded
+                                      : Icons.block_rounded,
                                   size: 17,
                                 ),
-                                label: const Text('Add to Cart'),
+                                label: Text(
+                                  available ? 'Add to Cart' : 'Not Available',
+                                ),
                               ),
                             ),
                           ),

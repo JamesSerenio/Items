@@ -732,14 +732,11 @@ class _ProductPageState extends State<ProductPage> {
                           child: _CellText(_money(item['price'])),
                         ),
                         Expanded(
-                          flex: 10,
-                          child: _CellText(_text(item['quantity'])),
-                        ),
-                        Expanded(
-                          flex: 14,
+                          flex: 18,
                           child: _CellText(
-                            _money(item['total']),
-                            isHighlight: true,
+                            item['availability'] == 'not_available'
+                                ? 'Not Available'
+                                : 'Available',
                           ),
                         ),
                         Expanded(
