@@ -35,7 +35,7 @@ class _ProductPageState extends State<ProductPage> {
       final data = await Supabase.instance.client
           .from('materials')
           .select(
-            'id, supplier_name, brand, description, unit, unit_value, price, quantity, total, location, created_at',
+            'id, supplier_name, brand, description, unit, unit_value, price, location, availability, created_at',
           )
           .order('created_at', ascending: false);
 
@@ -66,22 +66,6 @@ class _ProductPageState extends State<ProductPage> {
         item['location'],
       ].any((v) => (v?.toString().toLowerCase() ?? '').contains(query));
     }).toList();
-  }
-
-  num get _grandTotal {
-    num total = 0;
-    for (final item in _filteredMaterials) {
-      total += num.tryParse(item['total']?.toString() ?? '0') ?? 0;
-    }
-    return total;
-  }
-
-  num get _totalQuantity {
-    num total = 0;
-    for (final item in _filteredMaterials) {
-      total += num.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
-    }
-    return total;
   }
 
   String _text(dynamic value) => value?.toString() ?? '-';
@@ -482,6 +466,10 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Widget _buildStats(bool isMobile) {
+    final availableCount = _filteredMaterials
+        .where((e) => e['availability'] != 'not_available')
+        .length;
+
     return Row(
       children: [
         _compactStatCard(
@@ -492,16 +480,9 @@ class _ProductPageState extends State<ProductPage> {
         ),
         SizedBox(width: isMobile ? 5 : 14),
         _compactStatCard(
-          label: 'Qty',
-          value: _totalQuantity.toString(),
-          icon: Icons.format_list_numbered_outlined,
-          isMobile: isMobile,
-        ),
-        SizedBox(width: isMobile ? 5 : 14),
-        _compactStatCard(
-          label: 'Value',
-          value: _money(_grandTotal),
-          icon: Icons.payments_outlined,
+          label: 'Available',
+          value: availableCount.toString(),
+          icon: Icons.check_circle_outline,
           isMobile: isMobile,
         ),
       ],
@@ -574,8 +555,7 @@ class _ProductPageState extends State<ProductPage> {
                   Expanded(flex: 18, child: _MobileHeaderText('Supplier')),
                   Expanded(flex: 22, child: _MobileHeaderText('Material')),
                   Expanded(flex: 18, child: _MobileHeaderText('Price')),
-                  Expanded(flex: 12, child: _MobileHeaderText('Qty')),
-                  Expanded(flex: 20, child: _MobileHeaderText('Total')),
+                  Expanded(flex: 20, child: _MobileHeaderText('Status')),
                   SizedBox(width: 42, child: _MobileHeaderText('Act')),
                 ],
               ),
@@ -642,12 +622,12 @@ class _ProductPageState extends State<ProductPage> {
                             child: _MiniMoneyText(_money(item['price'])),
                           ),
                           Expanded(
-                            flex: 12,
-                            child: _MiniText(_text(item['quantity'])),
-                          ),
-                          Expanded(
                             flex: 20,
-                            child: _MiniTotalText(_money(item['total'])),
+                            child: _MiniText(
+                              item['availability'] == 'not_available'
+                                  ? 'Not Available'
+                                  : 'Available',
+                            ),
                           ),
                           SizedBox(
                             width: 42,
@@ -708,8 +688,7 @@ class _ProductPageState extends State<ProductPage> {
                   Expanded(flex: 11, child: _HeaderText('Unit')),
                   Expanded(flex: 12, child: _HeaderText('Unit Value')),
                   Expanded(flex: 13, child: _HeaderText('Price')),
-                  Expanded(flex: 10, child: _HeaderText('Qty')),
-                  Expanded(flex: 14, child: _HeaderText('Total')),
+                  Expanded(flex: 18, child: _HeaderText('Status')),
                   Expanded(flex: 18, child: _HeaderText('Location')),
                   Expanded(flex: 14, child: _HeaderText('Action')),
                 ],
@@ -777,14 +756,11 @@ class _ProductPageState extends State<ProductPage> {
                           child: _CellText(_money(item['price'])),
                         ),
                         Expanded(
-                          flex: 10,
-                          child: _CellText(_text(item['quantity'])),
-                        ),
-                        Expanded(
-                          flex: 14,
+                          flex: 18,
                           child: _CellText(
-                            _money(item['total']),
-                            isHighlight: true,
+                            item['availability'] == 'not_available'
+                                ? 'Not Available'
+                                : 'Available',
                           ),
                         ),
                         Expanded(
