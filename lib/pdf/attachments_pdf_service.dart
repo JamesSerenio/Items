@@ -89,7 +89,7 @@ class AttachmentsPdfService {
   static Future<String> _poNo(Map<String, dynamic> order) async {
     final data = await supabase
         .from('purchase_orders')
-        .select('id, created_at')
+        .select('id, created_at, project_title')
         .order('created_at', ascending: true);
 
     final list = List<Map<String, dynamic>>.from(data);
@@ -152,7 +152,7 @@ class AttachmentsPdfService {
                     children: [
                       Expanded(
                         child: Text(
-                          'Project Title: ${_text(order['project_title'])}',
+                          'Project Title: ${_text(order['project_title']).trim().isEmpty ? '-' : _text(order['project_title'])}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w700,
@@ -311,6 +311,9 @@ class AttachmentsPdfService {
     final contactNumberController = TextEditingController(
       text: (order['contact_number'] ?? '').toString().trim(),
     );
+    final canvasserController = TextEditingController(
+      text: (order['canvasser_name'] ?? '').toString().trim(),
+    );
 
     return showDialog<_ExtraInfo>(
       context: context,
@@ -355,6 +358,12 @@ class AttachmentsPdfService {
                 controller: contactNumberController,
                 label: 'Optional Contact Number',
               ),
+              const SizedBox(height: 12),
+
+              _InfoInput(
+                controller: canvasserController,
+                label: 'Canvasser Name',
+              ),
             ],
           ),
         ),
@@ -372,6 +381,7 @@ class AttachmentsPdfService {
                   address: addressController.text.trim(),
                   contact: contactController.text.trim(),
                   contactNumber: contactNumberController.text.trim(),
+                  canvasserName: canvasserController.text.trim(),
                 ),
               );
             },
@@ -405,8 +415,19 @@ class AttachmentsPdfService {
             'area_to_delivery': info.address,
             'contact_person': info.contact,
             'contact_number': info.contactNumber,
+            'canvasser_name': info.canvasserName,
           })
           .eq('id', order['id']);
+
+      final refreshedOrder = await supabase
+          .from('purchase_orders')
+          .select(
+            'id, po_no, project_title, total_amount, created_at, procuring_entity, area_to_delivery, contact_person, contact_number, canvasser_name',
+          )
+          .eq('id', order['id'])
+          .single();
+
+      order = Map<String, dynamic>.from(refreshedOrder);
 
       final items = await _loadOrderItems(order['id'].toString());
       final poNo = await _poNo(order);
@@ -492,7 +513,7 @@ class AttachmentsPdfService {
               _orderTable(rows, font, boldFont),
               _grandTotal(order['total_amount'], boldFont),
               pw.SizedBox(height: 24),
-              _receivedSection(font, boldFont),
+              _receivedSection(info, font, boldFont),
             ];
           },
         ),
@@ -513,7 +534,9 @@ class AttachmentsPdfService {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PDF download failed: $e'),
+            content: Text(
+              'PDF download failed. Please restart the app and try again.\n$e',
+            ),
             backgroundColor: const Color(0xFF0B1B13),
           ),
         );
@@ -838,7 +861,11 @@ class AttachmentsPdfService {
     );
   }
 
-  static pw.Widget _receivedSection(pw.Font font, pw.Font boldFont) {
+  static pw.Widget _receivedSection(
+    _ExtraInfo info,
+    pw.Font font,
+    pw.Font boldFont,
+  ) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: pw.BoxDecoration(
@@ -851,8 +878,10 @@ class AttachmentsPdfService {
       ),
       child: pw.Column(
         children: [
-          _infoRow('Received by', 'JAMES M. SERENIO', font, boldFont),
-          _infoRow('Designation', 'Authorized Representative', font, boldFont),
+          _infoRow('Received by', info.canvasserName, font, boldFont),
+
+          _infoRow('Type', 'Canvasser', font, boldFont),
+
           _infoRow(
             'Name of Firm',
             'MEGAPLUTO ELECTRICAL SUPPLY & HARDWARE MATERIALS TRADING',
@@ -870,12 +899,14 @@ class _ExtraInfo {
   final String address;
   final String contact;
   final String contactNumber;
+  final String canvasserName;
 
   const _ExtraInfo({
     required this.entity,
     required this.address,
     required this.contact,
     required this.contactNumber,
+    required this.canvasserName,
   });
 }
 
