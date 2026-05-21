@@ -19,20 +19,16 @@ class _AddItemsPageState extends State<AddItemsPage> {
   final _unitController = TextEditingController();
   final _unitValueController = TextEditingController(text: '1');
   final _priceController = TextEditingController();
-  final _quantityController = TextEditingController();
   final _locationController = TextEditingController();
 
   bool _isSaving = false;
+  String _availability = 'available';
 
   List<String> _suppliers = [];
   List<String> _brands = [];
   List<String> _units = [];
   List<String> _unitValues = [];
   List<String> _locations = [];
-
-  double get _price => double.tryParse(_priceController.text.trim()) ?? 0;
-  double get _quantity => double.tryParse(_quantityController.text.trim()) ?? 0;
-  double get _total => _price * _quantity;
 
   @override
   void initState() {
@@ -48,7 +44,6 @@ class _AddItemsPageState extends State<AddItemsPage> {
     _unitController.dispose();
     _unitValueController.dispose();
     _priceController.dispose();
-    _quantityController.dispose();
     _locationController.dispose();
     super.dispose();
   }
@@ -106,8 +101,8 @@ class _AddItemsPageState extends State<AddItemsPage> {
         'unit': _unitController.text.trim(),
         'unit_value': double.parse(_unitValueController.text.trim()),
         'price': double.parse(_priceController.text.trim()),
-        'quantity': double.parse(_quantityController.text.trim()),
         'location': _locationController.text.trim(),
+        'availability': _availability,
       });
 
       if (!mounted) return;
@@ -122,8 +117,8 @@ class _AddItemsPageState extends State<AddItemsPage> {
       _unitController.clear();
       _unitValueController.text = '1';
       _priceController.clear();
-      _quantityController.clear();
       _locationController.clear();
+      _availability = 'available';
 
       await _loadDropdownData();
       if (mounted) setState(() {});
@@ -172,6 +167,35 @@ class _AddItemsPageState extends State<AddItemsPage> {
         SizedBox(width: gap),
         Expanded(child: right),
       ],
+    );
+  }
+
+  Widget _availabilityDropdown() {
+    return _FieldShell(
+      label: 'Availability',
+      child: DropdownButtonFormField<String>(
+        value: _availability,
+        dropdownColor: const Color(0xFF07140F),
+        style: const TextStyle(
+          color: AddItemsStyles.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+        decoration: AddItemsStyles.inputDecoration(
+          hintText: 'Select availability',
+          prefixIcon: Icons.check_circle_outline,
+        ),
+        items: const [
+          DropdownMenuItem(value: 'available', child: Text('Available')),
+          DropdownMenuItem(
+            value: 'not_available',
+            child: Text('Not Available'),
+          ),
+        ],
+        onChanged: (v) {
+          setState(() => _availability = v ?? 'available');
+        },
+      ),
     );
   }
 
@@ -232,7 +256,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
             ),
             SizedBox(height: isMobile ? 1 : 4),
             Text(
-              'Add supplier, brand, material, unit, price, quantity, and location.',
+              'Add supplier, brand, material, unit, price, availability, and location.',
               maxLines: isMobile ? 2 : 1,
               overflow: TextOverflow.ellipsis,
               style: AddItemsStyles.pageSubtitleStyle.copyWith(
@@ -323,17 +347,8 @@ class _AddItemsPageState extends State<AddItemsPage> {
                                 icon: Icons.payments_outlined,
                                 keyboardType: TextInputType.number,
                                 validator: _numberValidator,
-                                onChanged: (_) => setState(() {}),
                               ),
-                              right: _InputField(
-                                controller: _quantityController,
-                                label: 'Quantity',
-                                hintText: 'Enter qty',
-                                icon: Icons.format_list_numbered_outlined,
-                                keyboardType: TextInputType.number,
-                                validator: _numberValidator,
-                                onChanged: (_) => setState(() {}),
-                              ),
+                              right: _availabilityDropdown(),
                             ),
                             SizedBox(height: gap),
                             _AutocompleteInputField(
@@ -360,7 +375,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
                                     ),
                                     decoration: AddItemsStyles.totalDecoration,
                                     child: Text(
-                                      'Total: ₱${_total.toStringAsFixed(2)}',
+                                      'Status: ${_availability == 'available' ? 'Available' : 'Not Available'}',
                                       style: TextStyle(
                                         color: AddItemsStyles.textPrimary,
                                         fontSize: isMobile
