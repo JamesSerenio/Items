@@ -675,9 +675,9 @@ class AttachmentsPdfService {
       cellAlignments: {
         0: pw.Alignment.center,
         1: pw.Alignment.center,
-        4: pw.Alignment.center,
-        5: pw.Alignment.centerRight,
+        5: pw.Alignment.center,
         6: pw.Alignment.centerRight,
+        7: pw.Alignment.centerRight,
       },
     );
   }
