@@ -189,7 +189,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         _cart.add({
           'material_id': item['id'],
           'supplier_name': item['supplier_name'],
-          'brand': item['brand'],
+          'supplier': item['supplier_name'],
           'unit': item['unit'],
           'item_description': item['description'],
           'quantity': 1,
@@ -288,6 +288,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         return {
           'material_id': item['material_id'],
           'brand': brand.isEmpty ? null : brand,
+          'supplier': item['supplier'] ?? item['supplier_name'],
           'unit': item['unit'],
           'item_description': item['item_description'],
           'quantity': item['quantity'],
