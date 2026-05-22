@@ -86,7 +86,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     final data = await Supabase.instance.client
         .from('purchase_order_void_requests')
         .select(
-          'id, purchase_order_id, requested_by, status, reason, created_at, purchase_orders(id, po_no, description, total_amount)',
+          'id, purchase_order_id, requested_by, status, reason, created_at, purchase_orders(id, po_no, project_title, total_amount)',
         )
         .eq('status', 'pending')
         .order('created_at', ascending: false);
@@ -98,7 +98,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     final data = await Supabase.instance.client
         .from('purchase_orders')
         .select(
-          'id, po_no, description, item_description, total_amount, collecting_status, created_at',
+          'id, po_no, project_title, item_description, total_amount, collecting_status, created_at',
         )
         .neq('collecting_status', 'collected')
         .order('created_at', ascending: false);
@@ -305,7 +305,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       await Supabase.instance.client.rpc(
         'checkout_purchase_order',
-        params: {'p_description': description, 'p_items': items},
+        params: {'p_project_title': description, 'p_items': items},
       );
 
       if (!mounted) return;
@@ -315,7 +315,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       if (!mounted) return;
       Navigator.pop(context);
-      _showSnack('Purchase order created');
+      _showSnack('Project order created');
     } catch (e) {
       _showSnack('Checkout failed: $e');
     }
@@ -343,7 +343,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Write description',
+                        'Project Title',
                         style: OrderStyles.popupTitleStyle,
                       ),
                     ),
@@ -373,7 +373,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           final text = controller.text.trim();
                           Navigator.pop(
                             context,
-                            text.isEmpty ? 'Purchase Order' : text,
+                            text.isEmpty ? 'Project Title' : text,
                           );
                         },
                         style: OrderStyles.checkoutButtonStyle,
@@ -578,7 +578,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           style: TextStyle(color: OrderStyles.textPrimary),
         ),
         content: Text(
-          'Void ${_text(order['description'])}? Stocks will be returned.',
+          'Void ${_text(order['project_title'])}? Stocks will be returned.',
           style: const TextStyle(color: OrderStyles.textSecondary),
         ),
         actions: [
@@ -733,7 +733,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         children: [
                           Expanded(
                             child: Text(
-                              'Procuring Entity: ${_text(order['description'])}',
+                              'Project Title: ${_text(order['project_title'])}',
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
