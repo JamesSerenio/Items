@@ -44,9 +44,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       final ordersData = await supabase
           .from('purchase_orders')
-          .select(
-            'id, po_no, description, item_description, total_amount, created_at',
-          )
+          .select('id, po_no, project_title, total_amount, created_at')
           .order('created_at', ascending: false);
 
       final itemData = await supabase.from('purchase_order_items').select('''
