@@ -297,22 +297,29 @@ class AttachmentsPdfService {
   static Future<_ExtraInfo?> _openInfoDialog({
     required BuildContext context,
     required Map<String, dynamic> order,
-  }) {
+  }) async {
+    final latestOrder = await supabase
+        .from('purchase_orders')
+        .select(
+          'procuring_entity, area_to_delivery, contact_person, contact_number, canvasser_name',
+        )
+        .eq('id', order['id'])
+        .single();
+
     final entityController = TextEditingController(
-      text: (order['procuring_entity'] ?? '').toString().trim(),
+      text: (latestOrder['procuring_entity'] ?? '').toString().trim(),
     );
     final addressController = TextEditingController(
-      text: (order['area_to_delivery'] ?? '').toString().trim(),
+      text: (latestOrder['area_to_delivery'] ?? '').toString().trim(),
     );
     final contactController = TextEditingController(
-      text: (order['contact_person'] ?? '').toString().trim(),
+      text: (latestOrder['contact_person'] ?? '').toString().trim(),
     );
-
     final contactNumberController = TextEditingController(
-      text: (order['contact_number'] ?? '').toString().trim(),
+      text: (latestOrder['contact_number'] ?? '').toString().trim(),
     );
     final canvasserController = TextEditingController(
-      text: (order['canvasser_name'] ?? '').toString().trim(),
+      text: (latestOrder['canvasser_name'] ?? '').toString().trim(),
     );
 
     return showDialog<_ExtraInfo>(
@@ -878,7 +885,7 @@ class AttachmentsPdfService {
       ),
       child: pw.Column(
         children: [
-          _infoRow('Received by', 'Joli Mae D. Cleopas', font, boldFont),
+          _infoRow('Received by', 'JOLIE MAE D. CLEOPAS', font, boldFont),
 
           _infoRow('Designation', 'Authorized Representative', font, boldFont),
 

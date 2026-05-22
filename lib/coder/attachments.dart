@@ -96,7 +96,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
       final ordersData = await supabase
           .from('purchase_orders')
           .select(
-            'id, po_no, project_title, item_description, collecting_status, status_datetime, total_amount, created_at',
+            'id, po_no, project_title, item_description, collecting_status, status_datetime, total_amount, created_at, procuring_entity, area_to_delivery, contact_person, contact_number, canvasser_name',
           )
           .order('created_at', ascending: false);
 
@@ -756,10 +756,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                         iconOnly: true,
                         height: 36,
                         iconSize: 15,
-                        onTap: () => AttachmentsPdfService.downloadPdf(
-                          context: context,
-                          order: order,
-                        ),
+                        onTap: () async {
+                          await AttachmentsPdfService.downloadPdf(
+                            context: context,
+                            order: order,
+                          );
+                          await loadAll();
+                        },
                       ),
                     ),
                     SizedBox(width: gap),
@@ -848,10 +851,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
                     _iconBtn(
                       icon: Icons.download_rounded,
                       label: '',
-                      onTap: () => AttachmentsPdfService.downloadPdf(
-                        context: context,
-                        order: order,
-                      ),
+                      onTap: () async {
+                        await AttachmentsPdfService.downloadPdf(
+                          context: context,
+                          order: order,
+                        );
+                        await loadAll();
+                      },
                     ),
                   ],
                 ),
