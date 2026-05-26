@@ -81,8 +81,18 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   String _money(dynamic value) {
-    final number = num.tryParse(value?.toString() ?? '0') ?? 0;
-    return '₱${number.toStringAsFixed(2)}';
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '0';
+
+    final number = num.tryParse(raw) ?? 0;
+
+    final parts = number.toStringAsFixed(2).split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    return '₱$whole.${parts[1]}';
   }
 
   void _showSnack(String message) {
@@ -98,7 +108,7 @@ class _ProductPageState extends State<ProductPage> {
 
   String? _numberValidator(String? value) {
     if (value == null || value.trim().isEmpty) return 'Required';
-    final number = double.tryParse(value.trim());
+    final number = double.tryParse(value.replaceAll(',', '').trim());
     if (number == null) return 'Invalid number';
     if (number <= 0) return 'Must be greater than 0';
     return null;
@@ -198,7 +208,9 @@ class _ProductPageState extends State<ProductPage> {
     final unitValueController = TextEditingController(
       text: _text(item['unit_value']),
     );
-    final priceController = TextEditingController(text: _text(item['price']));
+    final priceController = TextEditingController(
+      text: _money(item['price']).replaceAll('₱', ''),
+    );
     String availability = (item['availability'] ?? 'available').toString();
     final locationController = TextEditingController(
       text: _text(item['location']),
@@ -298,6 +310,29 @@ class _ProductPageState extends State<ProductPage> {
                               icon: Icons.payments_outlined,
                               keyboardType: TextInputType.number,
                               validator: _numberValidator,
+                              onChanged: (value) {
+                                final numbers = value.replaceAll(',', '');
+
+                                if (numbers.isEmpty) {
+                                  priceController.clear();
+                                  return;
+                                }
+
+                                final parsed = num.tryParse(numbers);
+                                if (parsed == null) return;
+
+                                final formatted = numbers.replaceAllMapped(
+                                  RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                                  (_) => ',',
+                                );
+
+                                priceController.value = TextEditingValue(
+                                  text: formatted,
+                                  selection: TextSelection.collapsed(
+                                    offset: formatted.length,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -375,7 +410,9 @@ class _ProductPageState extends State<ProductPage> {
                                     unitValueController.text.trim(),
                                   ),
                                   price: double.parse(
-                                    priceController.text.trim(),
+                                    priceController.text
+                                        .replaceAll(',', '')
+                                        .trim(),
                                   ),
                                   availability: availability,
                                   location: locationController.text.trim(),
@@ -1059,6 +1096,7 @@ class _EditField extends StatelessWidget {
   final IconData icon;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final void Function(String)? onChanged;
 
   const _EditField({
     required this.controller,
@@ -1066,6 +1104,7 @@ class _EditField extends StatelessWidget {
     required this.icon,
     this.keyboardType,
     this.validator,
+    this.onChanged,
   });
 
   @override
