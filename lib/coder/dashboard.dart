@@ -56,7 +56,6 @@ class _DashboardPageState extends State<DashboardPage> {
       list.sort((a, b) {
         final aRank = _statusRank(a['collecting_status']);
         final bRank = _statusRank(b['collecting_status']);
-
         if (aRank != bRank) return aRank.compareTo(bRank);
 
         final aDate =
@@ -87,11 +86,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   int _statusRank(dynamic value) {
     final status = value?.toString().toLowerCase().trim() ?? '';
-
     if (status == 'processing' || status == 'proccessing') return 0;
     if (status == 'collecting') return 1;
     if (status == 'collected') return 2;
-
     return 3;
   }
 
@@ -136,24 +133,159 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   List<Map<String, dynamic>> _items(Map<String, dynamic> order) {
-    final items = order['purchase_order_items'];
-    if (items is List) return List<Map<String, dynamic>>.from(items);
+    final data = order['purchase_order_items'];
+    if (data is List) return List<Map<String, dynamic>>.from(data);
     return [];
   }
 
-  void _showOrderView(Map<String, dynamic> order) {
-    final items = _items(order);
+  void _showItemsModal(Map<String, dynamic> order) {
+    final orderedItems = _items(order);
 
     showDialog(
       context: context,
       builder: (_) {
         return Dialog(
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: const EdgeInsets.all(18),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 620,
+            constraints: const BoxConstraints(maxHeight: 620),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07160F),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: DashboardStyles.plutoGold.withOpacity(0.75),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Items Ordered',
+                        style: DashboardStyles.pageTitleStyle.copyWith(
+                          fontSize: 22,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: DashboardStyles.plutoGold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _text(order['project_title']),
+                    style: DashboardStyles.pageSubtitleStyle,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (orderedItems.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(26),
+                    child: Text(
+                      'No ordered items found.',
+                      style: DashboardStyles.pageSubtitleStyle,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: orderedItems.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, index) {
+                        final item = orderedItems[index];
+                        final name = _text(item['item_description']);
+                        final brand = _text(item['brand']);
+                        final finalName = brand == '-'
+                            ? name
+                            : '$name ($brand)';
+
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: DashboardStyles.cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: DashboardStyles.plutoGold.withOpacity(
+                                0.35,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: Text(
+                                  finalName,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: DashboardStyles.textPrimary,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'Qty: ${_text(item['quantity'])}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: DashboardStyles.textSecondary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  _money(item['total_cost']),
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    color: DashboardStyles.plutoGold,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showOrderView(Map<String, dynamic> order) {
+    final orderedItems = _items(order);
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(18),
           backgroundColor: Colors.transparent,
           child: Container(
             width: 980,
             constraints: const BoxConstraints(maxHeight: 720),
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
@@ -180,7 +312,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
@@ -201,22 +333,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Location: ${_text(order['area_to_delivery'])}',
-                        style: const TextStyle(color: Colors.black),
-                      ),
-                    ),
-                    Text(
-                      'Status: ${_text(order['collecting_status'])}',
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Table(
@@ -242,7 +359,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           'UNIT COST',
                           'TOTAL COST',
                         ], header: true),
-                        ...items.map((item) {
+                        ...orderedItems.map((item) {
                           final desc = _text(item['item_description']);
                           final brand = _text(item['brand']);
                           return _tableRow([
@@ -308,7 +425,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 768;
 
     return Container(
       width: double.infinity,
@@ -354,13 +472,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         style: DashboardStyles.pageSubtitleStyle,
                       ),
                       const SizedBox(height: 22),
-                      _OrderTable(
+                      _ResponsiveOrderList(
                         orders: orders,
                         items: _items,
                         text: _text,
                         money: _money,
                         date: _date,
                         onView: _showOrderView,
+                        onItemsTap: _showItemsModal,
                       ),
                     ],
                   ),
@@ -371,99 +490,147 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-class _OrderTable extends StatelessWidget {
+class _ResponsiveOrderList extends StatelessWidget {
   final List<Map<String, dynamic>> orders;
   final List<Map<String, dynamic>> Function(Map<String, dynamic>) items;
   final String Function(dynamic) text;
   final String Function(dynamic) money;
   final String Function(dynamic) date;
   final void Function(Map<String, dynamic>) onView;
+  final void Function(Map<String, dynamic>) onItemsTap;
 
-  const _OrderTable({
+  const _ResponsiveOrderList({
     required this.orders,
     required this.items,
     required this.text,
     required this.money,
     required this.date,
     required this.onView,
+    required this.onItemsTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
     if (orders.isEmpty) {
-      return _empty();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: DashboardStyles.panelCardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: DashboardStyles.plutoGold.withOpacity(0.55),
+          ),
+        ),
+        child: const Center(
+          child: Text(
+            'No purchase orders found.',
+            style: DashboardStyles.pageSubtitleStyle,
+          ),
+        ),
+      );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: DashboardStyles.panelCardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.65)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: 1180,
+    if (width < 950) {
+      return Column(
+        children: orders.map((order) {
+          return _MobileOrderCard(
+            order: order,
+            count: items(order).length,
+            text: text,
+            money: money,
+            date: date,
+            onView: () => onView(order),
+            onItemsTap: () => onItemsTap(order),
+          );
+        }).toList(),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: DashboardStyles.panelCardColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: DashboardStyles.plutoGold.withOpacity(0.65),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
             child: Column(
               children: [
-                _header(),
+                _TableHeader(),
                 ...orders.map((order) {
-                  return _row(context, order);
+                  return _TableRowItem(
+                    order: order,
+                    count: items(order).length,
+                    text: text,
+                    money: money,
+                    date: date,
+                    onView: () => onView(order),
+                    onItemsTap: () => onItemsTap(order),
+                  );
                 }),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+}
 
-  Widget _empty() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: DashboardStyles.panelCardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.55)),
-      ),
-      child: const Center(
-        child: Text(
-          'No purchase orders found.',
-          style: DashboardStyles.pageSubtitleStyle,
-        ),
-      ),
-    );
-  }
-
-  Widget _header() {
+class _TableHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       color: DashboardStyles.plutoGold.withOpacity(0.15),
       child: const Row(
         children: [
-          _HeadCell('Project Title', flex: 3),
-          _HeadCell('Location', flex: 2),
-          _HeadCell('Date Created', flex: 2),
-          _HeadCell('Items Ordered', flex: 1),
-          _HeadCell('Total Amount', flex: 2),
-          _HeadCell('Collecting Status', flex: 2),
-          _HeadCell('View', flex: 1),
+          _HeadCell('Project Title', flex: 23),
+          _HeadCell('Location', flex: 16),
+          _HeadCell('Date Created', flex: 15),
+          _HeadCell('Items', flex: 10),
+          _HeadCell('Total', flex: 14),
+          _HeadCell('Status', flex: 15),
+          _HeadCell('View', flex: 11),
         ],
       ),
     );
   }
+}
 
-  Widget _row(BuildContext context, Map<String, dynamic> order) {
-    final status = text(order['collecting_status']);
-    final count = items(order).length;
+class _TableRowItem extends StatelessWidget {
+  final Map<String, dynamic> order;
+  final int count;
+  final String Function(dynamic) text;
+  final String Function(dynamic) money;
+  final String Function(dynamic) date;
+  final VoidCallback onView;
+  final VoidCallback onItemsTap;
 
+  const _TableRowItem({
+    required this.order,
+    required this.count,
+    required this.text,
+    required this.money,
+    required this.date,
+    required this.onView,
+    required this.onItemsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      height: 74,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: DashboardStyles.plutoGold.withOpacity(0.25)),
@@ -471,61 +638,145 @@ class _OrderTable extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _BodyCell(
-            text(order['project_title']),
-            flex: 3,
-            bold: true,
-            color: DashboardStyles.textPrimary,
-          ),
-          _BodyCell(text(order['area_to_delivery']), flex: 2),
-          _BodyCell(date(order['created_at']), flex: 2),
+          _BodyCell(text(order['project_title']), flex: 23, bold: true),
+          _BodyCell(text(order['area_to_delivery']), flex: 16),
+          _BodyCell(date(order['created_at']), flex: 15),
           Expanded(
-            flex: 1,
+            flex: 10,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _RoundBadge(
-                label: '$count',
-                color: DashboardStyles.megaGreen,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: onItemsTap,
+                child: _RoundBadge(
+                  label: '$count',
+                  color: DashboardStyles.megaGreen,
+                ),
               ),
             ),
           ),
           _BodyCell(
             money(order['total_amount']),
-            flex: 2,
+            flex: 14,
             bold: true,
             color: DashboardStyles.plutoGold,
           ),
           Expanded(
-            flex: 2,
+            flex: 15,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _StatusBadge(status: status),
+              child: _StatusBadge(status: text(order['collecting_status'])),
             ),
           ),
           Expanded(
-            flex: 1,
+            flex: 11,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: () => onView(order),
-                icon: const Icon(Icons.visibility_rounded, size: 16),
-                label: const Text('View'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DashboardStyles.plutoGold,
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 11,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
+              child: _ViewButton(onTap: onView),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileOrderCard extends StatelessWidget {
+  final Map<String, dynamic> order;
+  final int count;
+  final String Function(dynamic) text;
+  final String Function(dynamic) money;
+  final String Function(dynamic) date;
+  final VoidCallback onView;
+  final VoidCallback onItemsTap;
+
+  const _MobileOrderCard({
+    required this.order,
+    required this.count,
+    required this.text,
+    required this.money,
+    required this.date,
+    required this.onView,
+    required this.onItemsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DashboardStyles.panelCardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.62)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text(order['project_title']),
+            style: const TextStyle(
+              color: DashboardStyles.textPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _InfoLine(label: 'Location', value: text(order['area_to_delivery'])),
+          _InfoLine(label: 'Date', value: date(order['created_at'])),
+          _InfoLine(label: 'Total', value: money(order['total_amount'])),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: onItemsTap,
+                child: _RoundBadge(
+                  label: '$count items',
+                  color: DashboardStyles.megaGreen,
+                  wide: true,
                 ),
+              ),
+              _StatusBadge(status: text(order['collecting_status'])),
+              _ViewButton(onTap: onView),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 78,
+            child: Text(
+              label,
+              style: DashboardStyles.pageSubtitleStyle.copyWith(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: DashboardStyles.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
               ),
             ),
           ),
@@ -547,6 +798,7 @@ class _HeadCell extends StatelessWidget {
       flex: flex,
       child: Text(
         label,
+        overflow: TextOverflow.ellipsis,
         style: DashboardStyles.smallGold.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w900,
@@ -579,7 +831,7 @@ class _BodyCell extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
         ),
       ),
@@ -590,18 +842,24 @@ class _BodyCell extends StatelessWidget {
 class _RoundBadge extends StatelessWidget {
   final String label;
   final Color color;
+  final bool wide;
 
-  const _RoundBadge({required this.label, required this.color});
+  const _RoundBadge({
+    required this.label,
+    required this.color,
+    this.wide = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
+      width: wide ? null : 36,
       height: 36,
+      padding: wide ? const EdgeInsets.symmetric(horizontal: 14) : null,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withOpacity(0.16),
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withOpacity(0.65)),
       ),
       child: Text(
@@ -609,7 +867,7 @@ class _RoundBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w900,
-          fontSize: 13,
+          fontSize: 12,
         ),
       ),
     );
@@ -643,7 +901,7 @@ class _StatusBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.14),
         borderRadius: BorderRadius.circular(999),
@@ -656,6 +914,30 @@ class _StatusBadge extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w900,
         ),
+      ),
+    );
+  }
+}
+
+class _ViewButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ViewButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.visibility_rounded, size: 15),
+      label: const Text('View'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: DashboardStyles.plutoGold,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        minimumSize: const Size(0, 38),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
       ),
     );
   }
