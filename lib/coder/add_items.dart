@@ -100,7 +100,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
         'description': _descriptionController.text.trim(),
         'unit': _unitController.text.trim(),
         'unit_value': double.parse(_unitValueController.text.trim()),
-        'price': double.parse(_priceController.text.trim()),
+        'price': double.parse(_priceController.text.replaceAll(',', '').trim()),
         'location': _locationController.text.trim(),
         'availability': _availability,
       });
@@ -139,7 +139,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
 
   String? _numberValidator(String? value) {
     if (value == null || value.trim().isEmpty) return 'Required';
-    final number = double.tryParse(value.trim());
+    final number = double.tryParse(value.replaceAll(',', '').trim());
     if (number == null) return 'Invalid';
     if (number <= 0) return 'Must be > 0';
     return null;
@@ -347,6 +347,29 @@ class _AddItemsPageState extends State<AddItemsPage> {
                                 icon: Icons.payments_outlined,
                                 keyboardType: TextInputType.number,
                                 validator: _numberValidator,
+                                onChanged: (value) {
+                                  final numbers = value.replaceAll(',', '');
+
+                                  if (numbers.isEmpty) {
+                                    _priceController.clear();
+                                    return;
+                                  }
+
+                                  final parsed = num.tryParse(numbers);
+                                  if (parsed == null) return;
+
+                                  final formatted = numbers.replaceAllMapped(
+                                    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                                    (_) => ',',
+                                  );
+
+                                  _priceController.value = TextEditingValue(
+                                    text: formatted,
+                                    selection: TextSelection.collapsed(
+                                      offset: formatted.length,
+                                    ),
+                                  );
+                                },
                               ),
                               right: _availabilityDropdown(),
                             ),
