@@ -102,12 +102,15 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _money(dynamic value) {
-    final amount = num.tryParse(value?.toString() ?? '0') ?? 0;
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '0';
+    final amount = num.tryParse(raw) ?? 0;
+
     final parts = amount.toStringAsFixed(2).split('.');
     final whole = parts[0].replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (_) => ',',
     );
+
     return 'PHP $whole.${parts[1]}';
   }
 
