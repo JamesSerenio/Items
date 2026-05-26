@@ -207,14 +207,174 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _handleView(Map<String, dynamic> order) {
-    final width = MediaQuery.of(context).size.width;
+  void _showOrderView(Map<String, dynamic> order) {
+    final orderedItems = _items(order);
 
-    if (width < 700) {
-      _downloadOrderPdf(order);
-    } else {
-      _showOrderView(order);
-    }
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(14),
+          backgroundColor: Colors.transparent,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Center(
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width - 28,
+                      maxHeight: MediaQuery.of(context).size.height - 28,
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 210 / 297,
+                      child: Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'PURCHASE ORDER',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => Navigator.pop(context),
+                                  child: const Icon(Icons.close_rounded),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              'Project Title: ${_text(order['project_title'])}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Date: ${_dateTime(order['created_at'])}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Table(
+                                  border: TableBorder.all(
+                                    color: Colors.black54,
+                                    width: 0.8,
+                                  ),
+                                  columnWidths: const {
+                                    0: FlexColumnWidth(1.1),
+                                    1: FlexColumnWidth(1.1),
+                                    2: FlexColumnWidth(2.6),
+                                    3: FlexColumnWidth(1.5),
+                                    4: FlexColumnWidth(1.5),
+                                    5: FlexColumnWidth(0.8),
+                                    6: FlexColumnWidth(1.4),
+                                    7: FlexColumnWidth(1.5),
+                                  },
+                                  children: [
+                                    _tableRow([
+                                      'STOCK\nNO.',
+                                      'UNIT',
+                                      'ITEM DESCRIPTION /\nBRAND',
+                                      'LOCATION',
+                                      'SUPPLIER',
+                                      'QTY',
+                                      'UNIT\nCOST',
+                                      'TOTAL\nCOST',
+                                    ], header: true),
+                                    ...orderedItems.map((item) {
+                                      final desc = _text(
+                                        item['item_description'],
+                                      );
+                                      final brand = _text(item['brand']);
+
+                                      return _tableRow([
+                                        _text(item['stock_no']),
+                                        _text(item['unit']),
+                                        brand == '-' ? desc : '$desc ($brand)',
+                                        _text(item['location']),
+                                        _text(item['supplier']),
+                                        _text(item['quantity']),
+                                        _money(item['unit_cost']),
+                                        _money(item['total_cost']),
+                                      ]);
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              alignment: Alignment.centerRight,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                border: Border.all(color: Colors.black54),
+                              ),
+                              child: Text(
+                                'TOTAL AMOUNT     ${_money(order['total_amount'])}',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  TableRow _tableRow(List<String> cells, {bool header = false}) {
+    return TableRow(
+      decoration: BoxDecoration(
+        color: header ? Colors.grey.shade200 : Colors.white,
+      ),
+      children: cells.map((cell) {
+        return Padding(
+          padding: const EdgeInsets.all(6),
+          child: Text(
+            cell,
+            maxLines: header ? 3 : 4,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: header ? 9.5 : 9,
+              fontWeight: header ? FontWeight.w900 : FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   void _showItemsModal(Map<String, dynamic> order) {
@@ -223,14 +383,11 @@ class _DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (_) {
-        final width = MediaQuery.of(context).size.width;
-        final isSmall = width < 700;
-
         return Dialog(
           insetPadding: const EdgeInsets.all(16),
           backgroundColor: Colors.transparent,
           child: Container(
-            width: isSmall ? double.infinity : 650,
+            width: 650,
             constraints: const BoxConstraints(maxHeight: 620),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -249,7 +406,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: Text(
                         'Items Ordered',
                         style: DashboardStyles.pageTitleStyle.copyWith(
-                          fontSize: isSmall ? 18 : 22,
+                          fontSize: 20,
                         ),
                       ),
                     ),
@@ -303,73 +460,44 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ),
                                 ),
                               ),
-                              child: isSmall
-                                  ? Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          finalName,
-                                          style: const TextStyle(
-                                            color: DashboardStyles.textPrimary,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Qty: ${_text(item['quantity'])}',
-                                          style:
-                                              DashboardStyles.pageSubtitleStyle,
-                                        ),
-                                        Text(
-                                          'Price: ${_money(item['total_cost'])}',
-                                          style: const TextStyle(
-                                            color: DashboardStyles.plutoGold,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 5,
-                                          child: Text(
-                                            finalName,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color:
-                                                  DashboardStyles.textPrimary,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Text(
-                                            'Qty: ${_text(item['quantity'])}',
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color:
-                                                  DashboardStyles.textSecondary,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            _money(item['total_cost']),
-                                            textAlign: TextAlign.right,
-                                            style: const TextStyle(
-                                              color: DashboardStyles.plutoGold,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 5,
+                                    child: Text(
+                                      finalName,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: DashboardStyles.textPrimary,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      'Qty: ${_text(item['quantity'])}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: DashboardStyles.textSecondary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      _money(item['total_cost']),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        color: DashboardStyles.plutoGold,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
                           },
                         ),
@@ -382,153 +510,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _showOrderView(Map<String, dynamic> order) {
-    final orderedItems = _items(order);
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(18),
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 980,
-            constraints: const BoxConstraints(maxHeight: 720),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'PURCHASE ORDER',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Project Title: ${_text(order['project_title'])}',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'Date: ${_dateTime(order['created_at'])}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Table(
-                      border: TableBorder.all(color: Colors.black54),
-                      columnWidths: const {
-                        0: FlexColumnWidth(1),
-                        1: FlexColumnWidth(1),
-                        2: FlexColumnWidth(2.4),
-                        3: FlexColumnWidth(1.5),
-                        4: FlexColumnWidth(1.5),
-                        5: FlexColumnWidth(1),
-                        6: FlexColumnWidth(1.4),
-                        7: FlexColumnWidth(1.5),
-                      },
-                      children: [
-                        _tableRow([
-                          'STOCK NO.',
-                          'UNIT',
-                          'ITEM DESCRIPTION / BRAND',
-                          'LOCATION',
-                          'SUPPLIER',
-                          'QTY',
-                          'UNIT COST',
-                          'TOTAL COST',
-                        ], header: true),
-                        ...orderedItems.map((item) {
-                          final desc = _text(item['item_description']);
-                          final brand = _text(item['brand']);
-                          return _tableRow([
-                            _text(item['stock_no']),
-                            _text(item['unit']),
-                            brand == '-' ? desc : '$desc ($brand)',
-                            _text(item['location']),
-                            _text(item['supplier']),
-                            _text(item['quantity']),
-                            _money(item['unit_cost']),
-                            _money(item['total_cost']),
-                          ]);
-                        }),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  alignment: Alignment.centerRight,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    border: Border.all(color: Colors.black54),
-                  ),
-                  child: Text(
-                    'TOTAL AMOUNT     ${_money(order['total_amount'])}',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  TableRow _tableRow(List<String> cells, {bool header = false}) {
-    return TableRow(
-      decoration: BoxDecoration(
-        color: header ? Colors.grey.shade200 : Colors.white,
-      ),
-      children: cells.map((cell) {
-        return Padding(
-          padding: const EdgeInsets.all(9),
-          child: Text(
-            cell,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontWeight: header ? FontWeight.w900 : FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
-    );
+  void _handleView(Map<String, dynamic> order) {
+    _showOrderView(order);
   }
 
   @override
@@ -708,8 +691,6 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -751,10 +732,8 @@ class _OrderCard extends StatelessWidget {
               _StatusBadge(status: text(order['collecting_status'])),
               _ViewButton(
                 onTap: onView,
-                label: isMobile ? 'Download PDF' : 'View',
-                icon: isMobile
-                    ? Icons.download_rounded
-                    : Icons.visibility_rounded,
+                label: 'View',
+                icon: Icons.visibility_rounded,
               ),
             ],
           ),
