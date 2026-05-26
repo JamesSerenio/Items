@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../styles/dashboard_styles.dart';
@@ -104,7 +108,7 @@ class _DashboardPageState extends State<DashboardPage> {
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (_) => ',',
     );
-    return '₱$whole.${parts[1]}';
+    return 'PHP $whole.${parts[1]}';
   }
 
   String _date(dynamic value) {
@@ -133,6 +137,84 @@ class _DashboardPageState extends State<DashboardPage> {
     final data = order['purchase_order_items'];
     if (data is List) return List<Map<String, dynamic>>.from(data);
     return [];
+  }
+
+  Future<void> _downloadOrderPdf(Map<String, dynamic> order) async {
+    final orderedItems = _items(order);
+    final doc = pw.Document();
+
+    doc.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Center(
+            child: pw.Text(
+              'PURCHASE ORDER',
+              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+          pw.SizedBox(height: 20),
+          pw.Text(
+            'Project Title: ${_text(order['project_title'])}',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Text('Date: ${_dateTime(order['created_at'])}'),
+          pw.SizedBox(height: 18),
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'Stock No.',
+              'Unit',
+              'Item Description / Brand',
+              'Location',
+              'Supplier',
+              'Qty',
+              'Unit Cost',
+              'Total Cost',
+            ],
+            data: orderedItems.map((item) {
+              final desc = _text(item['item_description']);
+              final brand = _text(item['brand']);
+
+              return [
+                _text(item['stock_no']),
+                _text(item['unit']),
+                brand == '-' ? desc : '$desc ($brand)',
+                _text(item['location']),
+                _text(item['supplier']),
+                _text(item['quantity']),
+                _money(item['unit_cost']),
+                _money(item['total_cost']),
+              ];
+            }).toList(),
+          ),
+          pw.SizedBox(height: 18),
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Text(
+              'TOTAL AMOUNT: ${_money(order['total_amount'])}',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final Uint8List bytes = await doc.save();
+
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename: 'purchase_order_${_text(order['project_title'])}.pdf',
+    );
+  }
+
+  void _handleView(Map<String, dynamic> order) {
+    final width = MediaQuery.of(context).size.width;
+
+    if (width < 700) {
+      _downloadOrderPdf(order);
+    } else {
+      _showOrderView(order);
+    }
   }
 
   void _showItemsModal(Map<String, dynamic> order) {
@@ -306,16 +388,13 @@ class _DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (_) {
-        final width = MediaQuery.of(context).size.width;
-        final isSmall = width < 700;
-
         return Dialog(
-          insetPadding: const EdgeInsets.all(14),
+          insetPadding: const EdgeInsets.all(18),
           backgroundColor: Colors.transparent,
           child: Container(
-            width: isSmall ? double.infinity : 980,
+            width: 980,
             constraints: const BoxConstraints(maxHeight: 720),
-            padding: EdgeInsets.all(isSmall ? 16 : 24),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
@@ -325,12 +404,12 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         'PURCHASE ORDER',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: isSmall ? 20 : 26,
+                          fontSize: 26,
                           fontWeight: FontWeight.w900,
                           color: Colors.black,
                         ),
@@ -342,93 +421,68 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                if (isSmall)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
                         'Project Title: ${_text(order['project_title'])}',
                         style: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Date: ${_dateTime(order['created_at'])}',
-                        style: const TextStyle(color: Colors.black),
+                    ),
+                    Text(
+                      'Date: ${_dateTime(order['created_at'])}',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ],
-                  )
-                else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Project Title: ${_text(order['project_title'])}',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'Date: ${_dateTime(order['created_at'])}',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 18),
                 Expanded(
                   child: SingleChildScrollView(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: isSmall ? 760 : 900,
-                        child: Table(
-                          border: TableBorder.all(color: Colors.black54),
-                          columnWidths: const {
-                            0: FlexColumnWidth(1),
-                            1: FlexColumnWidth(1),
-                            2: FlexColumnWidth(2.4),
-                            3: FlexColumnWidth(1.5),
-                            4: FlexColumnWidth(1.5),
-                            5: FlexColumnWidth(1),
-                            6: FlexColumnWidth(1.4),
-                            7: FlexColumnWidth(1.5),
-                          },
-                          children: [
-                            _tableRow([
-                              'STOCK NO.',
-                              'UNIT',
-                              'ITEM DESCRIPTION / BRAND',
-                              'LOCATION',
-                              'SUPPLIER',
-                              'QTY',
-                              'UNIT COST',
-                              'TOTAL COST',
-                            ], header: true),
-                            ...orderedItems.map((item) {
-                              final desc = _text(item['item_description']);
-                              final brand = _text(item['brand']);
-                              return _tableRow([
-                                _text(item['stock_no']),
-                                _text(item['unit']),
-                                brand == '-' ? desc : '$desc ($brand)',
-                                _text(item['location']),
-                                _text(item['supplier']),
-                                _text(item['quantity']),
-                                _money(item['unit_cost']),
-                                _money(item['total_cost']),
-                              ]);
-                            }),
-                          ],
-                        ),
-                      ),
+                    child: Table(
+                      border: TableBorder.all(color: Colors.black54),
+                      columnWidths: const {
+                        0: FlexColumnWidth(1),
+                        1: FlexColumnWidth(1),
+                        2: FlexColumnWidth(2.4),
+                        3: FlexColumnWidth(1.5),
+                        4: FlexColumnWidth(1.5),
+                        5: FlexColumnWidth(1),
+                        6: FlexColumnWidth(1.4),
+                        7: FlexColumnWidth(1.5),
+                      },
+                      children: [
+                        _tableRow([
+                          'STOCK NO.',
+                          'UNIT',
+                          'ITEM DESCRIPTION / BRAND',
+                          'LOCATION',
+                          'SUPPLIER',
+                          'QTY',
+                          'UNIT COST',
+                          'TOTAL COST',
+                        ], header: true),
+                        ...orderedItems.map((item) {
+                          final desc = _text(item['item_description']);
+                          final brand = _text(item['brand']);
+                          return _tableRow([
+                            _text(item['stock_no']),
+                            _text(item['unit']),
+                            brand == '-' ? desc : '$desc ($brand)',
+                            _text(item['location']),
+                            _text(item['supplier']),
+                            _text(item['quantity']),
+                            _money(item['unit_cost']),
+                            _money(item['total_cost']),
+                          ]);
+                        }),
+                      ],
                     ),
                   ),
                 ),
@@ -532,7 +586,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         text: _text,
                         money: _money,
                         date: _date,
-                        onView: _showOrderView,
+                        onView: _handleView,
                         onItemsTap: _showItemsModal,
                       ),
                     ],
@@ -654,6 +708,8 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -693,7 +749,13 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               _StatusBadge(status: text(order['collecting_status'])),
-              _ViewButton(onTap: onView),
+              _ViewButton(
+                onTap: onView,
+                label: isMobile ? 'Download PDF' : 'View',
+                icon: isMobile
+                    ? Icons.download_rounded
+                    : Icons.visibility_rounded,
+              ),
             ],
           ),
         ],
@@ -789,7 +851,11 @@ class _TableRowItem extends StatelessWidget {
             flex: 10,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _ViewButton(onTap: onView),
+              child: _ViewButton(
+                onTap: onView,
+                label: 'View',
+                icon: Icons.visibility_rounded,
+              ),
             ),
           ),
         ],
@@ -968,15 +1034,21 @@ class _StatusBadge extends StatelessWidget {
 
 class _ViewButton extends StatelessWidget {
   final VoidCallback onTap;
+  final String label;
+  final IconData icon;
 
-  const _ViewButton({required this.onTap});
+  const _ViewButton({
+    required this.onTap,
+    required this.label,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onTap,
-      icon: const Icon(Icons.visibility_rounded, size: 15),
-      label: const Text('View'),
+      icon: Icon(icon, size: 15),
+      label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: DashboardStyles.plutoGold,
         foregroundColor: Colors.black,
