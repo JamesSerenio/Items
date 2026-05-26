@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../pages/login_page.dart';
 import '../styles/admin_menu_styles.dart';
+import 'dashboard.dart';
 import 'add_items.dart';
 import 'product.dart';
 import 'order.dart';
 import 'attachments.dart';
 
-enum CoderSection { addItems, product, order, attachments }
+enum CoderSection { dashboard, addItems, product, order, attachments }
 
 class CoderMenu extends StatefulWidget {
   const CoderMenu({super.key});
@@ -19,7 +20,7 @@ class CoderMenu extends StatefulWidget {
 class _CoderMenuState extends State<CoderMenu>
     with SingleTickerProviderStateMixin {
   bool _isCollapsed = false;
-  CoderSection _selectedSection = CoderSection.addItems;
+  CoderSection _selectedSection = CoderSection.dashboard;
 
   late final AnimationController _brandController;
 
@@ -104,6 +105,8 @@ class _CoderMenuState extends State<CoderMenu>
 
   Widget _buildCurrentPage(bool isMobile) {
     switch (_selectedSection) {
+      case CoderSection.dashboard:
+        return const DashboardPage();
       case CoderSection.addItems:
         return const AddItemsPage();
       case CoderSection.product:
@@ -118,6 +121,17 @@ class _CoderMenuState extends State<CoderMenu>
   Widget _menuTiles({required bool isMobile}) {
     return Column(
       children: [
+        _SidebarMenuTile(
+          icon: Icons.dashboard_outlined,
+          label: 'Dashboard',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == CoderSection.dashboard,
+          onTap: () {
+            _selectSection(CoderSection.dashboard);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
         _SidebarMenuTile(
           icon: Icons.add_box_outlined,
           label: 'Add Items',
