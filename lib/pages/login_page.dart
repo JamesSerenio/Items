@@ -224,6 +224,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
       final String role = profile['role'].toString();
 
+      await Supabase.instance.client
+          .from('profiles')
+          .update({
+            'is_online': true,
+            'last_login': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', user.id);
+
+      await Supabase.instance.client.from('user_logs').insert({
+        'user_id': user.id,
+        'email': user.email,
+        'role': role,
+        'action': 'login',
+      });
+
       if (!mounted) return;
 
       if (role == 'admin') {

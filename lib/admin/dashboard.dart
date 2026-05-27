@@ -28,6 +28,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   List<Map<String, dynamic>> orders = [];
   List<Map<String, dynamic>> items = [];
+  List<Map<String, dynamic>> users = [];
+  List<Map<String, dynamic>> userLogs = [];
 
   @override
   void initState() {
