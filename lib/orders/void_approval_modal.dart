@@ -16,6 +16,25 @@ class VoidApprovalModal extends StatelessWidget {
     required this.onDecline,
   });
 
+  String _formatNumber(dynamic value) {
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '0';
+
+    final number = num.tryParse(raw) ?? 0;
+
+    final parts = number.toString().split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    if (parts.length > 1 && parts[1] != '0') {
+      return '$whole.${parts[1]}';
+    }
+
+    return whole;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
@@ -38,14 +57,18 @@ class VoidApprovalModal extends StatelessWidget {
                   Icons.verified_user_outlined,
                   color: OrderStyles.plutoGold,
                 ),
+
                 const SizedBox(width: 10),
+
                 const Expanded(
                   child: Text(
                     'Void Approval',
                     style: OrderStyles.cartTitleStyle,
                   ),
                 ),
-                _MiniPill(text: '${voidRequests.length}'),
+
+                _MiniPill(text: _formatNumber(voidRequests.length)),
+
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
@@ -55,7 +78,9 @@ class VoidApprovalModal extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
+
             Expanded(
               child: voidRequests.isEmpty
                   ? const Center(
@@ -69,6 +94,7 @@ class VoidApprovalModal extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, index) {
                         final request = voidRequests[index];
+
                         final order = Map<String, dynamic>.from(
                           request['purchase_orders'] ?? {},
                         );
@@ -82,7 +108,9 @@ class VoidApprovalModal extends StatelessWidget {
                                 Icons.pending_actions_rounded,
                                 color: OrderStyles.plutoGold,
                               ),
+
                               const SizedBox(width: 10),
+
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,12 +121,16 @@ class VoidApprovalModal extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: OrderStyles.cartItemNameStyle,
                                     ),
+
                                     const SizedBox(height: 4),
+
                                     Text(
                                       text(order['po_no']),
                                       style: OrderStyles.cartItemMetaStyle,
                                     ),
+
                                     const SizedBox(height: 4),
+
                                     Text(
                                       'Reason: ${text(request['reason'])}',
                                       maxLines: 1,
@@ -112,6 +144,7 @@ class VoidApprovalModal extends StatelessWidget {
                                   ],
                                 ),
                               ),
+
                               InkWell(
                                 borderRadius: BorderRadius.circular(999),
                                 onTap: () => onApprove(request),
@@ -135,7 +168,9 @@ class VoidApprovalModal extends StatelessWidget {
                                   ),
                                 ),
                               ),
+
                               const SizedBox(width: 8),
+
                               InkWell(
                                 borderRadius: BorderRadius.circular(999),
                                 onTap: () => onDecline(request),
