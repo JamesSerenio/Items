@@ -10,7 +10,12 @@ class AttachmentsPdfService {
 
   static String _text(dynamic v) => v?.toString() ?? '-';
 
-  static num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
+  static num _num(dynamic v) {
+    final clean =
+        v?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+    return num.tryParse(clean) ?? 0;
+  }
 
   static String _money(dynamic v) {
     final n = _num(v);
@@ -210,7 +215,9 @@ class AttachmentsPdfService {
                                       '${_text(i['item_description'])}${_brandText(i)}',
                                       _text(i['location']),
                                       _supplierText(i),
-                                      _text(i['quantity']),
+                                      _money(
+                                        i['quantity'],
+                                      ).replaceAll('.00', ''),
                                       _peso(i['unit_cost']),
                                       _peso(i['total_cost']),
                                     ]),
