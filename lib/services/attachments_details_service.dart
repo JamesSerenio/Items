@@ -101,7 +101,7 @@ class AttachmentsDetailsService {
 
     final descController = TextEditingController(
       text: photos.isNotEmpty
-          ? (photos.first['procuring_entity'] ?? '').toString()
+          ? (photos.first['procuring_entity'] ?? '').toString().trim()
           : '',
     );
 

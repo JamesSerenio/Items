@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 
 import '../orders/current_order_modal.dart';
 import '../orders/orders_modal.dart';
@@ -139,11 +140,33 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
   String _text(dynamic value) => value?.toString() ?? '-';
 
-  num _num(dynamic value) => num.tryParse(value?.toString() ?? '0') ?? 0;
+  String _formatNumber(dynamic value) {
+    final number = _num(value);
+    final text = number % 1 == 0
+        ? number.toInt().toString()
+        : number.toString();
+
+    return text.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  }
+
+  num _num(dynamic value) {
+    final clean =
+        value?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+    return num.tryParse(clean) ?? 0;
+  }
 
   String _money(dynamic value) {
-    final n = _num(value);
-    return '₱${n.toStringAsFixed(2)}';
+    final number = _num(value);
+
+    final parts = number.toStringAsFixed(2).split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+
+    return '₱$whole.${parts[1]}';
   }
 
   void _showSnack(String message) {
@@ -236,6 +259,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         ),
         content: TextField(
           controller: controller,
+          inputFormatters: [ThousandsFormatter()],
           autofocus: true,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: OrderStyles.textPrimary),
@@ -254,7 +278,9 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           ),
           TextButton(
             onPressed: () {
-              final qty = num.tryParse(controller.text.trim());
+              final qty = num.tryParse(
+                controller.text.replaceAll(',', '').trim(),
+              );
               Navigator.pop(context, qty);
             },
             child: const Text('Save'),
@@ -825,14 +851,14 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         _TopIconButton(
           key: _cartIconKey,
           icon: Icons.shopping_bag_outlined,
-          badge: _cart.length.toString(),
+          badge: _formatNumber(_cart.length),
           onTap: _openCartModal,
         ),
         const SizedBox(width: 10),
         _TopIconButton(
           key: _ordersIconKey,
           icon: Icons.receipt_long_outlined,
-          badge: _orders.length.toString(),
+          badge: _formatNumber(_orders.length),
           onTap: _openOrdersModal,
         ),
         if (_currentRole == 'admin') ...[
@@ -840,7 +866,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           _TopIconButton(
             key: _approvalIconKey,
             icon: Icons.verified_user_outlined,
-            badge: _voidRequests.length.toString(),
+            badge: _formatNumber(_voidRequests.length),
             onTap: _openApprovalModal,
           ),
         ],
@@ -853,14 +879,14 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       children: [
         _StatCard(
           label: 'Products',
-          value: _filteredMaterials.length.toString(),
+          value: _formatNumber(_filteredMaterials.length),
           icon: Icons.inventory_2_outlined,
           isMobile: isMobile,
         ),
         SizedBox(width: isMobile ? 8 : 14),
         _StatCard(
           label: 'Cart',
-          value: _cartQty.toString(),
+          value: _formatNumber(_cartQty),
           icon: Icons.shopping_cart_outlined,
           isMobile: isMobile,
         ),
@@ -1675,6 +1701,35 @@ class _StockBadge extends StatelessWidget {
             ? OrderStyles.outStockTextStyle
             : OrderStyles.stockBadgeTextStyle,
       ),
+    );
+  }
+}
+
+class ThousandsFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll(',', '');
+
+    if (text.isEmpty) return newValue.copyWith(text: '');
+
+    final number = num.tryParse(text);
+    if (number == null) return oldValue;
+
+    final parts = text.split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    final formatted = parts.length > 1 ? '$whole.${parts[1]}' : whole;
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
