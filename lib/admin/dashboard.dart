@@ -31,6 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> userLogs = [];
   List<Map<String, dynamic>> itemLogs = [];
+  List<Map<String, dynamic>> materialLogs = [];
 
   @override
   void initState() {
@@ -68,6 +69,12 @@ class _DashboardPageState extends State<DashboardPage> {
           .order('created_at', ascending: false)
           .limit(20);
 
+      final materialLogsData = await supabase
+          .from('material_logs')
+          .select('description, action, user_email, created_at')
+          .order('created_at', ascending: false)
+          .limit(20);
+
       final itemData = await supabase.from('purchase_order_items').select('''
   id,
   purchase_order_id,
@@ -92,6 +99,7 @@ class _DashboardPageState extends State<DashboardPage> {
         users = List<Map<String, dynamic>>.from(usersData);
         userLogs = List<Map<String, dynamic>>.from(logsData);
         itemLogs = List<Map<String, dynamic>>.from(itemLogsData);
+        materialLogs = List<Map<String, dynamic>>.from(materialLogsData);
         loading = false;
       });
     } catch (e) {
@@ -617,6 +625,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   users: users,
                                   logs: userLogs,
                                   itemLogs: itemLogs,
+                                  materialLogs: materialLogs,
                                 ),
                               ),
                             ),
@@ -675,6 +684,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   users: users,
                                   logs: userLogs,
                                   itemLogs: itemLogs,
+                                  materialLogs: materialLogs,
                                 ),
                               ),
                             ),
@@ -1935,11 +1945,13 @@ class _CoderStatusPanel extends StatelessWidget {
   final List<Map<String, dynamic>> users;
   final List<Map<String, dynamic>> logs;
   final List<Map<String, dynamic>> itemLogs;
+  final List<Map<String, dynamic>> materialLogs;
 
   const _CoderStatusPanel({
     required this.users,
     required this.logs,
     required this.itemLogs,
+    required this.materialLogs,
   });
 
   String _shortDate(dynamic value) {
@@ -1953,7 +1965,7 @@ class _CoderStatusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 360,
+      height: 470,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2231,6 +2243,111 @@ class _CoderStatusPanel extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: DashboardStyles.smallGold.copyWith(
                                     fontSize: 8.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.edit_note_rounded,
+                color: DashboardStyles.plutoGold,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Edit / Delete Logs',
+                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          SizedBox(
+            height: 95,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: DashboardStyles.cardColor.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DashboardStyles.plutoGold.withOpacity(0.22),
+                ),
+              ),
+              child: materialLogs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No edit/delete logs yet.',
+                        style: DashboardStyles.pageSubtitleStyle.copyWith(
+                          fontSize: 10,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: materialLogs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, index) {
+                        final log = materialLogs[index];
+                        final action = log['action']?.toString() ?? '';
+                        final isDelete = action == 'delete';
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDelete
+                                ? DashboardStyles.danger.withOpacity(0.07)
+                                : DashboardStyles.megaGreen.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isDelete
+                                    ? Icons.delete_outline_rounded
+                                    : Icons.edit_rounded,
+                                color: isDelete
+                                    ? DashboardStyles.danger
+                                    : DashboardStyles.megaGreenSoft,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  log['description']?.toString() ?? '-',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardStyles.pageSubtitleStyle
+                                      .copyWith(
+                                        color: DashboardStyles.textPrimary,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  '${isDelete ? 'Deleted' : 'Edited'} by ${log['user_email'] ?? 'Unknown'}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardStyles.smallGold.copyWith(
+                                    fontSize: 8.5,
+                                    color: isDelete
+                                        ? DashboardStyles.danger
+                                        : DashboardStyles.megaGreenSoft,
                                   ),
                                 ),
                               ),
