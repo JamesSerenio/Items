@@ -15,7 +15,12 @@ class AttachmentsComputation {
   static const Color _muted = Color(0xFFC6B98F);
   static const Color _darkCard = Color(0xFF081711);
 
-  static num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
+  static num _num(dynamic v) {
+    final clean =
+        v?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+    return num.tryParse(clean) ?? 0;
+  }
 
   static String _money(dynamic value) {
     final n = _num(value);
@@ -416,7 +421,31 @@ class AttachmentsComputation {
   }) {
     return TextField(
       controller: controller,
-      onChanged: onChanged,
+      onChanged: (value) {
+        final clean = value.replaceAll(',', '');
+
+        if (clean.isNotEmpty) {
+          final number = num.tryParse(clean);
+
+          if (number != null) {
+            final parts = clean.split('.');
+
+            final whole = parts[0].replaceAllMapped(
+              RegExp(r'\B(?=(\d{3})+(?!\d))'),
+              (_) => ',',
+            );
+
+            final formatted = parts.length > 1 ? '$whole.${parts[1]}' : whole;
+
+            controller.value = TextEditingValue(
+              text: formatted,
+              selection: TextSelection.collapsed(offset: formatted.length),
+            );
+          }
+        }
+
+        onChanged(controller.text);
+      },
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       style: const TextStyle(
         color: _cream,
