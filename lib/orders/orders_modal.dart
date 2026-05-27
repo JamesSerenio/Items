@@ -18,6 +18,25 @@ class OrdersModal extends StatelessWidget {
     required this.onVoidOrder,
   });
 
+  String _formatNumber(dynamic value) {
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '0';
+
+    final number = num.tryParse(raw) ?? 0;
+
+    final parts = number.toString().split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    if (parts.length > 1 && parts[1] != '0') {
+      return '$whole.${parts[1]}';
+    }
+
+    return whole;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
@@ -44,7 +63,9 @@ class OrdersModal extends StatelessWidget {
                 const Expanded(
                   child: Text('Orders', style: OrderStyles.cartTitleStyle),
                 ),
-                _MiniPill(text: '${orders.length}'),
+
+                _MiniPill(text: _formatNumber(orders.length)),
+
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
@@ -54,7 +75,9 @@ class OrdersModal extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
+
             Expanded(
               child: orders.isEmpty
                   ? const Center(
@@ -81,7 +104,9 @@ class OrdersModal extends StatelessWidget {
                                   Icons.picture_as_pdf_outlined,
                                   color: OrderStyles.plutoGold,
                                 ),
+
                                 const SizedBox(width: 10),
+
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -93,7 +118,9 @@ class OrdersModal extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style: OrderStyles.cartItemNameStyle,
                                       ),
+
                                       const SizedBox(height: 4),
+
                                       Text(
                                         text(order['po_no']),
                                         style: OrderStyles.cartItemMetaStyle,
@@ -101,6 +128,7 @@ class OrdersModal extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -108,7 +136,9 @@ class OrdersModal extends StatelessWidget {
                                       money(order['total_amount']),
                                       style: OrderStyles.orderTotalStyle,
                                     ),
+
                                     const SizedBox(height: 6),
+
                                     InkWell(
                                       borderRadius: BorderRadius.circular(999),
                                       onTap: () => onVoidOrder(order),
