@@ -22,7 +22,29 @@ class CurrentOrderModal extends StatelessWidget {
     required this.onCheckout,
   });
 
-  num _num(dynamic value) => num.tryParse(value?.toString() ?? '0') ?? 0;
+  num _num(dynamic value) {
+    final clean =
+        value?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+    return num.tryParse(clean) ?? 0;
+  }
+
+  String _format(dynamic value) {
+    final number = _num(value);
+
+    final parts = number.toString().split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    if (parts.length > 1 && parts[1] != '0') {
+      return '$whole.${parts[1]}';
+    }
+
+    return whole;
+  }
 
   num get _modalCartTotal {
     num total = 0;
@@ -67,7 +89,7 @@ class CurrentOrderModal extends StatelessWidget {
                         style: OrderStyles.cartTitleStyle,
                       ),
                     ),
-                    _MiniPill(text: '${cart.length} items'),
+                    _MiniPill(text: '${_format(cart.length)} items'),
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -185,7 +207,7 @@ class CurrentOrderModal extends StatelessWidget {
                                       decoration:
                                           OrderStyles.unitPillDecoration,
                                       child: Text(
-                                        text(item['quantity']),
+                                        _format(item['quantity']),
                                         style: OrderStyles.qtyTextStyle
                                             .copyWith(
                                               fontSize: isMobile ? 12 : 14,
@@ -242,7 +264,7 @@ class CurrentOrderModal extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        money(_modalCartTotal),
+                        money(_format(_modalCartTotal)),
                         style: OrderStyles.totalValueStyle.copyWith(
                           fontSize: 20,
                         ),
