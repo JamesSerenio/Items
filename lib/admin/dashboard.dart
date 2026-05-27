@@ -30,6 +30,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> items = [];
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> userLogs = [];
+  List<Map<String, dynamic>> itemLogs = [];
 
   @override
   void initState() {
@@ -61,6 +62,12 @@ class _DashboardPageState extends State<DashboardPage> {
           .order('created_at', ascending: false)
           .limit(10);
 
+      final itemLogsData = await supabase
+          .from('materials')
+          .select('description, added_by_email, created_at')
+          .order('created_at', ascending: false)
+          .limit(20);
+
       final itemData = await supabase.from('purchase_order_items').select('''
   id,
   purchase_order_id,
@@ -84,6 +91,7 @@ class _DashboardPageState extends State<DashboardPage> {
         items = List<Map<String, dynamic>>.from(itemData);
         users = List<Map<String, dynamic>>.from(usersData);
         userLogs = List<Map<String, dynamic>>.from(logsData);
+        itemLogs = List<Map<String, dynamic>>.from(itemLogsData);
         loading = false;
       });
     } catch (e) {
@@ -608,6 +616,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 child: _CoderStatusPanel(
                                   users: users,
                                   logs: userLogs,
+                                  itemLogs: itemLogs,
                                 ),
                               ),
                             ),
@@ -665,6 +674,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 child: _CoderStatusPanel(
                                   users: users,
                                   logs: userLogs,
+                                  itemLogs: itemLogs,
                                 ),
                               ),
                             ),
@@ -1924,85 +1934,311 @@ class _EmptyChart extends StatelessWidget {
 class _CoderStatusPanel extends StatelessWidget {
   final List<Map<String, dynamic>> users;
   final List<Map<String, dynamic>> logs;
+  final List<Map<String, dynamic>> itemLogs;
 
-  const _CoderStatusPanel({required this.users, required this.logs});
+  const _CoderStatusPanel({
+    required this.users,
+    required this.logs,
+    required this.itemLogs,
+  });
 
   String _shortDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
     if (d == null) return '-';
-    return '${d.month}/${d.day}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final hour = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    return '${d.month}/${d.day}/${d.year} $hour:${d.minute.toString().padLeft(2, '0')} $ampm';
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 210,
+      height: 360,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ...users.map((u) {
             final online = u['is_online'] == true;
+
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
               decoration: BoxDecoration(
-                color: DashboardStyles.cardColor,
-                borderRadius: BorderRadius.circular(14),
+                color: online
+                    ? DashboardStyles.megaGreen.withOpacity(0.10)
+                    : DashboardStyles.cardColor.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: online
-                      ? DashboardStyles.megaGreen
+                      ? DashboardStyles.megaGreenSoft.withOpacity(0.95)
                       : DashboardStyles.plutoGold.withOpacity(0.35),
                 ),
+                boxShadow: [
+                  if (online)
+                    BoxShadow(
+                      color: DashboardStyles.megaGreenSoft.withOpacity(0.12),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 10,
-                    height: 10,
+                    width: 11,
+                    height: 11,
                     decoration: BoxDecoration(
                       color: online
                           ? DashboardStyles.megaGreenSoft
                           : DashboardStyles.textSecondary,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        if (online)
+                          BoxShadow(
+                            color: DashboardStyles.megaGreenSoft.withOpacity(
+                              0.65,
+                            ),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
                   Expanded(
                     child: Text(
                       u['email']?.toString() ?? '',
                       overflow: TextOverflow.ellipsis,
                       style: DashboardStyles.smallGold.copyWith(
                         color: DashboardStyles.textPrimary,
+                        fontSize: 10.5,
                       ),
                     ),
                   ),
-                  Text(
-                    online ? 'Active' : 'Offline',
-                    style: DashboardStyles.smallGold.copyWith(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
                       color: online
-                          ? DashboardStyles.megaGreenSoft
-                          : DashboardStyles.textSecondary,
+                          ? DashboardStyles.megaGreenSoft.withOpacity(0.16)
+                          : DashboardStyles.textSecondary.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      online ? 'Active' : 'Offline',
+                      style: DashboardStyles.smallGold.copyWith(
+                        fontSize: 9,
+                        color: online
+                            ? DashboardStyles.megaGreenSoft
+                            : DashboardStyles.textSecondary,
+                      ),
                     ),
                   ),
                 ],
               ),
             );
           }),
-          const SizedBox(height: 6),
-          Expanded(
-            child: ListView.builder(
-              itemCount: logs.length,
-              itemBuilder: (_, index) {
-                final log = logs[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '${log['email']} ${log['action']} • ${_shortDate(log['created_at'])}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardStyles.pageSubtitleStyle,
-                  ),
-                );
-              },
+
+          const SizedBox(height: 2),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.history_rounded,
+                color: DashboardStyles.plutoGold,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Recent Logs',
+                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          SizedBox(
+            height: 125,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: DashboardStyles.cardColor.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DashboardStyles.plutoGold.withOpacity(0.22),
+                ),
+              ),
+              child: logs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No recent login/logout logs.',
+                        style: DashboardStyles.pageSubtitleStyle.copyWith(
+                          fontSize: 10,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: logs.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 10,
+                        color: DashboardStyles.plutoGold.withOpacity(0.10),
+                      ),
+                      itemBuilder: (_, index) {
+                        final log = logs[index];
+                        final action = log['action']?.toString() ?? '';
+                        final isLogin = action == 'login';
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isLogin
+                                ? DashboardStyles.megaGreen.withOpacity(0.08)
+                                : DashboardStyles.danger.withOpacity(0.07),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isLogin
+                                    ? Icons.login_rounded
+                                    : Icons.logout_rounded,
+                                size: 14,
+                                color: isLogin
+                                    ? DashboardStyles.megaGreenSoft
+                                    : DashboardStyles.danger,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  log['email']?.toString() ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardStyles.pageSubtitleStyle
+                                      .copyWith(
+                                        color: DashboardStyles.textPrimary,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${isLogin ? 'Login' : 'Logout'} • ${_shortDate(log['created_at'])}',
+                                style: DashboardStyles.smallGold.copyWith(
+                                  fontSize: 8.5,
+                                  color: isLogin
+                                      ? DashboardStyles.megaGreenSoft
+                                      : DashboardStyles.danger,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.add_box_rounded,
+                color: DashboardStyles.plutoGold,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Recently Added Items',
+                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          SizedBox(
+            height: 95,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: DashboardStyles.cardColor.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DashboardStyles.plutoGold.withOpacity(0.22),
+                ),
+              ),
+              child: itemLogs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No added items yet.',
+                        style: DashboardStyles.pageSubtitleStyle.copyWith(
+                          fontSize: 10,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: itemLogs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, index) {
+                        final item = itemLogs[index];
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: DashboardStyles.plutoGold.withOpacity(0.07),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.inventory_2_rounded,
+                                color: DashboardStyles.plutoGold,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  item['description']?.toString() ?? '-',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardStyles.pageSubtitleStyle
+                                      .copyWith(
+                                        color: DashboardStyles.textPrimary,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  item['added_by_email']?.toString() ??
+                                      'Unknown',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardStyles.smallGold.copyWith(
+                                    fontSize: 8.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
           ),
         ],
