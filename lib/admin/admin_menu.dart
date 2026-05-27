@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
 import '../styles/admin_menu_styles.dart';
 import 'dashboard.dart';
@@ -46,7 +47,41 @@ class _AdminMenuState extends State<AdminMenu>
     setState(() => _isCollapsed = !_isCollapsed);
   }
 
-  void _logout() {
+  Future<void> _logout() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    try {
+      if (user != null) {
+        final profile = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        await supabase
+            .from('profiles')
+            .update({
+              'is_online': false,
+              'last_logout': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', user.id);
+
+        await supabase.from('user_logs').insert({
+          'user_id': user.id,
+          'email': user.email,
+          'role': profile?['role'] ?? 'unknown',
+          'action': 'logout',
+        });
+      }
+
+      await supabase.auth.signOut();
+    } catch (e) {
+      debugPrint('Logout log error: $e');
+    }
+
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),

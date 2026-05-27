@@ -49,6 +49,18 @@ class _DashboardPageState extends State<DashboardPage> {
           .select('id, po_no, project_title, total_amount, created_at')
           .order('created_at', ascending: false);
 
+      final usersData = await supabase
+          .from('profiles')
+          .select('id, email, role, is_online, last_login, last_logout')
+          .eq('role', 'coder')
+          .order('email');
+
+      final logsData = await supabase
+          .from('user_logs')
+          .select('email, role, action, created_at')
+          .order('created_at', ascending: false)
+          .limit(10);
+
       final itemData = await supabase.from('purchase_order_items').select('''
   id,
   purchase_order_id,
@@ -70,6 +82,8 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         orders = List<Map<String, dynamic>>.from(ordersData);
         items = List<Map<String, dynamic>>.from(itemData);
+        users = List<Map<String, dynamic>>.from(usersData);
+        userLogs = List<Map<String, dynamic>>.from(logsData);
         loading = false;
       });
     } catch (e) {
@@ -573,10 +587,31 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        _Panel(
-                          title: 'Supplier Share',
-                          subtitle: 'Percentage and total amount per supplier.',
-                          child: _DonutSection(stats: supplierStats),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _Panel(
+                                title: 'Supplier Share',
+                                subtitle:
+                                    'Percentage and total amount per supplier.',
+                                child: _DonutSection(stats: supplierStats),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 1,
+                              child: _Panel(
+                                title: 'Coder Status',
+                                subtitle: 'Realtime login and logout activity.',
+                                child: _CoderStatusPanel(
+                                  users: users,
+                                  logs: userLogs,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ] else ...[
                         Row(
@@ -609,10 +644,31 @@ class _DashboardPageState extends State<DashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _Panel(
-                          title: 'Supplier Share',
-                          subtitle: 'Percentage and total amount per supplier.',
-                          child: _DonutSection(stats: supplierStats),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _Panel(
+                                title: 'Supplier Share',
+                                subtitle:
+                                    'Percentage and total amount per supplier.',
+                                child: _DonutSection(stats: supplierStats),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 1,
+                              child: _Panel(
+                                title: 'Coder Status',
+                                subtitle: 'Realtime login and logout activity.',
+                                child: _CoderStatusPanel(
+                                  users: users,
+                                  logs: userLogs,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -1860,6 +1916,96 @@ class _EmptyChart extends StatelessWidget {
         message,
         textAlign: TextAlign.center,
         style: DashboardStyles.pageSubtitleStyle.copyWith(fontSize: 10),
+      ),
+    );
+  }
+}
+
+class _CoderStatusPanel extends StatelessWidget {
+  final List<Map<String, dynamic>> users;
+  final List<Map<String, dynamic>> logs;
+
+  const _CoderStatusPanel({required this.users, required this.logs});
+
+  String _shortDate(dynamic value) {
+    final d = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+    if (d == null) return '-';
+    return '${d.month}/${d.day}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 210,
+      child: Column(
+        children: [
+          ...users.map((u) {
+            final online = u['is_online'] == true;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: DashboardStyles.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: online
+                      ? DashboardStyles.megaGreen
+                      : DashboardStyles.plutoGold.withOpacity(0.35),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: online
+                          ? DashboardStyles.megaGreenSoft
+                          : DashboardStyles.textSecondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      u['email']?.toString() ?? '',
+                      overflow: TextOverflow.ellipsis,
+                      style: DashboardStyles.smallGold.copyWith(
+                        color: DashboardStyles.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    online ? 'Active' : 'Offline',
+                    style: DashboardStyles.smallGold.copyWith(
+                      color: online
+                          ? DashboardStyles.megaGreenSoft
+                          : DashboardStyles.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 6),
+          Expanded(
+            child: ListView.builder(
+              itemCount: logs.length,
+              itemBuilder: (_, index) {
+                final log = logs[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '${log['email']} ${log['action']} • ${_shortDate(log['created_at'])}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DashboardStyles.pageSubtitleStyle,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
