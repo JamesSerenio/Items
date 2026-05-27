@@ -152,7 +152,30 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
         .toList();
   }
 
-  String _text(dynamic v) => v?.toString() ?? '-';
+  String _text(dynamic v) {
+    if (v == null) return '-';
+
+    final raw = v.toString().trim();
+
+    final clean = raw.replaceAll(',', '').replaceAll('₱', '');
+
+    final number = num.tryParse(clean);
+
+    if (number == null) return raw;
+
+    final parts = number.toString().split('.');
+
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    if (parts.length > 1 && parts[1] != '0') {
+      return '$whole.${parts[1]}';
+    }
+
+    return whole;
+  }
 
   String _formatDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '');
@@ -539,7 +562,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             Icon(icon, color: color, size: 13),
             const SizedBox(width: 5),
             Text(
-              '$value',
+              _text(value),
               style: TextStyle(
                 color: color,
                 fontSize: 11,
