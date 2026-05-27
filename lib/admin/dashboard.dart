@@ -80,7 +80,14 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  num _num(dynamic v) => num.tryParse(v?.toString() ?? '0') ?? 0;
+  num _num(dynamic v) {
+    final clean =
+        v?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+    return num.tryParse(clean) ?? 0;
+  }
+
+  String _formatNumber(dynamic v) => formatNumber(v);
 
   String _money(num value) {
     final parts = value.toStringAsFixed(2).split('.');
@@ -504,7 +511,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: _StatMiniCard(
                               icon: Icons.storefront_rounded,
                               title: 'Supplier',
-                              value: '$totalSuppliers',
+                              value: _formatNumber(totalSuppliers),
                               color: DashboardStyles.megaGreen,
                             ),
                           ),
@@ -513,7 +520,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: _StatMiniCard(
                               icon: Icons.inventory_2_rounded,
                               title: 'Materials',
-                              value: '$totalMaterials',
+                              value: _formatNumber(totalMaterials),
                               color: DashboardStyles.plutoGold,
                             ),
                           ),
@@ -982,7 +989,7 @@ class _SupplierItemsTable extends StatelessWidget {
                       Expanded(
                         flex: 2,
                         child: Text(
-                          qty.toStringAsFixed(qty % 1 == 0 ? 0 : 2),
+                          formatNumber(qty),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: DashboardStyles.textSecondary,
@@ -1561,7 +1568,7 @@ class _DonutSection extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$totalItems',
+                        formatNumber(totalItems),
                         style: DashboardStyles.cardValueStyle.copyWith(
                           fontSize: 24,
                         ),
@@ -1618,7 +1625,7 @@ class _DonutSection extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${s.items} items',
+                          '${formatNumber(s.items)} items',
                           style: DashboardStyles.pageSubtitleStyle,
                         ),
                         const SizedBox(width: 12),
@@ -1662,7 +1669,7 @@ class _DonutSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$totalItems',
+                      formatNumber(totalItems),
                       style: DashboardStyles.cardValueStyle.copyWith(
                         fontSize: 15,
                       ),
@@ -1726,7 +1733,7 @@ class _DonutSection extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${s.items}',
+                        formatNumber(s.items),
                         style: DashboardStyles.pageSubtitleStyle.copyWith(
                           fontSize: 8.5,
                         ),
@@ -1818,6 +1825,25 @@ String _formatMoneyShort(num value) {
       .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ',');
 
   return '₱$whole';
+}
+
+String formatNumber(dynamic v) {
+  final clean =
+      v?.toString().replaceAll(',', '').replaceAll('₱', '').trim() ?? '0';
+
+  final number = num.tryParse(clean) ?? 0;
+  final parts = number.toString().split('.');
+
+  final whole = parts[0].replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+
+  if (parts.length > 1 && parts[1] != '0') {
+    return '$whole.${parts[1]}';
+  }
+
+  return whole;
 }
 
 class _EmptyChart extends StatelessWidget {

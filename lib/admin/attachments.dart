@@ -155,6 +155,23 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
   String _text(dynamic v) => v?.toString() ?? '-';
 
+  String _formatNumber(dynamic v) {
+    final raw = v?.toString().replaceAll(',', '').trim() ?? '0';
+    final number = num.tryParse(raw) ?? 0;
+
+    final parts = number.toString().split('.');
+    final whole = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+
+    if (parts.length > 1 && parts[1] != '0') {
+      return '$whole.${parts[1]}';
+    }
+
+    return whole;
+  }
+
   String _formatDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '');
     if (d == null) return '-';
@@ -540,7 +557,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
             Icon(icon, color: color, size: 13),
             const SizedBox(width: 5),
             Text(
-              '$value',
+              _formatNumber(value),
               style: TextStyle(
                 color: color,
                 fontSize: 11,
