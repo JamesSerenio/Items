@@ -34,11 +34,34 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> materialLogs = [];
   List<Map<String, dynamic>> orderLogs = [];
   List<Map<String, dynamic>> attachmentLogs = [];
+  RealtimeChannel? dashboardLogsChannel;
 
   @override
   void initState() {
     super.initState();
     loadDashboard();
+    listenDashboardLogsRealtime();
+  }
+
+  void listenDashboardLogsRealtime() {
+    dashboardLogsChannel = supabase.channel('public:dashboard_logs');
+
+    dashboardLogsChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'attachment_logs',
+          callback: (_) async => loadDashboard(),
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    if (dashboardLogsChannel != null) {
+      supabase.removeChannel(dashboardLogsChannel!);
+    }
+    super.dispose();
   }
 
   Future<void> loadDashboard() async {
@@ -85,8 +108,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
       final attachmentLogsData = await supabase
           .from('attachment_logs')
-          .select('project_title, user_email, action, status_to, created_at')
-          .eq('action', 'status_change')
+          .select(
+            'project_title, user_email, action, status_to, photo_description, download_description, created_at',
+          )
           .order('created_at', ascending: false)
           .limit(20);
 
@@ -636,16 +660,13 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(width: 16),
                             Expanded(
                               flex: 1,
-                              child: _Panel(
-                                title: 'Coder Status',
-                                subtitle: 'Realtime login and logout activity.',
-                                child: _CoderStatusPanel(
-                                  users: users,
-                                  logs: userLogs,
-                                  itemLogs: itemLogs,
-                                  materialLogs: materialLogs,
-                                  orderLogs: orderLogs,
-                                ),
+                              child: _CoderStatusPanel(
+                                users: users,
+                                logs: userLogs,
+                                itemLogs: itemLogs,
+                                materialLogs: materialLogs,
+                                orderLogs: orderLogs,
+                                attachmentLogs: attachmentLogs,
                               ),
                             ),
                           ],
@@ -696,16 +717,13 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(width: 16),
                             Expanded(
                               flex: 1,
-                              child: _Panel(
-                                title: 'Coder Status',
-                                subtitle: 'Realtime login and logout activity.',
-                                child: _CoderStatusPanel(
-                                  users: users,
-                                  logs: userLogs,
-                                  itemLogs: itemLogs,
-                                  materialLogs: materialLogs,
-                                  orderLogs: orderLogs,
-                                ),
+                              child: _CoderStatusPanel(
+                                users: users,
+                                logs: userLogs,
+                                itemLogs: itemLogs,
+                                materialLogs: materialLogs,
+                                orderLogs: orderLogs,
+                                attachmentLogs: attachmentLogs,
                               ),
                             ),
                           ],
@@ -1967,6 +1985,7 @@ class _CoderStatusPanel extends StatelessWidget {
   final List<Map<String, dynamic>> itemLogs;
   final List<Map<String, dynamic>> materialLogs;
   final List<Map<String, dynamic>> orderLogs;
+  final List<Map<String, dynamic>> attachmentLogs;
 
   const _CoderStatusPanel({
     required this.users,
@@ -1974,472 +1993,285 @@ class _CoderStatusPanel extends StatelessWidget {
     required this.itemLogs,
     required this.materialLogs,
     required this.orderLogs,
+    required this.attachmentLogs,
   });
 
   String _shortDate(dynamic value) {
     final d = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
     if (d == null) return '-';
+
     final hour = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
     final ampm = d.hour >= 12 ? 'PM' : 'AM';
+
     return '${d.month}/${d.day}/${d.year} $hour:${d.minute.toString().padLeft(2, '0')} $ampm';
+  }
+
+  Widget _section({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DashboardStyles.panelCardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: DashboardStyles.plutoGold.withOpacity(0.60),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: DashboardStyles.plutoGold, size: 15),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  title,
+                  style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _empty(String text) {
+    return Center(
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: DashboardStyles.pageSubtitleStyle.copyWith(fontSize: 10),
+      ),
+    );
+  }
+
+  Widget _logText(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      decoration: BoxDecoration(
+        color: DashboardStyles.cardColor.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DashboardStyles.plutoGold.withOpacity(0.13)),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: DashboardStyles.pageSubtitleStyle.copyWith(
+          color: DashboardStyles.textPrimary,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 720,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...users.map((u) {
-            final online = u['is_online'] == true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _section(
+          icon: Icons.person_pin_circle_rounded,
+          title: 'Coder Active Status',
+          child: users.isEmpty
+              ? SizedBox(height: 55, child: _empty('No coder users found.'))
+              : Column(
+                  children: users.map((u) {
+                    final online = u['is_online'] == true;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                color: online
-                    ? DashboardStyles.megaGreen.withOpacity(0.10)
-                    : DashboardStyles.cardColor.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: online
-                      ? DashboardStyles.megaGreenSoft.withOpacity(0.95)
-                      : DashboardStyles.plutoGold.withOpacity(0.35),
-                ),
-                boxShadow: [
-                  if (online)
-                    BoxShadow(
-                      color: DashboardStyles.megaGreenSoft.withOpacity(0.12),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 11,
-                    height: 11,
-                    decoration: BoxDecoration(
-                      color: online
-                          ? DashboardStyles.megaGreenSoft
-                          : DashboardStyles.textSecondary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        if (online)
-                          BoxShadow(
-                            color: DashboardStyles.megaGreenSoft.withOpacity(
-                              0.65,
-                            ),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      u['email']?.toString() ?? '',
-                      overflow: TextOverflow.ellipsis,
-                      style: DashboardStyles.smallGold.copyWith(
-                        color: DashboardStyles.textPrimary,
-                        fontSize: 10.5,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
                       ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: online
-                          ? DashboardStyles.megaGreenSoft.withOpacity(0.16)
-                          : DashboardStyles.textSecondary.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      online ? 'Active' : 'Offline',
-                      style: DashboardStyles.smallGold.copyWith(
-                        fontSize: 9,
+                      decoration: BoxDecoration(
                         color: online
-                            ? DashboardStyles.megaGreenSoft
-                            : DashboardStyles.textSecondary,
+                            ? DashboardStyles.megaGreen.withOpacity(0.12)
+                            : DashboardStyles.cardColor.withOpacity(0.80),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: online
+                              ? DashboardStyles.megaGreenSoft
+                              : DashboardStyles.plutoGold.withOpacity(0.25),
+                        ),
                       ),
-                    ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: online
+                                  ? DashboardStyles.megaGreenSoft
+                                  : DashboardStyles.textSecondary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              u['email']?.toString() ?? '',
+                              overflow: TextOverflow.ellipsis,
+                              style: DashboardStyles.smallGold.copyWith(
+                                color: DashboardStyles.textPrimary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            online ? 'Active' : 'Offline',
+                            style: DashboardStyles.smallGold.copyWith(
+                              fontSize: 8.5,
+                              color: online
+                                  ? DashboardStyles.megaGreenSoft
+                                  : DashboardStyles.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+
+        _section(
+          icon: Icons.history_rounded,
+          title: 'Recent Login / Logout Logs',
+          child: SizedBox(
+            height: 115,
+            child: logs.isEmpty
+                ? _empty('No recent login/logout logs.')
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: logs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 7),
+                    itemBuilder: (_, index) {
+                      final log = logs[index];
+                      final action = log['action']?.toString() ?? '';
+                      final isLogin = action == 'login';
+
+                      return _logText(
+                        '${log['email'] ?? 'Unknown'} • ${isLogin ? 'Login' : 'Logout'} • ${_shortDate(log['created_at'])}',
+                      );
+                    },
                   ),
-                ],
-              ),
-            );
-          }),
-
-          const SizedBox(height: 2),
-
-          Row(
-            children: [
-              const Icon(
-                Icons.history_rounded,
-                color: DashboardStyles.plutoGold,
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Recent Logs',
-                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
-              ),
-            ],
           ),
+        ),
 
-          const SizedBox(height: 8),
+        _section(
+          icon: Icons.add_box_rounded,
+          title: 'Recently Added Items',
+          child: SizedBox(
+            height: 100,
+            child: itemLogs.isEmpty
+                ? _empty('No added items yet.')
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: itemLogs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 7),
+                    itemBuilder: (_, index) {
+                      final item = itemLogs[index];
 
-          SizedBox(
-            height: 125,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: DashboardStyles.cardColor.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DashboardStyles.plutoGold.withOpacity(0.22),
-                ),
-              ),
-              child: logs.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No recent login/logout logs.',
-                        style: DashboardStyles.pageSubtitleStyle.copyWith(
-                          fontSize: 10,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: logs.length,
-                      separatorBuilder: (_, __) => Divider(
-                        height: 10,
-                        color: DashboardStyles.plutoGold.withOpacity(0.10),
-                      ),
-                      itemBuilder: (_, index) {
-                        final log = logs[index];
-                        final action = log['action']?.toString() ?? '';
-                        final isLogin = action == 'login';
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isLogin
-                                ? DashboardStyles.megaGreen.withOpacity(0.08)
-                                : DashboardStyles.danger.withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isLogin
-                                    ? Icons.login_rounded
-                                    : Icons.logout_rounded,
-                                size: 14,
-                                color: isLogin
-                                    ? DashboardStyles.megaGreenSoft
-                                    : DashboardStyles.danger,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  log['email']?.toString() ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: DashboardStyles.pageSubtitleStyle
-                                      .copyWith(
-                                        color: DashboardStyles.textPrimary,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${isLogin ? 'Login' : 'Logout'} • ${_shortDate(log['created_at'])}',
-                                style: DashboardStyles.smallGold.copyWith(
-                                  fontSize: 8.5,
-                                  color: isLogin
-                                      ? DashboardStyles.megaGreenSoft
-                                      : DashboardStyles.danger,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                      return _logText(
+                        '${item['added_by_email'] ?? 'Unknown'} added ${item['description'] ?? '-'}',
+                      );
+                    },
+                  ),
           ),
+        ),
 
-          const SizedBox(height: 10),
+        _section(
+          icon: Icons.receipt_long_rounded,
+          title: 'Checkout Logs',
+          child: SizedBox(
+            height: 100,
+            child: orderLogs.isEmpty
+                ? _empty('No checkout logs yet.')
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: orderLogs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 7),
+                    itemBuilder: (_, index) {
+                      final log = orderLogs[index];
 
-          Row(
-            children: [
-              const Icon(
-                Icons.add_box_rounded,
-                color: DashboardStyles.plutoGold,
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Recently Added Items',
-                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
-              ),
-            ],
+                      return _logText(
+                        '${log['user_email'] ?? 'Unknown'} saved ${log['project_title'] ?? '-'}',
+                      );
+                    },
+                  ),
           ),
+        ),
 
-          const SizedBox(height: 8),
+        _section(
+          icon: Icons.photo_camera_rounded,
+          title: 'Attachment Logs',
+          child: SizedBox(
+            height: 115,
+            child: attachmentLogs.isEmpty
+                ? _empty('No attachment logs yet.')
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: attachmentLogs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 7),
+                    itemBuilder: (_, index) {
+                      final log = attachmentLogs[index];
+                      final action = log['action']?.toString() ?? '';
 
-          SizedBox(
-            height: 95,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: DashboardStyles.cardColor.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DashboardStyles.plutoGold.withOpacity(0.22),
-                ),
-              ),
-              child: itemLogs.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No added items yet.',
-                        style: DashboardStyles.pageSubtitleStyle.copyWith(
-                          fontSize: 10,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: itemLogs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (_, index) {
-                        final item = itemLogs[index];
+                      String text;
+                      if (action == 'photo_upload') {
+                        text =
+                            '${log['user_email'] ?? 'Unknown'} uploaded photo: ${log['photo_description'] ?? '-'}';
+                      } else if (action == 'pdf_download') {
+                        text =
+                            '${log['user_email'] ?? 'Unknown'} downloaded PDF: ${log['download_description'] ?? '-'}';
+                      } else {
+                        text =
+                            '${log['user_email'] ?? 'Unknown'} changed status to ${log['status_to'] ?? '-'}';
+                      }
 
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: DashboardStyles.plutoGold.withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.inventory_2_rounded,
-                                color: DashboardStyles.plutoGold,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  item['description']?.toString() ?? '-',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: DashboardStyles.pageSubtitleStyle
-                                      .copyWith(
-                                        color: DashboardStyles.textPrimary,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  item['added_by_email']?.toString() ??
-                                      'Unknown',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: DashboardStyles.smallGold.copyWith(
-                                    fontSize: 8.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                      return _logText(text);
+                    },
+                  ),
           ),
+        ),
 
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.receipt_long_rounded,
-                color: DashboardStyles.plutoGold,
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Checkout Logs',
-                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
-              ),
-            ],
+        _section(
+          icon: Icons.edit_note_rounded,
+          title: 'Edit / Delete Logs',
+          child: SizedBox(
+            height: 110,
+            child: materialLogs.isEmpty
+                ? _empty('No edit/delete logs yet.')
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: materialLogs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 7),
+                    itemBuilder: (_, index) {
+                      final log = materialLogs[index];
+                      final action = log['action']?.toString() ?? '';
+                      final isDelete = action == 'delete';
+
+                      return _logText(
+                        '${isDelete ? 'Deleted' : 'Edited'} ${log['description'] ?? '-'} by ${log['user_email'] ?? 'Unknown'}',
+                      );
+                    },
+                  ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 95,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: DashboardStyles.cardColor.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DashboardStyles.plutoGold.withOpacity(0.22),
-                ),
-              ),
-              child: orderLogs.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No checkout logs yet.',
-                        style: DashboardStyles.pageSubtitleStyle.copyWith(
-                          fontSize: 10,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: orderLogs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (_, index) {
-                        final log = orderLogs[index];
-                        return Text(
-                          '${log['user_email'] ?? 'Unknown'} saved ${log['project_title'] ?? '-'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DashboardStyles.pageSubtitleStyle.copyWith(
-                            color: DashboardStyles.textPrimary,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Row(
-            children: [
-              const Icon(
-                Icons.edit_note_rounded,
-                color: DashboardStyles.plutoGold,
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Edit / Delete Logs',
-                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          SizedBox(
-            height: 95,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: DashboardStyles.cardColor.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DashboardStyles.plutoGold.withOpacity(0.22),
-                ),
-              ),
-              child: materialLogs.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No edit/delete logs yet.',
-                        style: DashboardStyles.pageSubtitleStyle.copyWith(
-                          fontSize: 10,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: materialLogs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (_, index) {
-                        final log = materialLogs[index];
-                        final action = log['action']?.toString() ?? '';
-                        final isDelete = action == 'delete';
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDelete
-                                ? DashboardStyles.danger.withOpacity(0.07)
-                                : DashboardStyles.megaGreen.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isDelete
-                                    ? Icons.delete_outline_rounded
-                                    : Icons.edit_rounded,
-                                color: isDelete
-                                    ? DashboardStyles.danger
-                                    : DashboardStyles.megaGreenSoft,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  log['description']?.toString() ?? '-',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: DashboardStyles.pageSubtitleStyle
-                                      .copyWith(
-                                        color: DashboardStyles.textPrimary,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  '${isDelete ? 'Deleted' : 'Edited'} by ${log['user_email'] ?? 'Unknown'}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: DashboardStyles.smallGold.copyWith(
-                                    fontSize: 8.5,
-                                    color: isDelete
-                                        ? DashboardStyles.danger
-                                        : DashboardStyles.megaGreenSoft,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
