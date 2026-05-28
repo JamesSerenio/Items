@@ -332,6 +332,8 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         };
       }).toList();
 
+      final user = Supabase.instance.client.auth.currentUser;
+
       await Supabase.instance.client.rpc(
         'checkout_purchase_order',
         params: {
@@ -340,6 +342,13 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           'p_items': items,
         },
       );
+
+      await Supabase.instance.client.from('order_logs').insert({
+        'project_title': description,
+        'user_id': user?.id,
+        'user_email': user?.email,
+        'action': 'checkout',
+      });
 
       if (!mounted) return;
 
