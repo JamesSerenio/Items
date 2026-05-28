@@ -32,6 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> userLogs = [];
   List<Map<String, dynamic>> itemLogs = [];
   List<Map<String, dynamic>> materialLogs = [];
+  List<Map<String, dynamic>> orderLogs = [];
 
   @override
   void initState() {
@@ -75,6 +76,12 @@ class _DashboardPageState extends State<DashboardPage> {
           .order('created_at', ascending: false)
           .limit(20);
 
+      final orderLogsData = await supabase
+          .from('order_logs')
+          .select('project_title, user_email, action, created_at')
+          .order('created_at', ascending: false)
+          .limit(20);
+
       final itemData = await supabase.from('purchase_order_items').select('''
   id,
   purchase_order_id,
@@ -100,6 +107,7 @@ class _DashboardPageState extends State<DashboardPage> {
         userLogs = List<Map<String, dynamic>>.from(logsData);
         itemLogs = List<Map<String, dynamic>>.from(itemLogsData);
         materialLogs = List<Map<String, dynamic>>.from(materialLogsData);
+        orderLogs = List<Map<String, dynamic>>.from(orderLogsData);
         loading = false;
       });
     } catch (e) {
@@ -626,6 +634,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   logs: userLogs,
                                   itemLogs: itemLogs,
                                   materialLogs: materialLogs,
+                                  orderLogs: orderLogs,
                                 ),
                               ),
                             ),
@@ -685,6 +694,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   logs: userLogs,
                                   itemLogs: itemLogs,
                                   materialLogs: materialLogs,
+                                  orderLogs: orderLogs,
                                 ),
                               ),
                             ),
@@ -1946,12 +1956,14 @@ class _CoderStatusPanel extends StatelessWidget {
   final List<Map<String, dynamic>> logs;
   final List<Map<String, dynamic>> itemLogs;
   final List<Map<String, dynamic>> materialLogs;
+  final List<Map<String, dynamic>> orderLogs;
 
   const _CoderStatusPanel({
     required this.users,
     required this.logs,
     required this.itemLogs,
     required this.materialLogs,
+    required this.orderLogs,
   });
 
   String _shortDate(dynamic value) {
@@ -1965,7 +1977,7 @@ class _CoderStatusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 470,
+      height: 720,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2253,6 +2265,64 @@ class _CoderStatusPanel extends StatelessWidget {
                     ),
             ),
           ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.receipt_long_rounded,
+                color: DashboardStyles.plutoGold,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Checkout Logs',
+                style: DashboardStyles.smallGold.copyWith(fontSize: 10.5),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 95,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: DashboardStyles.cardColor.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DashboardStyles.plutoGold.withOpacity(0.22),
+                ),
+              ),
+              child: orderLogs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No checkout logs yet.',
+                        style: DashboardStyles.pageSubtitleStyle.copyWith(
+                          fontSize: 10,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: orderLogs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, index) {
+                        final log = orderLogs[index];
+                        return Text(
+                          '${log['user_email'] ?? 'Unknown'} saved ${log['project_title'] ?? '-'}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DashboardStyles.pageSubtitleStyle.copyWith(
+                            color: DashboardStyles.textPrimary,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+
           const SizedBox(height: 10),
 
           Row(
