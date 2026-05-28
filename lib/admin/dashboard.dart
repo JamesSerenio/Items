@@ -33,6 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> itemLogs = [];
   List<Map<String, dynamic>> materialLogs = [];
   List<Map<String, dynamic>> orderLogs = [];
+  List<Map<String, dynamic>> attachmentLogs = [];
 
   @override
   void initState() {
@@ -82,6 +83,13 @@ class _DashboardPageState extends State<DashboardPage> {
           .order('created_at', ascending: false)
           .limit(20);
 
+      final attachmentLogsData = await supabase
+          .from('attachment_logs')
+          .select('project_title, user_email, action, status_to, created_at')
+          .eq('action', 'status_change')
+          .order('created_at', ascending: false)
+          .limit(20);
+
       final itemData = await supabase.from('purchase_order_items').select('''
   id,
   purchase_order_id,
@@ -107,6 +115,8 @@ class _DashboardPageState extends State<DashboardPage> {
         userLogs = List<Map<String, dynamic>>.from(logsData);
         itemLogs = List<Map<String, dynamic>>.from(itemLogsData);
         materialLogs = List<Map<String, dynamic>>.from(materialLogsData);
+        orderLogs = List<Map<String, dynamic>>.from(orderLogsData);
+        attachmentLogs = List<Map<String, dynamic>>.from(attachmentLogsData);
         orderLogs = List<Map<String, dynamic>>.from(orderLogsData);
         loading = false;
       });
