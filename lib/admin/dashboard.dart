@@ -34,34 +34,11 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> materialLogs = [];
   List<Map<String, dynamic>> orderLogs = [];
   List<Map<String, dynamic>> attachmentLogs = [];
-  RealtimeChannel? dashboardLogsChannel;
 
   @override
   void initState() {
     super.initState();
     loadDashboard();
-    listenDashboardLogsRealtime();
-  }
-
-  void listenDashboardLogsRealtime() {
-    dashboardLogsChannel = supabase.channel('public:dashboard_logs');
-
-    dashboardLogsChannel!
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'attachment_logs',
-          callback: (_) async => loadDashboard(),
-        )
-        .subscribe();
-  }
-
-  @override
-  void dispose() {
-    if (dashboardLogsChannel != null) {
-      supabase.removeChannel(dashboardLogsChannel!);
-    }
-    super.dispose();
   }
 
   Future<void> loadDashboard() async {
@@ -645,29 +622,22 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Column(
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: _Panel(
-                                title: 'Supplier Share',
-                                subtitle:
-                                    'Percentage and total amount per supplier.',
-                                child: _DonutSection(stats: supplierStats),
-                              ),
+                            _Panel(
+                              title: 'Supplier Share',
+                              subtitle:
+                                  'Percentage and total amount per supplier.',
+                              child: _DonutSection(stats: supplierStats),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              flex: 1,
-                              child: _CoderStatusPanel(
-                                users: users,
-                                logs: userLogs,
-                                itemLogs: itemLogs,
-                                materialLogs: materialLogs,
-                                orderLogs: orderLogs,
-                                attachmentLogs: attachmentLogs,
-                              ),
+                            const SizedBox(height: 16),
+                            _CoderStatusPanel(
+                              users: users,
+                              logs: userLogs,
+                              itemLogs: itemLogs,
+                              materialLogs: materialLogs,
+                              orderLogs: orderLogs,
+                              attachmentLogs: attachmentLogs,
                             ),
                           ],
                         ),
@@ -702,29 +672,22 @@ class _DashboardPageState extends State<DashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Column(
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: _Panel(
-                                title: 'Supplier Share',
-                                subtitle:
-                                    'Percentage and total amount per supplier.',
-                                child: _DonutSection(stats: supplierStats),
-                              ),
+                            _Panel(
+                              title: 'Supplier Share',
+                              subtitle:
+                                  'Percentage and total amount per supplier.',
+                              child: _DonutSection(stats: supplierStats),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              flex: 1,
-                              child: _CoderStatusPanel(
-                                users: users,
-                                logs: userLogs,
-                                itemLogs: itemLogs,
-                                materialLogs: materialLogs,
-                                orderLogs: orderLogs,
-                                attachmentLogs: attachmentLogs,
-                              ),
+                            const SizedBox(height: 16),
+                            _CoderStatusPanel(
+                              users: users,
+                              logs: userLogs,
+                              itemLogs: itemLogs,
+                              materialLogs: materialLogs,
+                              orderLogs: orderLogs,
+                              attachmentLogs: attachmentLogs,
                             ),
                           ],
                         ),
@@ -2006,14 +1969,12 @@ class _CoderStatusPanel extends StatelessWidget {
     return '${d.month}/${d.day}/${d.year} $hour:${d.minute.toString().padLeft(2, '0')} $ampm';
   }
 
-  Widget _section({
+  Widget _box({
     required IconData icon,
     required String title,
     required Widget child,
   }) {
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: DashboardStyles.panelCardColor,
@@ -2077,201 +2038,209 @@ class _CoderStatusPanel extends StatelessWidget {
     );
   }
 
+  Widget _listBox({
+    required double height,
+    required List<Map<String, dynamic>> data,
+    required String empty,
+    required String Function(Map<String, dynamic>) textBuilder,
+  }) {
+    return SizedBox(
+      height: height,
+      child: data.isEmpty
+          ? _empty(empty)
+          : ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: data.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 7),
+              itemBuilder: (_, index) => _logText(textBuilder(data[index])),
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _section(
-          icon: Icons.person_pin_circle_rounded,
-          title: 'Coder Active Status',
-          child: users.isEmpty
-              ? SizedBox(height: 55, child: _empty('No coder users found.'))
-              : Column(
-                  children: users.map((u) {
-                    final online = u['is_online'] == true;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final isSmall = c.maxWidth < 900;
+        final gap = 14.0;
+        final boxWidth = isSmall ? c.maxWidth : (c.maxWidth - gap) / 2;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: online
-                            ? DashboardStyles.megaGreen.withOpacity(0.12)
-                            : DashboardStyles.cardColor.withOpacity(0.80),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: online
-                              ? DashboardStyles.megaGreenSoft
-                              : DashboardStyles.plutoGold.withOpacity(0.25),
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.person_pin_circle_rounded,
+                title: 'Coder Active Status',
+                child: users.isEmpty
+                    ? SizedBox(
+                        height: 75,
+                        child: _empty('No coder users found.'),
+                      )
+                    : SizedBox(
+                        height: 120,
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          children: users.map((u) {
+                            final online = u['is_online'] == true;
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: online
+                                    ? DashboardStyles.megaGreen.withOpacity(
+                                        0.12,
+                                      )
+                                    : DashboardStyles.cardColor.withOpacity(
+                                        0.80,
+                                      ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: online
+                                      ? DashboardStyles.megaGreenSoft
+                                      : DashboardStyles.plutoGold.withOpacity(
+                                          0.25,
+                                        ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: online
+                                          ? DashboardStyles.megaGreenSoft
+                                          : DashboardStyles.textSecondary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      u['email']?.toString() ?? '',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: DashboardStyles.smallGold.copyWith(
+                                        color: DashboardStyles.textPrimary,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    online ? 'Active' : 'Offline',
+                                    style: DashboardStyles.smallGold.copyWith(
+                                      fontSize: 8.5,
+                                      color: online
+                                          ? DashboardStyles.megaGreenSoft
+                                          : DashboardStyles.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: online
-                                  ? DashboardStyles.megaGreenSoft
-                                  : DashboardStyles.textSecondary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              u['email']?.toString() ?? '',
-                              overflow: TextOverflow.ellipsis,
-                              style: DashboardStyles.smallGold.copyWith(
-                                color: DashboardStyles.textPrimary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            online ? 'Active' : 'Offline',
-                            style: DashboardStyles.smallGold.copyWith(
-                              fontSize: 8.5,
-                              color: online
-                                  ? DashboardStyles.megaGreenSoft
-                                  : DashboardStyles.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+              ),
+            ),
+
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.history_rounded,
+                title: 'Recent Login / Logout Logs',
+                child: _listBox(
+                  height: 120,
+                  data: logs,
+                  empty: 'No recent login/logout logs.',
+                  textBuilder: (log) {
+                    final action = log['action']?.toString() ?? '';
+                    return '${log['email'] ?? 'Unknown'} • ${action == 'login' ? 'Login' : 'Logout'} • ${_shortDate(log['created_at'])}';
+                  },
                 ),
-        ),
+              ),
+            ),
 
-        _section(
-          icon: Icons.history_rounded,
-          title: 'Recent Login / Logout Logs',
-          child: SizedBox(
-            height: 115,
-            child: logs.isEmpty
-                ? _empty('No recent login/logout logs.')
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: logs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 7),
-                    itemBuilder: (_, index) {
-                      final log = logs[index];
-                      final action = log['action']?.toString() ?? '';
-                      final isLogin = action == 'login';
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.add_box_rounded,
+                title: 'Recently Added Items',
+                child: _listBox(
+                  height: 120,
+                  data: itemLogs,
+                  empty: 'No added items yet.',
+                  textBuilder: (item) =>
+                      '${item['added_by_email'] ?? 'Unknown'} added ${item['description'] ?? '-'}',
+                ),
+              ),
+            ),
 
-                      return _logText(
-                        '${log['email'] ?? 'Unknown'} • ${isLogin ? 'Login' : 'Logout'} • ${_shortDate(log['created_at'])}',
-                      );
-                    },
-                  ),
-          ),
-        ),
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.receipt_long_rounded,
+                title: 'Checkout Logs',
+                child: _listBox(
+                  height: 120,
+                  data: orderLogs,
+                  empty: 'No checkout logs yet.',
+                  textBuilder: (log) =>
+                      '${log['user_email'] ?? 'Unknown'} saved ${log['project_title'] ?? '-'}',
+                ),
+              ),
+            ),
 
-        _section(
-          icon: Icons.add_box_rounded,
-          title: 'Recently Added Items',
-          child: SizedBox(
-            height: 100,
-            child: itemLogs.isEmpty
-                ? _empty('No added items yet.')
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: itemLogs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 7),
-                    itemBuilder: (_, index) {
-                      final item = itemLogs[index];
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.photo_camera_rounded,
+                title: 'Attachment Logs',
+                child: _listBox(
+                  height: 135,
+                  data: attachmentLogs,
+                  empty: 'No attachment logs yet.',
+                  textBuilder: (log) {
+                    final action = log['action']?.toString() ?? '';
 
-                      return _logText(
-                        '${item['added_by_email'] ?? 'Unknown'} added ${item['description'] ?? '-'}',
-                      );
-                    },
-                  ),
-          ),
-        ),
+                    if (action == 'photo_upload') {
+                      return '${log['user_email'] ?? 'Unknown'} uploaded photo: ${log['photo_description'] ?? '-'}';
+                    } else if (action == 'pdf_download') {
+                      return '${log['user_email'] ?? 'Unknown'} downloaded PDF: ${log['download_description'] ?? '-'}';
+                    } else {
+                      return '${log['user_email'] ?? 'Unknown'} changed status to ${log['status_to'] ?? '-'}';
+                    }
+                  },
+                ),
+              ),
+            ),
 
-        _section(
-          icon: Icons.receipt_long_rounded,
-          title: 'Checkout Logs',
-          child: SizedBox(
-            height: 100,
-            child: orderLogs.isEmpty
-                ? _empty('No checkout logs yet.')
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: orderLogs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 7),
-                    itemBuilder: (_, index) {
-                      final log = orderLogs[index];
-
-                      return _logText(
-                        '${log['user_email'] ?? 'Unknown'} saved ${log['project_title'] ?? '-'}',
-                      );
-                    },
-                  ),
-          ),
-        ),
-
-        _section(
-          icon: Icons.photo_camera_rounded,
-          title: 'Attachment Logs',
-          child: SizedBox(
-            height: 115,
-            child: attachmentLogs.isEmpty
-                ? _empty('No attachment logs yet.')
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: attachmentLogs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 7),
-                    itemBuilder: (_, index) {
-                      final log = attachmentLogs[index];
-                      final action = log['action']?.toString() ?? '';
-
-                      String text;
-                      if (action == 'photo_upload') {
-                        text =
-                            '${log['user_email'] ?? 'Unknown'} uploaded photo: ${log['photo_description'] ?? '-'}';
-                      } else if (action == 'pdf_download') {
-                        text =
-                            '${log['user_email'] ?? 'Unknown'} downloaded PDF: ${log['download_description'] ?? '-'}';
-                      } else {
-                        text =
-                            '${log['user_email'] ?? 'Unknown'} changed status to ${log['status_to'] ?? '-'}';
-                      }
-
-                      return _logText(text);
-                    },
-                  ),
-          ),
-        ),
-
-        _section(
-          icon: Icons.edit_note_rounded,
-          title: 'Edit / Delete Logs',
-          child: SizedBox(
-            height: 110,
-            child: materialLogs.isEmpty
-                ? _empty('No edit/delete logs yet.')
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: materialLogs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 7),
-                    itemBuilder: (_, index) {
-                      final log = materialLogs[index];
-                      final action = log['action']?.toString() ?? '';
-                      final isDelete = action == 'delete';
-
-                      return _logText(
-                        '${isDelete ? 'Deleted' : 'Edited'} ${log['description'] ?? '-'} by ${log['user_email'] ?? 'Unknown'}',
-                      );
-                    },
-                  ),
-          ),
-        ),
-      ],
+            SizedBox(
+              width: boxWidth,
+              child: _box(
+                icon: Icons.edit_note_rounded,
+                title: 'Edit / Delete Logs',
+                child: _listBox(
+                  height: 135,
+                  data: materialLogs,
+                  empty: 'No edit/delete logs yet.',
+                  textBuilder: (log) {
+                    final action = log['action']?.toString() ?? '';
+                    final isDelete = action == 'delete';
+                    return '${isDelete ? 'Deleted' : 'Edited'} ${log['description'] ?? '-'} by ${log['user_email'] ?? 'Unknown'}';
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

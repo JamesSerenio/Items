@@ -539,19 +539,6 @@ class AttachmentsPdfService {
         Navigator.pop(context);
       }
 
-      final user = supabase.auth.currentUser;
-
-      await supabase.from('attachment_logs').insert({
-        'order_id': order['id'],
-        'project_title': order['project_title'],
-        'action': 'pdf_download',
-        'download_description': info.entity.trim().isEmpty
-            ? order['project_title']
-            : info.entity,
-        'user_id': user?.id,
-        'user_email': user?.email ?? 'Unknown',
-      }).select();
-
       await Printing.sharePdf(bytes: bytes, filename: 'PO_$poNo.pdf');
     } catch (e) {
       if (context.mounted && Navigator.canPop(context)) {
