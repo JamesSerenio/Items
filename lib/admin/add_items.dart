@@ -92,7 +92,11 @@ class _AddItemsPageState extends State<AddItemsPage> {
     setState(() => _isSaving = true);
 
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+
       await Supabase.instance.client.from('materials').insert({
+        'added_by': user?.id,
+        'added_by_email': user?.email,
         'supplier_name': _supplierController.text.trim(),
         'brand': _brandController.text.trim().isEmpty
             ? null
@@ -101,6 +105,7 @@ class _AddItemsPageState extends State<AddItemsPage> {
         'unit': _unitController.text.trim(),
         'unit_value': double.parse(_unitValueController.text.trim()),
         'price': double.parse(_priceController.text.replaceAll(',', '').trim()),
+        'quantity': 0,
         'location': _locationController.text.trim(),
         'availability': _availability,
       });

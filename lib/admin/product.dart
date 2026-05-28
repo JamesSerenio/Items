@@ -114,9 +114,23 @@ class _ProductPageState extends State<ProductPage> {
     return null;
   }
 
-  Future<void> _deleteMaterial(String id) async {
+  Future<void> _deleteMaterial(Map<String, dynamic> item) async {
     try {
-      await Supabase.instance.client.from('materials').delete().eq('id', id);
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.from('material_logs').insert({
+        'material_id': item['id'],
+        'description': item['description'],
+        'action': 'delete',
+        'user_id': user?.id,
+        'user_email': user?.email,
+      });
+
+      await Supabase.instance.client
+          .from('materials')
+          .delete()
+          .eq('id', item['id']);
+
       if (!mounted) return;
       _showSnack('Material deleted');
       await _loadMaterials();
@@ -147,7 +161,7 @@ class _ProductPageState extends State<ProductPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteMaterial(item['id'].toString());
+              _deleteMaterial(item);
             },
             child: const Text(
               'Delete',
@@ -161,6 +175,7 @@ class _ProductPageState extends State<ProductPage> {
 
   Future<void> _updateMaterial({
     required String id,
+    required String oldDescription,
     required String supplierName,
     required String brand,
     required String description,
@@ -171,6 +186,15 @@ class _ProductPageState extends State<ProductPage> {
     required String location,
   }) async {
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.from('material_logs').insert({
+        'material_id': id,
+        'description': oldDescription,
+        'action': 'edit',
+        'user_id': user?.id,
+        'user_email': user?.email,
+      });
       await Supabase.instance.client
           .from('materials')
           .update({
@@ -401,6 +425,8 @@ class _ProductPageState extends State<ProductPage> {
 
                                 await _updateMaterial(
                                   id: item['id'].toString(),
+                                  oldDescription:
+                                      item['description']?.toString() ?? '-',
                                   supplierName: supplierController.text.trim(),
                                   brand: brandController.text.trim(),
                                   description: descriptionController.text
