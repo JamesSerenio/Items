@@ -400,6 +400,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   style: const TextStyle(color: OrderStyles.textPrimary),
                   decoration: OrderStyles.descriptionInputDecoration.copyWith(
                     labelText: 'Project Title',
+                    hintText: 'Enter project title...',
                   ),
                 ),
 
@@ -410,6 +411,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   style: const TextStyle(color: OrderStyles.textPrimary),
                   decoration: OrderStyles.descriptionInputDecoration.copyWith(
                     labelText: 'Procuring Entity',
+                    hintText: 'Enter procuring entity...',
                   ),
                 ),
 

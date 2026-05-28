@@ -323,7 +323,6 @@ class OrderStyles {
 
   static InputDecoration get descriptionInputDecoration {
     return InputDecoration(
-      hintText: 'Enter project title...',
       hintStyle: const TextStyle(color: textSecondary),
       filled: true,
       fillColor: inputFill,
