@@ -65,6 +65,17 @@ class AttachmentsUploadService {
           'description': desc,
           'storage_path': fileName,
         });
+
+        final user = supabase.auth.currentUser;
+
+        await supabase.from('attachment_logs').insert({
+          'order_id': order['id'],
+          'project_title': order['project_title'],
+          'action': 'photo_upload',
+          'photo_description': desc,
+          'user_id': user?.id,
+          'user_email': user?.email,
+        });
       }
 
       await onDone();
