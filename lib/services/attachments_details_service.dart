@@ -295,6 +295,7 @@ class AttachmentsDetailsService {
                               'order_id': order['id'],
                               'project_title': order['project_title'],
                               'action': 'status_change',
+                              'status_to': status,
                               'user_id': user?.id,
                               'user_email': user?.email,
                             });
