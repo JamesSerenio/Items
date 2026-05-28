@@ -125,7 +125,7 @@ class AttachmentsViewService {
                     children: [
                       Expanded(
                         child: Text(
-                          'Procuring Entity: ${_text(order['description'])}',
+                          'Procuring Entity: ${_text(order['procuring_entity'])}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w700,

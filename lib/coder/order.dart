@@ -310,8 +310,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       return;
     }
 
-    final description = await _openDescriptionDialog();
-    if (description == null) return;
+    final orderData = await _openDescriptionDialog();
+    if (orderData == null) return;
+
+    final description = orderData['project_title'] ?? 'Project Title';
+    final procuringEntity = orderData['procuring_entity'] ?? '-';
 
     try {
       final items = _cart.map((item) {
@@ -331,7 +334,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
       await Supabase.instance.client.rpc(
         'checkout_purchase_order',
-        params: {'p_project_title': description, 'p_items': items},
+        params: {
+          'p_project_title': description,
+          'p_procuring_entity': procuringEntity,
+          'p_items': items,
+        },
       );
 
       if (!mounted) return;
@@ -347,10 +354,11 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     }
   }
 
-  Future<String?> _openDescriptionDialog() async {
-    final controller = TextEditingController();
+  Future<Map<String, String>?> _openDescriptionDialog() async {
+    final projectController = TextEditingController();
+    final procuringController = TextEditingController();
 
-    return showDialog<String>(
+    return showDialog<Map<String, String>>(
       context: context,
       builder: (_) {
         return Dialog(
@@ -369,20 +377,35 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Project Title',
+                        'Order Details',
                         style: OrderStyles.popupTitleStyle,
                       ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 16),
+
                 TextField(
-                  controller: controller,
-                  maxLines: 4,
+                  controller: projectController,
                   style: const TextStyle(color: OrderStyles.textPrimary),
-                  decoration: OrderStyles.descriptionInputDecoration,
+                  decoration: OrderStyles.descriptionInputDecoration.copyWith(
+                    labelText: 'Project Title',
+                  ),
                 ),
+
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: procuringController,
+                  style: const TextStyle(color: OrderStyles.textPrimary),
+                  decoration: OrderStyles.descriptionInputDecoration.copyWith(
+                    labelText: 'Procuring Entity',
+                  ),
+                ),
+
                 const SizedBox(height: 16),
+
                 Row(
                   children: [
                     Expanded(
@@ -392,15 +415,23 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                         child: const Text('Cancel'),
                       ),
                     ),
+
                     const SizedBox(width: 12),
+
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          final text = controller.text.trim();
-                          Navigator.pop(
-                            context,
-                            text.isEmpty ? 'Project Title' : text,
-                          );
+                          Navigator.pop(context, {
+                            'project_title':
+                                projectController.text.trim().isEmpty
+                                ? 'Project Title'
+                                : projectController.text.trim(),
+
+                            'procuring_entity':
+                                procuringController.text.trim().isEmpty
+                                ? '-'
+                                : procuringController.text.trim(),
+                          });
                         },
                         style: OrderStyles.checkoutButtonStyle,
                         child: const Text(
