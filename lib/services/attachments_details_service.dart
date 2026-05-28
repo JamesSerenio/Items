@@ -99,12 +99,6 @@ class AttachmentsDetailsService {
   }) async {
     final rootContext = context;
 
-    final descController = TextEditingController(
-      text: photos.isNotEmpty
-          ? (photos.first['procuring_entity'] ?? '').toString().trim()
-          : '',
-    );
-
     String status = _statusOf(order);
     DateTime? selectedDateTime = _dateOf(order);
     bool saving = false;
@@ -134,7 +128,7 @@ class AttachmentsDetailsService {
                 ),
               ),
               title: const Text(
-                'Write Procuring Entity',
+                'Update Status',
                 style: TextStyle(
                   color: AttachmentsStyles.textPrimary,
                   fontWeight: FontWeight.w900,
@@ -143,38 +137,6 @@ class AttachmentsDetailsService {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: descController,
-                    maxLines: 3,
-                    style: const TextStyle(
-                      color: AttachmentsStyles.textPrimary,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Write Procuring Entity...',
-                      hintStyle: const TextStyle(
-                        color: AttachmentsStyles.textSecondary,
-                      ),
-                      filled: true,
-                      fillColor: AttachmentsStyles.bgDark,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: AttachmentsStyles.gold.withOpacity(0.40),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: AttachmentsStyles.gold,
-                          width: 1.6,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -327,13 +289,15 @@ class AttachmentsDetailsService {
                                 })
                                 .eq('id', order['id']);
 
-                            await supabase
-                                .from('order_attachments')
-                                .update({
-                                  'procuring_entity': descController.text
-                                      .trim(),
-                                })
-                                .eq('order_id', order['id']);
+                            final user = supabase.auth.currentUser;
+
+                            await supabase.from('attachment_logs').insert({
+                              'order_id': order['id'],
+                              'project_title': order['project_title'],
+                              'action': 'status_change',
+                              'user_id': user?.id,
+                              'user_email': user?.email,
+                            });
 
                             if (Navigator.of(
                               dialogContext,
@@ -376,7 +340,5 @@ class AttachmentsDetailsService {
         );
       },
     );
-
-    descController.dispose();
   }
 }
