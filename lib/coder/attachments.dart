@@ -106,6 +106,33 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
       setState(() {
         orders = List<Map<String, dynamic>>.from(ordersData);
+
+        int statusRank(Map<String, dynamic> o) {
+          final status = (o['collecting_status'] ?? 'processing')
+              .toString()
+              .trim()
+              .toLowerCase();
+
+          if (status == 'processing') return 0;
+          if (status == 'collecting') return 1;
+          if (status == 'collected') return 2;
+          return 0;
+        }
+
+        orders.sort((a, b) {
+          final rankCompare = statusRank(a).compareTo(statusRank(b));
+          if (rankCompare != 0) return rankCompare;
+
+          final ad =
+              DateTime.tryParse(a['created_at']?.toString() ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final bd =
+              DateTime.tryParse(b['created_at']?.toString() ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+
+          return bd.compareTo(ad);
+        });
+        orders = List<Map<String, dynamic>>.from(ordersData);
         attachments = attachmentData;
         loading = false;
       });
