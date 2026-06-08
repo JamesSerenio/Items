@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
 import 'dart:html' as html;
 import 'dart:typed_data';
@@ -173,7 +173,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
         if (file.bytes == null) continue;
 
         final safeName = file.name.replaceAll(RegExp(r'[^\w.\-]'), '_');
-
         final fileName = '${DateTime.now().millisecondsSinceEpoch}_$safeName';
 
         await supabase.storage
@@ -188,11 +187,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
       await Future.delayed(const Duration(milliseconds: 700));
 
       if (!mounted) return;
-
       await loadPhotos(currentFolder);
 
       if (!mounted) return;
-
       setState(() {
         openedFolder = currentFolder;
         uploading = false;
@@ -298,12 +295,8 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   List<String> get filteredFolders {
     final q = searchController.text.trim().toLowerCase();
-
     if (q.isEmpty) return folders;
-
-    return folders.where((f) {
-      return f.toLowerCase().contains(q);
-    }).toList();
+    return folders.where((f) => f.toLowerCase().contains(q)).toList();
   }
 
   Widget folderCard(String folder) {
@@ -447,15 +440,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
             const SizedBox(width: 10),
             ElevatedButton.icon(
               style: DocumentsStyles.goldButton,
-              onPressed: uploading ? null : uploadPhotos,
-              icon: uploading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.add_photo_alternate_rounded),
-              label: Text(uploading ? 'Uploading...' : 'Add Photos'),
+              onPressed: createFolder,
+              icon: const Icon(Icons.create_new_folder_rounded),
+              label: const Text('Add Folder'),
             ),
             if (selectedFolders.isNotEmpty) ...[
               const SizedBox(width: 10),
@@ -488,6 +475,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
   }
 
   Widget photosView(bool isMobile) {
+    final allSelected =
+        photos.isNotEmpty && selectedPhotos.length == photos.length;
+
     return Column(
       children: [
         Row(
@@ -512,11 +502,42 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 style: DocumentsStyles.title.copyWith(fontSize: 23),
               ),
             ),
+            if (photos.isNotEmpty) ...[
+              Checkbox(
+                value: allSelected,
+                activeColor: DocumentsStyles.megaGreen,
+                onChanged: (v) {
+                  setState(() {
+                    if (v == true) {
+                      selectedPhotos
+                        ..clear()
+                        ..addAll(photos.map((p) => p.name));
+                    } else {
+                      selectedPhotos.clear();
+                    }
+                  });
+                },
+              ),
+              const Text(
+                'Select All',
+                style: TextStyle(
+                  color: DocumentsStyles.textPrimary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
             ElevatedButton.icon(
               style: DocumentsStyles.goldButton,
-              onPressed: uploadPhotos,
-              icon: const Icon(Icons.add_photo_alternate_rounded),
-              label: const Text('Add Photos'),
+              onPressed: uploading ? null : uploadPhotos,
+              icon: uploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_photo_alternate_rounded),
+              label: Text(uploading ? 'Uploading...' : 'Add Photos'),
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
