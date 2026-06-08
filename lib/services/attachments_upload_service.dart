@@ -50,7 +50,7 @@ class AttachmentsUploadService {
         if (file.bytes == null) continue;
 
         final fileName =
-            '${order['id']}/${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+            'bucket_photos/${DateTime.now().millisecondsSinceEpoch}_${file.name}';
 
         await supabase.storage
             .from('attachments')

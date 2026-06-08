@@ -407,8 +407,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
     if (orderId != null && orderId.isNotEmpty) {
       final fileName = imageUrl.split('/').last.split('?').first;
       if (fileName.isNotEmpty && fileName != '-') {
-        paths.add('bucket_photos/$orderId/$fileName');
-        paths.add('$orderId/$fileName');
+        paths.add('bucket_photos/$fileName');
       }
     }
 
