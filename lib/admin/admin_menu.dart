@@ -7,8 +7,16 @@ import 'add_items.dart';
 import 'product.dart';
 import 'order.dart';
 import 'attachments.dart';
+import 'documents.dart';
 
-enum AdminSection { dashboard, addItems, product, order, attachments }
+enum AdminSection {
+  dashboard,
+  addItems,
+  product,
+  order,
+  attachments,
+  documents,
+}
 
 class AdminMenu extends StatefulWidget {
   const AdminMenu({super.key});
@@ -149,6 +157,8 @@ class _AdminMenuState extends State<AdminMenu>
         return const OrderPage();
       case AdminSection.attachments:
         return const AttachmentsPage();
+      case AdminSection.documents:
+        return const DocumentsPage();
     }
   }
 
@@ -206,6 +216,17 @@ class _AdminMenuState extends State<AdminMenu>
           isActive: _selectedSection == AdminSection.attachments,
           onTap: () {
             _selectSection(AdminSection.attachments);
+            if (isMobile) Navigator.pop(context);
+          },
+        ),
+        const SizedBox(height: 12),
+        _SidebarMenuTile(
+          icon: Icons.folder_copy_outlined,
+          label: 'Documents',
+          isCollapsed: isMobile ? false : _isCollapsed,
+          isActive: _selectedSection == AdminSection.documents,
+          onTap: () {
+            _selectSection(AdminSection.documents);
             if (isMobile) Navigator.pop(context);
           },
         ),
